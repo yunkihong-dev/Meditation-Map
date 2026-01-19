@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import FilterPanel from "@/components/meditation/FilterPanel";
 import PlaceListItem from "@/components/meditation/PlaceListItem";
 import {
@@ -183,13 +183,34 @@ const Empty = styled.p`
 const DrawerOverlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 70;
+`;
+
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+`;
+
+const slideIn = keyframes`
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 `;
 
 const DrawerBackdrop = styled.div`
   position: absolute;
   inset: 0;
   background: rgba(53, 24, 96, 0.35);
+  animation: ${fadeIn} 0.2s ease;
 `;
 
 const DrawerPanel = styled.div`
@@ -202,6 +223,7 @@ const DrawerPanel = styled.div`
   padding: 20px;
   overflow-y: auto;
   box-shadow: -12px 0 32px rgba(53, 24, 96, 0.24);
+  animation: ${slideIn} 0.25s ease;
 `;
 
 const DrawerHeader = styled.div`
@@ -214,13 +236,34 @@ const DrawerHeader = styled.div`
 const DrawerClose = styled.button`
   border: none;
   background: ${({ theme }) => theme.colors.bg100};
-  padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: ${({ theme }) => theme.radii.pill};
   cursor: pointer;
+  transition: transform 0.2s ease;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
 
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.primary300};
     outline-offset: 2px;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    stroke: ${({ theme }) => theme.colors.text900};
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover svg,
+  &:focus-visible svg {
+    transform: rotate(90deg);
   }
 `;
 
@@ -404,7 +447,10 @@ const MeditationSearchPage = () => {
             <DrawerHeader>
               <h3>필터</h3>
               <DrawerClose type="button" onClick={() => setFilterOpen(false)}>
-                닫기
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
               </DrawerClose>
             </DrawerHeader>
             <FilterPanel

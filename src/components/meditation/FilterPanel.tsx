@@ -94,16 +94,6 @@ const FilterPanel = ({
   return (
     <Panel>
       <Section>
-        <Label>Search</Label>
-        <Input
-          type="text"
-          placeholder="Search by name or address"
-          value={filters.keyword}
-          onChange={(event) => onChangeKeyword(event.target.value)}
-        />
-      </Section>
-
-      <Section>
         <Label>해시태그</Label>
         <TagList>
           {availableTags.map((tag) => (

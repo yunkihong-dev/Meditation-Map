@@ -110,15 +110,15 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <Link to="/meditation/search" onClick={onClose}>
             명상지 검색
           </Link>
-          <a href="#" onClick={onClose}>
+          <Link to="/notice" onClick={onClose}>
             공지사항
-          </a>
-          <a href="#" onClick={onClose}>
+          </Link>
+          <Link to="/inquiry" onClick={onClose}>
             1:1문의
-          </a>
-          <a href="#" onClick={onClose}>
+          </Link>
+          <Link to="/service-info" onClick={onClose}>
             서비스 소개
-          </a>
+          </Link>
         </Menu>
       </Drawer>
     </Overlay>
