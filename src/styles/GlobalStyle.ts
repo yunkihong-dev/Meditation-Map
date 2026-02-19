@@ -10,11 +10,26 @@ export const GlobalStyle = createGlobalStyle`
 
   html {
     font-size: 10px;
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
   }
 
   body {
-    background: ${({ theme }) => theme.colors.white};
-    color: ${({ theme }) => theme.colors.text900};
+    min-height: 100%;
+    min-height: 100dvh;
+    background: ${({ theme }) => theme.colors.warmCream};
+    color: ${({ theme }) => theme.colors.charcoal};
+    overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+  }
+
+  #root {
+    min-height: 100%;
+    min-height: 100dvh;
   }
 
   a {

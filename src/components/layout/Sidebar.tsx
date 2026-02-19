@@ -23,7 +23,7 @@ const Drawer = styled.aside<{ $open: boolean }>`
   width: min(80vw, 280px);
   height: 100%;
   background: ${({ theme }) => theme.colors.white};
-  padding: 20px 16px;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px));
   transform: translateX(${({ $open }) => ($open ? "0" : "-100%")});
   transition: transform 0.3s ease;
   box-shadow: ${({ theme }) => theme.shadow.soft};
@@ -102,13 +102,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </CloseButton>
         <Menu>
           <Link to="/" onClick={onClose}>
-            힐링명상 홈
+            전국 힐링명상지도 홈
           </Link>
           <Link to="/meditation" onClick={onClose}>
-            지역별 명상지
-          </Link>
-          <Link to="/meditation/search" onClick={onClose}>
-            명상지 검색
+            지역별 명상센터
           </Link>
           <Link to="/notice" onClick={onClose}>
             공지사항

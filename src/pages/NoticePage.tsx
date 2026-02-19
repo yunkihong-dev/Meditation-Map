@@ -5,11 +5,11 @@ import noticesData from "@/data/notices.json";
 const Page = styled.div`
   max-width: 960px;
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  padding: 24px 20px calc(64px + env(safe-area-inset-bottom, 0px));
   color: ${({ theme }) => theme.colors.text900};
 
   @media (max-width: 960px) {
-    padding: 20px 14px 48px;
+    padding: 20px 14px calc(48px + env(safe-area-inset-bottom, 0px));
   }
 `;
 
@@ -170,7 +170,7 @@ const NoticePage = () => {
   return (
     <Page>
       <Title>공지사항</Title>
-      <Subtitle>힐링명상에서 전하는 소식을 확인하세요.</Subtitle>
+      <Subtitle>전국 힐링명상지도에서 전하는 소식을 확인하세요.</Subtitle>
 
       <SearchBox onSubmit={handleSearch}>
         <SearchLabel htmlFor="notice-search">공지사항 검색</SearchLabel>

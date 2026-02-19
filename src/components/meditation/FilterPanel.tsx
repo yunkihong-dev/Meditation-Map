@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import type { MeditationFilters, SortBy } from "@/services/meditation/types";
+import type { Category, MeditationFilters, SortBy } from "@/services/meditation/types";
 
 const Panel = styled.div`
   background: ${({ theme }) => theme.colors.white};
@@ -21,13 +21,6 @@ const Section = styled.div`
 const Label = styled.span`
   font-size: 1.1rem;
   font-weight: 600;
-`;
-
-const Input = styled.input`
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border200};
-  font-size: 1.1rem;
 `;
 
 const Select = styled.select`
@@ -77,7 +70,7 @@ const ResetButton = styled.button`
 interface FilterPanelProps {
   filters: MeditationFilters;
   availableTags: string[];
-  onChangeKeyword: (value: string) => void;
+  onChangeCategory: (value: Category) => void;
   onToggleTag: (tag: string) => void;
   onChangeSortBy: (value: SortBy) => void;
   onReset: () => void;
@@ -86,13 +79,38 @@ interface FilterPanelProps {
 const FilterPanel = ({
   filters,
   availableTags,
-  onChangeKeyword,
+  onChangeCategory,
   onToggleTag,
   onChangeSortBy,
   onReset,
 }: FilterPanelProps) => {
+  const categories: { label: string; value: Category }[] = [
+    { label: "전체", value: "all" },
+    { label: "템플스테이", value: "템플스테이" },
+    { label: "명상센터", value: "명상센터" },
+    { label: "프리랜서(공간없음)", value: "프리랜서(공간없음)" },
+    { label: "요가센터", value: "요가센터" },
+    { label: "기타", value: "기타" },
+  ];
+
   return (
     <Panel>
+      <Section>
+        <Label>카테고리</Label>
+        <TagList>
+          {categories.map((category) => (
+            <Chip
+              key={category.value}
+              type="button"
+              $active={filters.category === category.value}
+              onClick={() => onChangeCategory(category.value)}
+            >
+              {category.label}
+            </Chip>
+          ))}
+        </TagList>
+      </Section>
+
       <Section>
         <Label>해시태그</Label>
         <TagList>

@@ -3,11 +3,11 @@ import styled from "styled-components";
 const Page = styled.div`
   max-width: 960px;
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  padding: 24px 20px calc(64px + env(safe-area-inset-bottom, 0px));
   color: ${({ theme }) => theme.colors.text900};
 
   @media (max-width: 960px) {
-    padding: 20px 14px 48px;
+    padding: 20px 14px calc(48px + env(safe-area-inset-bottom, 0px));
   }
 `;
 

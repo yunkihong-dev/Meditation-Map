@@ -1,6 +1,6 @@
 [
   {
-    "id": "seoul-01",
+    "id": "1",
     "regionId": "KR-11",
     "name": "한강 새벽 명상 라운지",
     "shortDescription": "한강 물결 소리와 함께하는 60분 호흡 명상.",
@@ -12,19 +12,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "한강 마음연구소",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/hanriver"
+      "name": "한강 마음연구소"
     },
     "externalLink": "https://example.com/hanriver",
-    "coordinates": { "lat": 37.528, "lng": 126.932 },
     "detailSections": [
-      { "title": "프로그램", "body": "호흡 안내, 바디 스캔, 마무리 저널링." },
-      { "title": "준비물", "body": "따뜻한 외투, 개인 담요를 권장합니다." }
+      {
+        "title": "프로그램",
+        "body": "호흡 안내, 바디 스캔, 마무리 저널링."
+      },
+      {
+        "title": "준비물",
+        "body": "따뜻한 외투, 개인 담요를 권장합니다."
+      }
     ]
   },
   {
-    "id": "seoul-02",
+    "id": "2",
     "regionId": "KR-11",
     "name": "남산 숲길 호흡 스튜디오",
     "shortDescription": "도심 속 숲길을 따라 걷는 90분 이동 명상.",
@@ -36,19 +39,22 @@
     "hasTempleStay": false,
     "duration": "1시간 30분",
     "organization": {
-      "name": "남산 리추얼",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/namsan"
+      "name": "남산 리추얼"
     },
     "externalLink": "https://example.com/namsan",
-    "coordinates": { "lat": 37.551, "lng": 126.988 },
     "detailSections": [
-      { "title": "프로그램", "body": "숲길 걷기 명상, 호흡 리듬 정렬." },
-      { "title": "유의사항", "body": "편한 운동화를 착용해주세요." }
+      {
+        "title": "프로그램",
+        "body": "숲길 걷기 명상, 호흡 리듬 정렬."
+      },
+      {
+        "title": "유의사항",
+        "body": "편한 운동화를 착용해주세요."
+      }
     ]
   },
   {
-    "id": "seoul-03",
+    "id": "3",
     "regionId": "KR-11",
     "name": "북촌 고요한 다실",
     "shortDescription": "차 명상과 함께하는 45분 정좌 명상.",
@@ -60,19 +66,22 @@
     "hasTempleStay": false,
     "duration": "45분",
     "organization": {
-      "name": "북촌 다도원",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/bukchon"
+      "name": "북촌 다도원"
     },
     "externalLink": "https://example.com/bukchon",
-    "coordinates": { "lat": 37.582, "lng": 126.983 },
     "detailSections": [
-      { "title": "프로그램", "body": "차 준비, 향 관찰, 정좌 명상." },
-      { "title": "추천 대상", "body": "조용한 집중이 필요한 분." }
+      {
+        "title": "프로그램",
+        "body": "차 준비, 향 관찰, 정좌 명상."
+      },
+      {
+        "title": "추천 대상",
+        "body": "조용한 집중이 필요한 분."
+      }
     ]
   },
   {
-    "id": "seoul-04",
+    "id": "4",
     "regionId": "KR-11",
     "name": "성수 리버사이드 요가덱",
     "shortDescription": "한강 전망의 스트레칭 명상 클래스.",
@@ -84,19 +93,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "리버 요가랩",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/river"
+      "name": "리버 요가랩"
     },
     "externalLink": "https://example.com/river",
-    "coordinates": { "lat": 37.543, "lng": 127.06 },
     "detailSections": [
-      { "title": "프로그램", "body": "요가 플로우, 호흡 명상, 릴랙스." },
-      { "title": "난이도", "body": "초급" }
+      {
+        "title": "프로그램",
+        "body": "요가 플로우, 호흡 명상, 릴랙스."
+      },
+      {
+        "title": "난이도",
+        "body": "초급"
+      }
     ]
   },
   {
-    "id": "seoul-05",
+    "id": "5",
     "regionId": "KR-11",
     "name": "홍대 사운드 테라피 룸",
     "shortDescription": "싱잉볼과 함께하는 30분 사운드 명상.",
@@ -108,19 +120,22 @@
     "hasTempleStay": false,
     "duration": "30분",
     "organization": {
-      "name": "사운드클라우드 룸",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/sound"
+      "name": "사운드클라우드 룸"
     },
     "externalLink": "https://example.com/sound",
-    "coordinates": { "lat": 37.551, "lng": 126.924 },
     "detailSections": [
-      { "title": "프로그램", "body": "싱잉볼 세션, 호흡 명상." },
-      { "title": "추천 대상", "body": "짧게 집중을 원하는 분." }
+      {
+        "title": "프로그램",
+        "body": "싱잉볼 세션, 호흡 명상."
+      },
+      {
+        "title": "추천 대상",
+        "body": "짧게 집중을 원하는 분."
+      }
     ]
   },
   {
-    "id": "seoul-06",
+    "id": "6",
     "regionId": "KR-11",
     "name": "여의도 마음챙김 센터",
     "shortDescription": "업무 후 60분 마음챙김 프로그램.",
@@ -132,19 +147,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "마인드 오피스",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/mindoffice"
+      "name": "마인드 오피스"
     },
     "externalLink": "https://example.com/mindoffice",
-    "coordinates": { "lat": 37.525, "lng": 126.925 },
     "detailSections": [
-      { "title": "프로그램", "body": "호흡 집중, 감정 라벨링, 감사 기록." },
-      { "title": "구성", "body": "인원 12명 소규모." }
+      {
+        "title": "프로그램",
+        "body": "호흡 집중, 감정 라벨링, 감사 기록."
+      },
+      {
+        "title": "구성",
+        "body": "인원 12명 소규모."
+      }
     ]
   },
   {
-    "id": "seoul-07",
+    "id": "7",
     "regionId": "KR-11",
     "name": "삼청동 차명상 아틀리에",
     "shortDescription": "차 향과 함께하는 저녁 명상.",
@@ -156,19 +174,22 @@
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
-      "name": "삼청 아틀리에",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/samcheong"
+      "name": "삼청 아틀리에"
     },
     "externalLink": "https://example.com/samcheong",
-    "coordinates": { "lat": 37.581, "lng": 126.983 },
     "detailSections": [
-      { "title": "프로그램", "body": "차 명상, 호흡 리듬, 마무리 기록." },
-      { "title": "특징", "body": "차 전문가 진행." }
+      {
+        "title": "프로그램",
+        "body": "차 명상, 호흡 리듬, 마무리 기록."
+      },
+      {
+        "title": "특징",
+        "body": "차 전문가 진행."
+      }
     ]
   },
   {
-    "id": "seoul-08",
+    "id": "8",
     "regionId": "KR-11",
     "name": "잠실 루프탑 선셋 명상",
     "shortDescription": "해질녘 루프탑에서 진행되는 40분 명상.",
@@ -180,19 +201,22 @@
     "hasTempleStay": false,
     "duration": "40분",
     "organization": {
-      "name": "선셋 루프",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/sunset"
+      "name": "선셋 루프"
     },
     "externalLink": "https://example.com/sunset",
-    "coordinates": { "lat": 37.513, "lng": 127.102 },
     "detailSections": [
-      { "title": "프로그램", "body": "일몰 호흡, 집중 명상." },
-      { "title": "추천", "body": "퇴근 후 휴식." }
+      {
+        "title": "프로그램",
+        "body": "일몰 호흡, 집중 명상."
+      },
+      {
+        "title": "추천",
+        "body": "퇴근 후 휴식."
+      }
     ]
   },
   {
-    "id": "seoul-09",
+    "id": "9",
     "regionId": "KR-11",
     "name": "강남 호흡 리트릿 스튜디오",
     "shortDescription": "집중 호흡과 자세 교정 클래스.",
@@ -204,19 +228,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "브레스 스튜디오",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/breath"
+      "name": "브레스 스튜디오"
     },
     "externalLink": "https://example.com/breath",
-    "coordinates": { "lat": 37.499, "lng": 127.036 },
     "detailSections": [
-      { "title": "프로그램", "body": "호흡 패턴 체크, 집중 명상." },
-      { "title": "특징", "body": "1:1 상담 포함." }
+      {
+        "title": "프로그램",
+        "body": "호흡 패턴 체크, 집중 명상."
+      },
+      {
+        "title": "특징",
+        "body": "1:1 상담 포함."
+      }
     ]
   },
   {
-    "id": "seoul-10",
+    "id": "10",
     "regionId": "KR-11",
     "name": "은평 한옥 명상마당",
     "shortDescription": "한옥 마당에서 진행되는 70분 명상.",
@@ -228,19 +255,22 @@
     "hasTempleStay": false,
     "duration": "70분",
     "organization": {
-      "name": "진관 명상마당",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/jingwan"
+      "name": "진관 명상마당"
     },
     "externalLink": "https://example.com/jingwan",
-    "coordinates": { "lat": 37.642, "lng": 126.945 },
     "detailSections": [
-      { "title": "프로그램", "body": "호흡 정렬, 마음챙김, 차 한잔." },
-      { "title": "준비물", "body": "따뜻한 양말." }
+      {
+        "title": "프로그램",
+        "body": "호흡 정렬, 마음챙김, 차 한잔."
+      },
+      {
+        "title": "준비물",
+        "body": "따뜻한 양말."
+      }
     ]
   },
   {
-    "id": "seoul-11",
+    "id": "11",
     "regionId": "KR-11",
     "name": "서촌 움직임 명상홀",
     "shortDescription": "느린 움직임으로 진행되는 50분 명상.",
@@ -252,19 +282,22 @@
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
-      "name": "모션 마인드",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/motion"
+      "name": "모션 마인드"
     },
     "externalLink": "https://example.com/motion",
-    "coordinates": { "lat": 37.580, "lng": 126.969 },
     "detailSections": [
-      { "title": "프로그램", "body": "느린 움직임, 호흡 동기화." },
-      { "title": "난이도", "body": "초급" }
+      {
+        "title": "프로그램",
+        "body": "느린 움직임, 호흡 동기화."
+      },
+      {
+        "title": "난이도",
+        "body": "초급"
+      }
     ]
   },
   {
-    "id": "seoul-12",
+    "id": "12",
     "regionId": "KR-11",
     "name": "동대문 심야 명상살롱",
     "shortDescription": "밤 10시에 시작하는 40분 집중 명상.",
@@ -276,19 +309,22 @@
     "hasTempleStay": false,
     "duration": "40분",
     "organization": {
-      "name": "나이트 마인드",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/night"
+      "name": "나이트 마인드"
     },
     "externalLink": "https://example.com/night",
-    "coordinates": { "lat": 37.565, "lng": 127.007 },
     "detailSections": [
-      { "title": "프로그램", "body": "심야 호흡 명상, 감정 정리." },
-      { "title": "특징", "body": "야간 예약제 운영." }
+      {
+        "title": "프로그램",
+        "body": "심야 호흡 명상, 감정 정리."
+      },
+      {
+        "title": "특징",
+        "body": "야간 예약제 운영."
+      }
     ]
   },
   {
-    "id": "busan-01",
+    "id": "13",
     "regionId": "KR-26",
     "name": "해운대 바다 명상 라운지",
     "shortDescription": "파도 소리와 함께하는 해변 명상.",
@@ -300,19 +336,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "부산 해변명상",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/busan"
+      "name": "부산 해변명상"
     },
     "externalLink": "https://example.com/busan",
-    "coordinates": { "lat": 35.158, "lng": 129.161 },
     "detailSections": [
-      { "title": "프로그램", "body": "일출 명상, 파도 호흡." },
-      { "title": "준비물", "body": "돗자리, 따뜻한 겉옷." }
+      {
+        "title": "프로그램",
+        "body": "일출 명상, 파도 호흡."
+      },
+      {
+        "title": "준비물",
+        "body": "돗자리, 따뜻한 겉옷."
+      }
     ]
   },
   {
-    "id": "daegu-01",
+    "id": "14",
     "regionId": "KR-27",
     "name": "팔공산 고요 수련원",
     "shortDescription": "산사 분위기 속 집중 명상.",
@@ -324,19 +363,22 @@
     "hasTempleStay": true,
     "duration": "반나절",
     "organization": {
-      "name": "팔공산 수련원",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/palgong"
+      "name": "팔공산 수련원"
     },
     "externalLink": "https://example.com/palgong",
-    "coordinates": { "lat": 35.987, "lng": 128.695 },
     "detailSections": [
-      { "title": "프로그램", "body": "정좌 명상, 걷기 명상, 명상 노트." },
-      { "title": "특징", "body": "템플스테이 옵션 제공." }
+      {
+        "title": "프로그램",
+        "body": "정좌 명상, 걷기 명상, 명상 노트."
+      },
+      {
+        "title": "특징",
+        "body": "템플스테이 옵션 제공."
+      }
     ]
   },
   {
-    "id": "incheon-01",
+    "id": "15",
     "regionId": "KR-28",
     "name": "영종도 바람 명상센터",
     "shortDescription": "바람과 함께하는 해안 명상.",
@@ -348,19 +390,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "영종 힐링센터",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/yeongjong"
+      "name": "영종 힐링센터"
     },
     "externalLink": "https://example.com/yeongjong",
-    "coordinates": { "lat": 37.495, "lng": 126.492 },
     "detailSections": [
-      { "title": "프로그램", "body": "해안 산책, 바람 명상." },
-      { "title": "준비물", "body": "편한 운동화." }
+      {
+        "title": "프로그램",
+        "body": "해안 산책, 바람 명상."
+      },
+      {
+        "title": "준비물",
+        "body": "편한 운동화."
+      }
     ]
   },
   {
-    "id": "gwangju-01",
+    "id": "16",
     "regionId": "KR-29",
     "name": "무등산 정적 리트릿",
     "shortDescription": "산림 속 2시간 명상 리트릿.",
@@ -372,19 +417,22 @@
     "hasTempleStay": false,
     "duration": "2시간",
     "organization": {
-      "name": "무등 힐링캠프",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/mudeung"
+      "name": "무등 힐링캠프"
     },
     "externalLink": "https://example.com/mudeung",
-    "coordinates": { "lat": 35.138, "lng": 126.988 },
     "detailSections": [
-      { "title": "프로그램", "body": "숲 호흡, 걷기 명상." },
-      { "title": "추천", "body": "자연 속 재충전." }
+      {
+        "title": "프로그램",
+        "body": "숲 호흡, 걷기 명상."
+      },
+      {
+        "title": "추천",
+        "body": "자연 속 재충전."
+      }
     ]
   },
   {
-    "id": "daejeon-01",
+    "id": "17",
     "regionId": "KR-30",
     "name": "대청호 수변 명상관",
     "shortDescription": "호숫가에서 진행되는 저녁 명상.",
@@ -396,19 +444,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "대청 수련관",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/daecheong"
+      "name": "대청 수련관"
     },
     "externalLink": "https://example.com/daecheong",
-    "coordinates": { "lat": 36.364, "lng": 127.482 },
     "detailSections": [
-      { "title": "프로그램", "body": "호숫가 호흡, 마음챙김." },
-      { "title": "구성", "body": "1:1 상담 가능." }
+      {
+        "title": "프로그램",
+        "body": "호숫가 호흡, 마음챙김."
+      },
+      {
+        "title": "구성",
+        "body": "1:1 상담 가능."
+      }
     ]
   },
   {
-    "id": "ulsan-01",
+    "id": "18",
     "regionId": "KR-31",
     "name": "대왕암 해송 명상길",
     "shortDescription": "해송 숲길 걷기 명상.",
@@ -420,19 +471,22 @@
     "hasTempleStay": false,
     "duration": "1시간 20분",
     "organization": {
-      "name": "해송 명상길",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/ulsan"
+      "name": "해송 명상길"
     },
     "externalLink": "https://example.com/ulsan",
-    "coordinates": { "lat": 35.513, "lng": 129.432 },
     "detailSections": [
-      { "title": "프로그램", "body": "걷기 명상, 파도 호흡." },
-      { "title": "추천", "body": "자연 소리 명상을 원하는 분." }
+      {
+        "title": "프로그램",
+        "body": "걷기 명상, 파도 호흡."
+      },
+      {
+        "title": "추천",
+        "body": "자연 소리 명상을 원하는 분."
+      }
     ]
   },
   {
-    "id": "gyeonggi-01",
+    "id": "19",
     "regionId": "KR-41",
     "name": "양평 강변 선명상",
     "shortDescription": "강변 야외 명상과 차 한잔.",
@@ -444,19 +498,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "양평 마음쉼터",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/yangpyeong"
+      "name": "양평 마음쉼터"
     },
     "externalLink": "https://example.com/yangpyeong",
-    "coordinates": { "lat": 37.491, "lng": 127.487 },
     "detailSections": [
-      { "title": "프로그램", "body": "강변 명상, 차 명상." },
-      { "title": "준비물", "body": "돗자리." }
+      {
+        "title": "프로그램",
+        "body": "강변 명상, 차 명상."
+      },
+      {
+        "title": "준비물",
+        "body": "돗자리."
+      }
     ]
   },
   {
-    "id": "gyeonggi-02",
+    "id": "20",
     "regionId": "KR-41",
     "name": "가평 숲속 차명상",
     "shortDescription": "침엽수 숲 속 차 명상 프로그램.",
@@ -468,19 +525,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "가평 힐링하우스",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/gapyeong"
+      "name": "가평 힐링하우스"
     },
     "externalLink": "https://example.com/gapyeong",
-    "coordinates": { "lat": 37.831, "lng": 127.507 },
     "detailSections": [
-      { "title": "프로그램", "body": "차 명상, 숲 호흡." },
-      { "title": "추천", "body": "자연 속 휴식을 원하는 분." }
+      {
+        "title": "프로그램",
+        "body": "차 명상, 숲 호흡."
+      },
+      {
+        "title": "추천",
+        "body": "자연 속 휴식을 원하는 분."
+      }
     ]
   },
   {
-    "id": "gyeonggi-03",
+    "id": "21",
     "regionId": "KR-41",
     "name": "수원 정원 명상랩",
     "shortDescription": "정원 산책과 짧은 정좌 명상.",
@@ -492,19 +552,22 @@
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
-      "name": "수원 가든랩",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/suwon"
+      "name": "수원 가든랩"
     },
     "externalLink": "https://example.com/suwon",
-    "coordinates": { "lat": 37.263, "lng": 127.028 },
     "detailSections": [
-      { "title": "프로그램", "body": "정원 산책, 정좌 명상." },
-      { "title": "특징", "body": "가족 참여 가능." }
+      {
+        "title": "프로그램",
+        "body": "정원 산책, 정좌 명상."
+      },
+      {
+        "title": "특징",
+        "body": "가족 참여 가능."
+      }
     ]
   },
   {
-    "id": "gangwon-01",
+    "id": "22",
     "regionId": "KR-42",
     "name": "속초 해변 호흡캠프",
     "shortDescription": "동해 바람과 함께하는 아침 호흡 명상.",
@@ -516,21 +579,24 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "동해 명상캠프",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/sokcho"
+      "name": "동해 명상캠프"
     },
     "externalLink": "https://example.com/sokcho",
-    "coordinates": { "lat": 38.199, "lng": 128.591 },
     "detailSections": [
-      { "title": "프로그램", "body": "일출 명상, 바다 호흡." },
-      { "title": "추천", "body": "동해 여행자." }
+      {
+        "title": "프로그램",
+        "body": "일출 명상, 바다 호흡."
+      },
+      {
+        "title": "추천",
+        "body": "동해 여행자."
+      }
     ]
   },
   {
-    "id": "gangwon-02",
+    "id": "23",
     "regionId": "KR-42",
-    "name": "평창 산림 명상지",
+    "name": "평창 산림 명상센터",
     "shortDescription": "자작나무 숲에서 진행하는 고요 명상.",
     "description": "평창 산림에서 진행되는 고요한 정좌 명상 프로그램입니다.",
     "address": "강원 평창군 봉평면 태기로 111",
@@ -540,19 +606,22 @@
     "hasTempleStay": true,
     "duration": "반나절",
     "organization": {
-      "name": "평창 마음숲",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/pyeongchang"
+      "name": "평창 마음숲"
     },
     "externalLink": "https://example.com/pyeongchang",
-    "coordinates": { "lat": 37.645, "lng": 128.329 },
     "detailSections": [
-      { "title": "프로그램", "body": "숲 정좌, 걷기 명상." },
-      { "title": "특징", "body": "템플스테이 선택 가능." }
+      {
+        "title": "프로그램",
+        "body": "숲 정좌, 걷기 명상."
+      },
+      {
+        "title": "특징",
+        "body": "템플스테이 선택 가능."
+      }
     ]
   },
   {
-    "id": "chungbuk-01",
+    "id": "24",
     "regionId": "KR-43",
     "name": "제천 산사 힐링센터",
     "shortDescription": "산사에서 진행되는 집중 명상.",
@@ -564,19 +633,22 @@
     "hasTempleStay": true,
     "duration": "반나절",
     "organization": {
-      "name": "제천 힐링센터",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/jecheon"
+      "name": "제천 힐링센터"
     },
     "externalLink": "https://example.com/jecheon",
-    "coordinates": { "lat": 37.11, "lng": 128.211 },
     "detailSections": [
-      { "title": "프로그램", "body": "정좌 명상, 산사 산책." },
-      { "title": "특징", "body": "숙박형 옵션." }
+      {
+        "title": "프로그램",
+        "body": "정좌 명상, 산사 산책."
+      },
+      {
+        "title": "특징",
+        "body": "숙박형 옵션."
+      }
     ]
   },
   {
-    "id": "chungnam-01",
+    "id": "25",
     "regionId": "KR-44",
     "name": "부여 연꽃 명상정원",
     "shortDescription": "연꽃 정원에서 진행하는 명상.",
@@ -588,19 +660,22 @@
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
-      "name": "부여 명상정원",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/buyeo"
+      "name": "부여 명상정원"
     },
     "externalLink": "https://example.com/buyeo",
-    "coordinates": { "lat": 36.275, "lng": 126.912 },
     "detailSections": [
-      { "title": "프로그램", "body": "정원 산책, 정좌 명상." },
-      { "title": "추천", "body": "여유로운 휴식." }
+      {
+        "title": "프로그램",
+        "body": "정원 산책, 정좌 명상."
+      },
+      {
+        "title": "추천",
+        "body": "여유로운 휴식."
+      }
     ]
   },
   {
-    "id": "jeonbuk-01",
+    "id": "26",
     "regionId": "KR-45",
     "name": "전주 한옥 마루명상",
     "shortDescription": "한옥 마루에서 진행되는 명상.",
@@ -612,19 +687,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "전주 한옥명상",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/jeonju"
+      "name": "전주 한옥명상"
     },
     "externalLink": "https://example.com/jeonju",
-    "coordinates": { "lat": 35.815, "lng": 127.152 },
     "detailSections": [
-      { "title": "프로그램", "body": "차 명상, 정좌 명상." },
-      { "title": "특징", "body": "전통 문화 체험." }
+      {
+        "title": "프로그램",
+        "body": "차 명상, 정좌 명상."
+      },
+      {
+        "title": "특징",
+        "body": "전통 문화 체험."
+      }
     ]
   },
   {
-    "id": "jeonnam-01",
+    "id": "27",
     "regionId": "KR-46",
     "name": "담양 대나무 숨길",
     "shortDescription": "대나무 숲길 걷기 명상.",
@@ -636,19 +714,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "담양 숨길",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/damyang"
+      "name": "담양 숨길"
     },
     "externalLink": "https://example.com/damyang",
-    "coordinates": { "lat": 35.321, "lng": 126.988 },
     "detailSections": [
-      { "title": "프로그램", "body": "대나무 숲 걷기 명상." },
-      { "title": "추천", "body": "가볍게 걷고 싶은 분." }
+      {
+        "title": "프로그램",
+        "body": "대나무 숲 걷기 명상."
+      },
+      {
+        "title": "추천",
+        "body": "가볍게 걷고 싶은 분."
+      }
     ]
   },
   {
-    "id": "gyeongbuk-01",
+    "id": "28",
     "regionId": "KR-47",
     "name": "경주 고도 명상당",
     "shortDescription": "고도 경주의 고요함을 느끼는 명상.",
@@ -660,19 +741,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "경주 명상당",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/gyeongju"
+      "name": "경주 명상당"
     },
     "externalLink": "https://example.com/gyeongju",
-    "coordinates": { "lat": 35.844, "lng": 129.214 },
     "detailSections": [
-      { "title": "프로그램", "body": "정좌 명상, 고도 산책." },
-      { "title": "특징", "body": "문화 탐방 포함." }
+      {
+        "title": "프로그램",
+        "body": "정좌 명상, 고도 산책."
+      },
+      {
+        "title": "특징",
+        "body": "문화 탐방 포함."
+      }
     ]
   },
   {
-    "id": "gyeongnam-01",
+    "id": "29",
     "regionId": "KR-48",
     "name": "거제 바람과 바다 명상터",
     "shortDescription": "남해 바람을 느끼는 해안 명상.",
@@ -684,19 +768,22 @@
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
-      "name": "거제 바다명상",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/geoje"
+      "name": "거제 바다명상"
     },
     "externalLink": "https://example.com/geoje",
-    "coordinates": { "lat": 34.8, "lng": 128.7 },
     "detailSections": [
-      { "title": "프로그램", "body": "바다 호흡, 마음챙김." },
-      { "title": "추천", "body": "해안 여행자." }
+      {
+        "title": "프로그램",
+        "body": "바다 호흡, 마음챙김."
+      },
+      {
+        "title": "추천",
+        "body": "해안 여행자."
+      }
     ]
   },
   {
-    "id": "jeju-01",
+    "id": "30",
     "regionId": "KR-49",
     "name": "제주 오름 선명상",
     "shortDescription": "오름 위에서 진행되는 일출 명상.",
@@ -708,19 +795,22 @@
     "hasTempleStay": false,
     "duration": "1시간 30분",
     "organization": {
-      "name": "제주 오름센터",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/jejuoreum"
+      "name": "제주 오름센터"
     },
     "externalLink": "https://example.com/jejuoreum",
-    "coordinates": { "lat": 33.477, "lng": 126.797 },
     "detailSections": [
-      { "title": "프로그램", "body": "오름 등반, 일출 명상." },
-      { "title": "준비물", "body": "운동화, 물." }
+      {
+        "title": "프로그램",
+        "body": "오름 등반, 일출 명상."
+      },
+      {
+        "title": "준비물",
+        "body": "운동화, 물."
+      }
     ]
   },
   {
-    "id": "jeju-02",
+    "id": "31",
     "regionId": "KR-49",
     "name": "서귀포 해안 치유스테이",
     "shortDescription": "해안 산책과 쉼 명상.",
@@ -732,19 +822,22 @@
     "hasTempleStay": false,
     "duration": "2시간",
     "organization": {
-      "name": "서귀포 치유스테이",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/seogwipo"
+      "name": "서귀포 치유스테이"
     },
     "externalLink": "https://example.com/seogwipo",
-    "coordinates": { "lat": 33.252, "lng": 126.56 },
     "detailSections": [
-      { "title": "프로그램", "body": "해안 산책, 호흡 명상." },
-      { "title": "특징", "body": "소규모 운영." }
+      {
+        "title": "프로그램",
+        "body": "해안 산책, 호흡 명상."
+      },
+      {
+        "title": "특징",
+        "body": "소규모 운영."
+      }
     ]
   },
   {
-    "id": "sejong-01",
+    "id": "32",
     "regionId": "KR-50",
     "name": "세종 호수공원 명상데크",
     "shortDescription": "호수 전망의 야외 명상.",
@@ -756,15 +849,18 @@
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
-      "name": "세종 마음쉼터",
-      "logoUrl": "https://placehold.co/120x120?text=LOGO",
-      "website": "https://example.com/sejong"
+      "name": "세종 마음쉼터"
     },
     "externalLink": "https://example.com/sejong",
-    "coordinates": { "lat": 36.497, "lng": 127.272 },
     "detailSections": [
-      { "title": "프로그램", "body": "호수 명상, 호흡 안내." },
-      { "title": "추천", "body": "야외 명상을 원하는 분." }
+      {
+        "title": "프로그램",
+        "body": "호수 명상, 호흡 안내."
+      },
+      {
+        "title": "추천",
+        "body": "야외 명상을 원하는 분."
+      }
     ]
   }
 ]

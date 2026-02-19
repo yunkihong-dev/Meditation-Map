@@ -1,4 +1,11 @@
 export type SortBy = "recommend" | "name";
+export type Category =
+  | "all"
+  | "템플스테이"
+  | "명상센터"
+  | "프리랜서(공간없음)"
+  | "요가센터"
+  | "기타";
 
 export interface Region {
   id: string;
@@ -8,8 +15,6 @@ export interface Region {
 
 export interface OrganizationInfo {
   name: string;
-  logoUrl: string;
-  website: string;
 }
 
 export interface DetailSection {
@@ -21,6 +26,8 @@ export interface MeditationPlace {
   id: string;
   regionId: string;
   name: string;
+  rating?: number;
+  reviewCount?: number;
   shortDescription: string;
   description: string;
   address: string;
@@ -31,17 +38,15 @@ export interface MeditationPlace {
   duration: string;
   organization: OrganizationInfo;
   externalLink: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
   detailSections: DetailSection[];
+  facilities?: string[];
 }
 
 export interface MeditationFilters {
   tags: string[];
   keyword: string;
   sortBy: SortBy;
+  category: Category;
 }
 
 export interface PaginationResult<T> {

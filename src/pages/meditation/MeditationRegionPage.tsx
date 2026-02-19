@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import FilterPanel from "@/components/meditation/FilterPanel";
@@ -15,41 +15,48 @@ import { useMeditationStore } from "@/stores/meditationStore";
 const Page = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  padding: 24px 20px calc(64px + env(safe-area-inset-bottom, 0px));
   color: ${({ theme }) => theme.colors.text900};
 
   @media (max-width: 960px) {
-    padding: 20px 14px 48px;
+    padding: 20px 14px calc(48px + env(safe-area-inset-bottom, 0px));
   }
 `;
 
-const Hero = styled.header`
+const PageHeader = styled.header`
   display: flex;
-  justify-content: space-between;
-  gap: 24px;
   align-items: center;
-  margin-bottom: 32px;
-
-  h1 {
-    font-size: 2.4rem;
-    margin-top: 6px;
-  }
-
-  @media (max-width: 960px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
 `;
 
-const Eyebrow = styled.p`
-  font-size: 1.2rem;
-  color: ${({ theme }) => theme.colors.text700};
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
 `;
 
-const Subtitle = styled.p`
-  margin-top: 8px;
-  font-size: 1.3rem;
-  color: ${({ theme }) => theme.colors.text700};
+const BackButton = styled.button`
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border-radius: ${({ theme }) => theme.radii.pill};
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+    stroke: ${({ theme }) => theme.colors.text900};
+  }
 `;
 
 const LinkButton = styled.button`
@@ -78,17 +85,11 @@ const LinkButton = styled.button`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 1fr 280px;
   gap: 28px;
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
-  }
-`;
-
-const FilterDesktop = styled.aside`
-  @media (max-width: 960px) {
-    display: none;
   }
 `;
 
@@ -98,23 +99,37 @@ const Content = styled.main`
   gap: 20px;
 `;
 
-const FilterMobile = styled.div`
-  display: none;
-
+const FilterAside = styled.aside`
   @media (max-width: 960px) {
-    display: block;
+    display: none;
   }
 `;
 
-const List = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
+const FilterIconButton = styled.button`
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: ${({ theme }) => theme.radii.pill};
 
-const Empty = styled.p`
-  font-size: 1.1rem;
-  color: ${({ theme }) => theme.colors.text700};
+  @media (max-width: 960px) {
+    display: flex;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+    stroke: ${({ theme }) => theme.colors.text900};
+  }
 `;
 
 const DrawerOverlay = styled.div`
@@ -123,30 +138,13 @@ const DrawerOverlay = styled.div`
   z-index: 70;
 `;
 
-const fadeIn = keyframes`
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-`;
-
-const slideIn = keyframes`
-  from {
-    transform: translateX(24px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-`;
+const fadeIn = keyframes`from { opacity: 0; } to { opacity: 1; }`;
+const slideIn = keyframes`from { transform: translateX(100%); } to { transform: translateX(0); }`;
 
 const DrawerBackdrop = styled.div`
   position: absolute;
   inset: 0;
-  background: rgba(53, 24, 96, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   animation: ${fadeIn} 0.2s ease;
 `;
 
@@ -159,7 +157,7 @@ const DrawerPanel = styled.div`
   background: ${({ theme }) => theme.colors.white};
   padding: 20px;
   overflow-y: auto;
-  box-shadow: -12px 0 32px rgba(53, 24, 96, 0.24);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
   animation: ${slideIn} 0.25s ease;
 `;
 
@@ -171,37 +169,31 @@ const DrawerHeader = styled.div`
 `;
 
 const DrawerClose = styled.button`
+  width: 36px;
+  height: 36px;
   border: none;
   background: ${({ theme }) => theme.colors.bg100};
   border-radius: ${({ theme }) => theme.radii.pill};
   cursor: pointer;
-  transition: transform 0.2s ease;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary300};
-    outline-offset: 2px;
-  }
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     stroke: ${({ theme }) => theme.colors.text900};
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    fill: none;
-    transition: transform 0.25s ease;
   }
+`;
 
-  &:hover svg,
-  &:focus-visible svg {
-    transform: rotate(90deg);
-  }
+const List = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const Empty = styled.p`
+  font-size: 1.1rem;
+  color: ${({ theme }) => theme.colors.text700};
 `;
 
 const ScrollSentinel = styled.div`
@@ -217,9 +209,9 @@ const MeditationRegionPage = () => {
     pageSize,
     setPage,
     setRegion,
-    setKeyword,
     toggleTag,
     setSortBy,
+    setCategory,
     resetFilters,
     isFilterOpen,
     setFilterOpen,
@@ -229,8 +221,9 @@ const MeditationRegionPage = () => {
   useEffect(() => {
     if (regionId) {
       setRegion(regionId);
+      setPage(1);
     }
-  }, [regionId, setRegion]);
+  }, [regionId, setRegion, setPage]);
 
   const region = regionId ? getRegionById(regionId) : undefined;
   const availableTags = useMemo(() => getAvailableTags(), []);
@@ -254,7 +247,7 @@ const MeditationRegionPage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [filters.keyword, filters.sortBy, filters.tags, setPage]);
+  }, [filters.keyword, filters.sortBy, filters.tags, filters.category, setPage]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -288,41 +281,27 @@ const MeditationRegionPage = () => {
 
   return (
     <Page>
-      <Hero>
-        <div>
-          <Eyebrow>{region.name} 명상지</Eyebrow>
-          <h1>{region.name}에서 찾는 쉼</h1>
-          <Subtitle>
-            총 {sortedPlaces.length}곳의 명상지가 준비되어 있어요.
-          </Subtitle>
-        </div>
-        <LinkButton type="button" onClick={() => navigate("/meditation")}>
-          전체 지도 보기
-        </LinkButton>
-      </Hero>
+      <PageHeader>
+        <HeaderLeft>
+          <BackButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </BackButton>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 600 }}>명상지 리스트</h2>
+        </HeaderLeft>
+        <FilterIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+        </FilterIconButton>
+      </PageHeader>
 
       <Grid>
-        <FilterDesktop>
-          <FilterPanel
-            filters={filters}
-            availableTags={availableTags}
-            onChangeKeyword={setKeyword}
-            onToggleTag={toggleTag}
-            onChangeSortBy={setSortBy}
-            onReset={resetFilters}
-          />
-        </FilterDesktop>
-
         <Content>
-          <FilterMobile>
-            <LinkButton type="button" onClick={() => setFilterOpen(true)}>
-              필터 열기
-            </LinkButton>
-          </FilterMobile>
-
           <List>
             {visibleItems.length === 0 && (
-              <Empty>조건에 맞는 명상지가 없어요.</Empty>
+              <Empty>조건에 맞는 명상센터가 없어요.</Empty>
             )}
             {visibleItems.map((place) => (
               <PlaceListItem key={place.id} place={place} />
@@ -330,6 +309,17 @@ const MeditationRegionPage = () => {
           </List>
           {hasMore && <ScrollSentinel ref={sentinelRef} />}
         </Content>
+
+        <FilterAside>
+          <FilterPanel
+            filters={filters}
+            availableTags={availableTags}
+            onChangeCategory={setCategory}
+            onToggleTag={toggleTag}
+            onChangeSortBy={setSortBy}
+            onReset={resetFilters}
+          />
+          </FilterAside>
       </Grid>
 
       {isFilterOpen && (
@@ -337,18 +327,17 @@ const MeditationRegionPage = () => {
           <DrawerBackdrop onClick={() => setFilterOpen(false)} />
           <DrawerPanel>
             <DrawerHeader>
-              <h3>필터</h3>
+              <h3 style={{ margin: 0, fontSize: "1.2rem" }}>필터</h3>
               <DrawerClose type="button" onClick={() => setFilterOpen(false)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                  <line x1="18" y1="6" x2="6" y2="18" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </DrawerClose>
             </DrawerHeader>
             <FilterPanel
               filters={filters}
               availableTags={availableTags}
-              onChangeKeyword={setKeyword}
+              onChangeCategory={setCategory}
               onToggleTag={toggleTag}
               onChangeSortBy={setSortBy}
               onReset={resetFilters}

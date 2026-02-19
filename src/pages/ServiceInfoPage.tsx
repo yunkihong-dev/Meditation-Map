@@ -19,11 +19,11 @@ const Container = styled.div`
 `;
 
 const Hero = styled.section`
-  padding: 64px 20px 56px;
+  padding: 64px 20px calc(56px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, #ffffff 0%, ${({ theme }) => theme.colors.primary50} 100%);
 
   @media (max-width: 960px) {
-    padding: 48px 14px 40px;
+    padding: 48px 14px calc(40px + env(safe-area-inset-bottom, 0px));
   }
 `;
 
@@ -172,9 +172,9 @@ const ServiceInfoPage = () => {
         <HeroCard>
           <Title>누구나 원하는 곳에서, 더 깊은 힐링 명상</Title>
           <Subtitle>
-            힐링명상은 지역별 명상지를 쉽고 빠르게 찾을 수 있는 플랫폼입니다.
+            전국 힐링명상지도는 지역별 명상센터를 쉽고 빠르게 찾을 수 있는 플랫폼입니다.
           </Subtitle>
-          <PrimaryButton to="/meditation/search">명상지 찾아보기</PrimaryButton>
+          <PrimaryButton to="/">명상센터 찾아보기</PrimaryButton>
         </HeroCard>
       </Hero>
 
@@ -182,7 +182,7 @@ const ServiceInfoPage = () => {
         <Container>
           <StatsGrid>
             <StatCard>
-              <StatLabel>누적 명상지</StatLabel>
+              <StatLabel>누적 명상센터</StatLabel>
               <StatValue>1,200+</StatValue>
             </StatCard>
             <StatCard>
@@ -208,7 +208,7 @@ const ServiceInfoPage = () => {
                 </svg>
               </FeatureIcon>
               <h3>지도 기반 탐색</h3>
-              <p>대한민국 지도로 지역을 선택하고, 명상지를 한눈에 찾아보세요.</p>
+              <p>대한민국 지도로 지역을 선택하고, 명상센터를 한눈에 찾아보세요.</p>
             </FeatureCard>
             <FeatureCard>
               <FeatureIcon>
@@ -217,7 +217,7 @@ const ServiceInfoPage = () => {
                 </svg>
               </FeatureIcon>
               <h3>맞춤형 필터</h3>
-              <p>해시태그와 정렬 기준으로 내게 맞는 명상지를 빠르게 추천해요.</p>
+              <p>해시태그와 정렬 기준으로 내게 맞는 명상센터를 빠르게 추천해요.</p>
             </FeatureCard>
             <FeatureCard>
               <FeatureIcon>
@@ -237,7 +237,7 @@ const ServiceInfoPage = () => {
                 </svg>
               </FeatureIcon>
               <h3>검색 경험</h3>
-              <p>검색어 입력만으로 관련 명상지를 부드럽게 이어 보여드립니다.</p>
+              <p>검색어 입력만으로 관련 명상센터를 부드럽게 이어 보여드립니다.</p>
             </FeatureCard>
           </FeatureGrid>
         </Container>
@@ -246,8 +246,8 @@ const ServiceInfoPage = () => {
       <Band>
         <BandInner>
           <div>
-            <h2>명상지 운영자라면 함께해요</h2>
-            <p>힐링명상과 함께 더 많은 사람에게 명상 경험을 전달하세요.</p>
+            <h2>명상센터 운영자라면 함께해요</h2>
+            <p>전국 힐링명상지도와 함께 더 많은 사람에게 명상 경험을 전달하세요.</p>
           </div>
           <BandButton type="button">등록 문의하기</BandButton>
         </BandInner>

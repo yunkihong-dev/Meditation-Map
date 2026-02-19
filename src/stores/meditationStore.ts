@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { MeditationFilters, SortBy } from "@/services/meditation/types";
+import type { Category, MeditationFilters, SortBy } from "@/services/meditation/types";
 
 interface MeditationStoreState {
   selectedRegionId?: string;
@@ -14,6 +14,7 @@ interface MeditationStoreState {
   toggleTag: (tag: string) => void;
   clearTags: () => void;
   setSortBy: (sortBy: SortBy) => void;
+  setCategory: (category: Category) => void;
   resetFilters: () => void;
   setFilterOpen: (open: boolean) => void;
 }
@@ -22,6 +23,7 @@ const defaultFilters: MeditationFilters = {
   tags: [],
   keyword: "",
   sortBy: "recommend",
+  category: "all",
 };
 
 export const useMeditationStore = create<MeditationStoreState>((set) => ({
@@ -47,6 +49,8 @@ export const useMeditationStore = create<MeditationStoreState>((set) => ({
     set((state) => ({ filters: { ...state.filters, tags: [] }, page: 1 })),
   setSortBy: (sortBy) =>
     set((state) => ({ filters: { ...state.filters, sortBy }, page: 1 })),
+  setCategory: (category) =>
+    set((state) => ({ filters: { ...state.filters, category }, page: 1 })),
   resetFilters: () => set({ filters: defaultFilters, page: 1 }),
   setFilterOpen: (open) => set({ isFilterOpen: open }),
 }));

@@ -13,13 +13,20 @@ const places = placesData as MeditationPlace[];
 
 export const getRegions = (): Region[] => regions;
 
+const ALL_REGION: Region = { id: "all", name: "전체", slug: "all" };
+
 export const getRegionById = (regionId: string): Region | undefined =>
-  regions.find((region) => region.id === regionId);
+  regionId === "all"
+    ? ALL_REGION
+    : regions.find((region) => region.id === regionId);
 
 export const getPlaces = (): MeditationPlace[] => places;
 
 export const getPlacesByRegion = (regionId: string): MeditationPlace[] =>
-  places.filter((place) => place.regionId === regionId);
+  regionId === "all" ? [...places] : places.filter((place) => place.regionId === regionId);
+
+export const getPopularPlaces = (limit = 8): MeditationPlace[] =>
+  places.slice(0, limit);
 
 export const getPlaceById = (placeId: string): MeditationPlace | undefined =>
   places.find((place) => place.id === placeId);
@@ -29,7 +36,19 @@ export const getAvailableTags = (): string[] => {
   places.forEach((place) => {
     place.hashtags.forEach((tag) => tags.add(tag));
   });
-  return Array.from(tags).sort();
+  return Array.from(tags)
+    .filter((tag) => tag !== "템플스테이")
+    .sort();
+};
+
+const resolveCategory = (place: MeditationPlace) => {
+  if (place.hasTempleStay) {
+    return "템플스테이";
+  }
+  if (place.hashtags.includes("요가") || place.name.includes("요가")) {
+    return "요가센터";
+  }
+  return "명상센터";
 };
 
 export const applyFilters = (
@@ -37,6 +56,12 @@ export const applyFilters = (
   filters: MeditationFilters
 ): MeditationPlace[] => {
   return items.filter((place) => {
+    if (filters.category && filters.category !== "all") {
+      const category = resolveCategory(place);
+      if (category !== filters.category) {
+        return false;
+      }
+    }
     if (filters.tags.length > 0) {
       const hasTag = filters.tags.some((tag) =>
         [...place.hashtags, ...place.themes].includes(tag)
@@ -46,9 +71,14 @@ export const applyFilters = (
       }
     }
     if (filters.keyword.trim().length > 0) {
-      const keyword = filters.keyword.trim().toLowerCase();
+      const terms = filters.keyword
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((t) => t.length > 0);
       const haystack = `${place.name} ${place.shortDescription} ${place.address}`.toLowerCase();
-      if (!haystack.includes(keyword)) {
+      const allMatch = terms.every((term) => haystack.includes(term));
+      if (!allMatch) {
         return false;
       }
     }
