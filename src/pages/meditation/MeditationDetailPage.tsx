@@ -314,31 +314,27 @@ const MeditationDetailPage = () => {
         zoom: 15,
         mapTypeControl: true,
       });
-      const marker = new naver.maps.Marker({
-        position: defaultCenter,
-        map,
-      });
-      const searchAddress = place.address;
-      const applyCoords = (lat: number, lng: number) => {
+
+      const showAt = (lat: number, lng: number) => {
         const position = new naver.maps.LatLng(lat, lng);
         (map as { setCenter: (p: unknown) => void }).setCenter(position);
-        (marker as { setPosition: (p: unknown) => void }).setPosition(position);
+        new naver.maps.Marker({ position, map });
       };
 
-      naver.maps.Service!.geocode({ address: searchAddress }, (status: string, response: unknown) => {
+      naver.maps.Service!.geocode({ address: place.address }, (status: string, response: unknown) => {
+        if (status !== "OK") return;
         const res = response as {
-          result?: { items?: Array<{ point: { x: number; y: number } }> };
+          result?: { items?: Array<{ point: { x: number; y: number }; isRoadAddress?: boolean }> };
           v2?: { addresses?: Array<{ x: string; y: string }> };
           addresses?: Array<{ x: string; y: string }>;
         };
-        const item = res?.result?.items?.[0];
+        const items = res?.result?.items ?? [];
+        const item = items.find((i) => i.isRoadAddress) ?? items[0];
         const addr = res?.v2?.addresses?.[0] ?? res?.addresses?.[0];
         if (item?.point != null) {
-          applyCoords(item.point.y, item.point.x);
-          return;
-        }
-        if (addr != null) {
-          applyCoords(Number(addr.y), Number(addr.x));
+          showAt(item.point.y, item.point.x);
+        } else if (addr != null) {
+          showAt(Number(addr.y), Number(addr.x));
         }
       });
       return true;
