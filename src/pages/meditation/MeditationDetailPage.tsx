@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
+import ReactMarkdown from "react-markdown";
 import { getPlaceById, getRegionById } from "@/services/meditation/meditationService";
 import FavoriteButton from "@/components/meditation/FavoriteButton";
 
@@ -163,6 +164,31 @@ const AccordionBody = styled.div`
   font-size: 1rem;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.text700};
+
+  p {
+    margin: 0 0 0.75em;
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  ul, ol {
+    margin: 0 0 0.75em;
+    padding-left: 1.25em;
+  }
+  li {
+    margin-bottom: 0.25em;
+  }
+  strong {
+    font-weight: 600;
+  }
+  h1, h2, h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1em 0 0.5em;
+  }
+  h1:first-child, h2:first-child, h3:first-child {
+    margin-top: 0;
+  }
 `;
 
 const FacilitiesSection = styled.section`
@@ -225,6 +251,130 @@ const MapSection = styled.section`
   h3 {
     font-size: 1.2rem;
     margin-bottom: 12px;
+  }
+`;
+
+const MapAddressRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+`;
+
+const MapAddressButton = styled.button`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.colors.text700};
+  background: rgba(0, 0, 0, 0.04);
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.md};
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.2s, background 0.2s;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary600};
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+  }
+
+  &:hover svg {
+    opacity: 1;
+  }
+`;
+
+const MapAddressText = styled.span`
+  flex: 1;
+  min-width: 0;
+`;
+
+const NavButton = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: ${({ theme }) => theme.colors.primary600};
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.md};
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease, transform 0.1s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.primary700};
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+const CopyToast = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+`;
+
+const CopyToastInner = styled.div`
+  padding: 16px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: fadeInOut 2s ease forwards;
+
+  @keyframes fadeInOut {
+    0% {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    15% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    85% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.95);
+    }
   }
 `;
 
@@ -321,6 +471,9 @@ const MeditationDetailPage = () => {
   const programSection = place?.detailSections.find((s) =>
     s.title.toLowerCase().includes("프로그램")
   );
+  const scheduleSection = place?.detailSections.find((s) =>
+    s.title.toLowerCase().includes("일정")
+  );
   const noticeSection = place?.detailSections.find((s) =>
     s.title.toLowerCase().includes("유의사항")
   );
@@ -328,6 +481,15 @@ const MeditationDetailPage = () => {
     s.title.toLowerCase().includes("준비물")
   );
   const [openTab, setOpenTab] = useState<string | null>(null);
+  const [addressCopied, setAddressCopied] = useState(false);
+
+  const copyAddress = () => {
+    if (!place) return;
+    navigator.clipboard.writeText(place.address).then(() => {
+      setAddressCopied(true);
+      setTimeout(() => setAddressCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     if (!place) return;
@@ -476,6 +638,11 @@ const MeditationDetailPage = () => {
 
   return (
     <Page>
+      {addressCopied && (
+        <CopyToast>
+          <CopyToastInner>주소를 복사했습니다</CopyToastInner>
+        </CopyToast>
+      )}
       <Header>
         <BackButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -518,7 +685,9 @@ const MeditationDetailPage = () => {
               </AccordionHeader>
               <AccordionBodyWrap $open={openTab === "program"}>
                 <AccordionBodyInner>
-                  <AccordionBody>{programSection.body}</AccordionBody>
+                  <AccordionBody>
+                    <ReactMarkdown>{programSection.body}</ReactMarkdown>
+                  </AccordionBody>
                 </AccordionBodyInner>
               </AccordionBodyWrap>
             </AccordionItem>
@@ -537,11 +706,17 @@ const MeditationDetailPage = () => {
             <AccordionBodyWrap $open={openTab === "schedule"}>
               <AccordionBodyInner>
                 <AccordionBody>
-                  소요 시간: {place.duration}
-                  {place.organization?.name && (
-                    <p style={{ marginTop: 8, marginBottom: 0 }}>
-                      운영: {place.organization.name}
-                    </p>
+                  {scheduleSection?.body ? (
+                    <ReactMarkdown>{scheduleSection.body}</ReactMarkdown>
+                  ) : (
+                    <>
+                      소요 시간: {place.duration}
+                      {place.organization?.name && (
+                        <p style={{ marginTop: 8, marginBottom: 0 }}>
+                          운영: {place.organization.name}
+                        </p>
+                      )}
+                    </>
                   )}
                 </AccordionBody>
               </AccordionBodyInner>
@@ -561,7 +736,11 @@ const MeditationDetailPage = () => {
             <AccordionBodyWrap $open={openTab === "prep"}>
               <AccordionBodyInner>
                 <AccordionBody>
-                  {prepSection?.body ?? "등록된 준비물이 없습니다."}
+                  {prepSection?.body ? (
+                    <ReactMarkdown>{prepSection.body}</ReactMarkdown>
+                  ) : (
+                    "등록된 준비물이 없습니다."
+                  )}
                 </AccordionBody>
               </AccordionBodyInner>
             </AccordionBodyWrap>
@@ -580,7 +759,11 @@ const MeditationDetailPage = () => {
             <AccordionBodyWrap $open={openTab === "notice"}>
               <AccordionBodyInner>
                 <AccordionBody>
-                  {noticeSection?.body ?? "등록된 유의사항이 없습니다."}
+                  {noticeSection?.body ? (
+                    <ReactMarkdown>{noticeSection.body}</ReactMarkdown>
+                  ) : (
+                    "등록된 유의사항이 없습니다."
+                  )}
                 </AccordionBody>
               </AccordionBodyInner>
             </AccordionBodyWrap>
@@ -623,9 +806,26 @@ const MeditationDetailPage = () => {
 
         <MapSection>
           <h3>위치</h3>
-          <p style={{ marginBottom: 12, fontSize: "0.95rem" }}>
-            {place.address}
-          </p>
+          <MapAddressRow>
+            <MapAddressButton type="button" onClick={copyAddress} title="클릭하여 주소 복사">
+              <MapAddressText>{place.address}</MapAddressText>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            </MapAddressButton>
+            <NavButton
+              href={`https://map.naver.com/v5/search/${encodeURIComponent(place.address)}`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              안내
+            </NavButton>
+          </MapAddressRow>
           <MapWrap id="naver-map" ref={mapRef} />
         </MapSection>
       </Content>
