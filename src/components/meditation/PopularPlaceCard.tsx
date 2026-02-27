@@ -30,7 +30,7 @@ const Card = styled(Link)`
 
 const FavoriteWrap = styled.div`
   position: absolute;
-  top: 8px;
+  bottom: 8px;
   right: 8px;
   z-index: 2;
 `;
@@ -63,18 +63,16 @@ const Title = styled.h3`
   overflow: hidden;
 `;
 
-const RatingRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.dustyGold};
-  margin-bottom: 4px;
-`;
-
 const Location = styled.span`
   font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.text700};
+`;
+
+const Tags = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
 `;
 
 const Tag = styled.span`
@@ -84,7 +82,6 @@ const Tag = styled.span`
   background: ${({ theme }) => theme.colors.primary50};
   padding: 2px 8px;
   border-radius: ${({ theme }) => theme.radii.pill};
-  margin-top: 6px;
 `;
 
 interface PopularPlaceCardProps {
@@ -93,7 +90,6 @@ interface PopularPlaceCardProps {
 
 const PopularPlaceCard = ({ place }: PopularPlaceCardProps) => {
   const region = getRegionById(place.regionId);
-  const rating = place.rating ?? 4.5;
 
   return (
     <CardWrapper>
@@ -101,21 +97,21 @@ const PopularPlaceCard = ({ place }: PopularPlaceCardProps) => {
         <FavoriteButton placeId={place.id} />
       </FavoriteWrap>
       <Card to={`/meditation/place/${place.id}`}>
-      <Thumb>
-        <img src={place.thumbnailUrl} alt={`${place.name} 썸네일`} />
-      </Thumb>
-      <Body>
-        <Title>{place.name}</Title>
-        <RatingRow>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-          <span>{rating.toFixed(1)}</span>
-        </RatingRow>
-        <Location>{region?.name ?? place.regionId}</Location>
-        <Tag>힐링 뉴스</Tag>
-      </Body>
-    </Card>
+        <Thumb>
+          <img src={place.thumbnailUrl} alt={`${place.name} 썸네일`} />
+        </Thumb>
+        <Body>
+          <Title>{place.name}</Title>
+          <Location>{region?.name ?? place.regionId}</Location>
+          {place.hashtags && place.hashtags.length > 0 && (
+            <Tags>
+              {place.hashtags.slice(0, 2).map((tag) => (
+                <Tag key={tag}>{tag}</Tag>
+              ))}
+            </Tags>
+          )}
+        </Body>
+      </Card>
     </CardWrapper>
   );
 };

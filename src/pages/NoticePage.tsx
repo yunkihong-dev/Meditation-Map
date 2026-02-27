@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import noticesData from "@/data/notices.json";
 
@@ -119,6 +119,51 @@ const BulletList = styled.ul`
   gap: 6px;
 `;
 
+const TtsRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+`;
+
+const TtsButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid ${({ theme }) => theme.colors.primary300};
+  background: ${({ theme }) => theme.colors.primary50};
+  color: ${({ theme }) => theme.colors.primary700};
+  border-radius: ${({ theme }) => theme.radii.md};
+  font-size: 0.95rem;
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.primary100};
+  }
+`;
+
+const LangToggle = styled.div`
+  display: flex;
+  gap: 4px;
+
+  button {
+    padding: 6px 10px;
+    border: 1px solid ${({ theme }) => theme.colors.border200};
+    background: ${({ theme }) => theme.colors.white};
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &.active {
+      background: ${({ theme }) => theme.colors.primary100};
+      border-color: ${({ theme }) => theme.colors.primary300};
+      color: ${({ theme }) => theme.colors.primary700};
+    }
+  }
+`;
+
 const Pagination = styled.div`
   margin-top: 20px;
   display: flex;
@@ -136,11 +181,60 @@ const PageButton = styled.button<{ $active?: boolean }>`
   cursor: pointer;
 `;
 
+type TtsLang = "ko-KR" | "en-US";
+
 const NoticePage = () => {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(noticesData[0]?.id ?? null);
   const [page, setPage] = useState(1);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [ttsLang, setTtsLang] = useState<TtsLang>("ko-KR");
+  const [preferRemote, setPreferRemote] = useState(false); // Google 등 온라인 음성 (네트워크 필요)
   const pageSize = 6;
+
+  const speakText = useCallback(
+    (text: string, noticeId: string) => {
+      if (!("speechSynthesis" in window)) {
+        alert("이 브라우저는 음성 읽기를 지원하지 않습니다.");
+        return;
+      }
+      window.speechSynthesis.cancel();
+
+      const voices = window.speechSynthesis.getVoices();
+      const langPrefix = ttsLang.split("-")[0];
+      const matching = voices.filter((v) => v.lang.startsWith(langPrefix));
+      const local = matching.filter((v) => v.localService);
+      const remote = matching.filter((v) => !v.localService);
+      const preferred = preferRemote && remote.length
+        ? remote[0]
+        : local[0] ?? matching[0]; // 기본: 로컬 우선. preferRemote 시 Google 등 온라인 음성
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = ttsLang;
+      utterance.rate = 0.95;
+      if (preferred) utterance.voice = preferred;
+
+      utterance.onstart = () => setSpeakingId(noticeId);
+      utterance.onend = () => setSpeakingId(null);
+      utterance.onerror = (e) => {
+        setSpeakingId(null);
+        console.warn("TTS error:", e);
+      };
+      window.speechSynthesis.speak(utterance);
+    },
+    [ttsLang, preferRemote]
+  );
+
+  // Chrome: voices 비동기 로드 → 미리 트리거
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+    const load = () => window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = load;
+    load();
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const lower = query.trim().toLowerCase();
@@ -203,6 +297,73 @@ const NoticePage = () => {
               </RowTop>
               {isOpen && (
                 <Details>
+                  <TtsRow>
+                    <TtsButton
+                      type="button"
+                      onClick={(e) => {
+                      e.stopPropagation();
+                      if (speakingId === notice.id) {
+                        window.speechSynthesis.cancel();
+                        return;
+                      }
+                      const text = [
+                        notice.title,
+                        notice.summary,
+                        ...notice.details.paragraphs,
+                        ...(notice.details.bullets ?? []),
+                        notice.details.footer,
+                      ]
+                        .filter(Boolean)
+                        .join(". ");
+                      speakText(text, notice.id);
+                    }}
+                  >
+                    {speakingId === notice.id ? (
+                      <>멈추기</>
+                    ) : (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        </svg>
+                        음성으로 들으기
+                      </>
+                    )}
+                    </TtsButton>
+                    <LangToggle>
+                      <button
+                        type="button"
+                        className={ttsLang === "ko-KR" ? "active" : ""}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTtsLang("ko-KR");
+                        }}
+                      >
+                        한국어
+                      </button>
+                      <button
+                        type="button"
+                        className={ttsLang === "en-US" ? "active" : ""}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTtsLang("en-US");
+                        }}
+                      >
+                        English
+                      </button>
+                      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85rem", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={preferRemote}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setPreferRemote(e.target.checked);
+                          }}
+                        />
+                        고품질(온라인)
+                      </label>
+                    </LangToggle>
+                  </TtsRow>
                   <p>{notice.summary}</p>
                   {notice.details.paragraphs.map((text) => (
                     <p key={text}>{text}</p>

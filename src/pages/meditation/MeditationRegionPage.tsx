@@ -85,21 +85,26 @@ const LinkButton = styled.button`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 280px 1fr;
+  grid-template-areas: "filter content";
   gap: 28px;
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
+    grid-template-areas: "content";
   }
 `;
 
 const Content = styled.main`
+  grid-area: content;
   display: flex;
   flex-direction: column;
   gap: 20px;
 `;
 
 const FilterAside = styled.aside`
+  grid-area: filter;
+
   @media (max-width: 960px) {
     display: none;
   }
@@ -298,6 +303,16 @@ const MeditationRegionPage = () => {
       </PageHeader>
 
       <Grid>
+        <FilterAside>
+          <FilterPanel
+            filters={filters}
+            availableTags={availableTags}
+            onChangeCategory={setCategory}
+            onToggleTag={toggleTag}
+            onChangeSortBy={setSortBy}
+            onReset={resetFilters}
+          />
+        </FilterAside>
         <Content>
           <List>
             {visibleItems.length === 0 && (
@@ -309,17 +324,6 @@ const MeditationRegionPage = () => {
           </List>
           {hasMore && <ScrollSentinel ref={sentinelRef} />}
         </Content>
-
-        <FilterAside>
-          <FilterPanel
-            filters={filters}
-            availableTags={availableTags}
-            onChangeCategory={setCategory}
-            onToggleTag={toggleTag}
-            onChangeSortBy={setSortBy}
-            onReset={resetFilters}
-          />
-          </FilterAside>
       </Grid>
 
       {isFilterOpen && (

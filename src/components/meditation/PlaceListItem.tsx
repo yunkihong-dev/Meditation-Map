@@ -22,6 +22,10 @@ const CardLink = styled(Link)`
   display: block;
   text-decoration: none;
   color: inherit;
+
+  @media (min-width: 961px) {
+    display: flex;
+  }
 `;
 
 const Thumbnail = styled.div`
@@ -34,10 +38,24 @@ const Thumbnail = styled.div`
     height: 100%;
     object-fit: cover;
   }
+
+  @media (min-width: 961px) {
+    flex-shrink: 0;
+    width: 220px;
+    height: 160px;
+  }
 `;
 
 const Body = styled.div`
   padding: 16px 18px;
+
+  @media (min-width: 961px) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
 `;
 
 const Title = styled.h3`
@@ -55,13 +73,6 @@ const Meta = styled.div`
   margin-bottom: 10px;
   font-size: 0.95rem;
   color: ${({ theme }) => theme.colors.text700};
-`;
-
-const Rating = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: ${({ theme }) => theme.colors.dustyGold};
 `;
 
 const Location = styled.span`
@@ -121,8 +132,6 @@ interface PlaceListItemProps {
 const PlaceListItem = ({ place }: PlaceListItemProps) => {
   const navigate = useNavigate();
   const region = getRegionById(place.regionId);
-  const rating = place.rating ?? 4.5;
-  const reviewCount = place.reviewCount ?? 80;
 
   const handleBook = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -139,12 +148,6 @@ const PlaceListItem = ({ place }: PlaceListItemProps) => {
         <Body>
           <Title>{place.name}</Title>
           <Meta>
-            <Rating>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-              {rating.toFixed(1)} ({reviewCount} 리뷰)
-            </Rating>
             <Location>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />

@@ -1,9 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { getPlaceById, getRegionById } from "@/services/meditation/meditationService";
 import FavoriteButton from "@/components/meditation/FavoriteButton";
-import owlQuestionImg from "@/assets/owl-question.png";
 
 const Page = styled.div`
   max-width: 1200px;
@@ -104,20 +103,6 @@ const LocationRow = styled.div`
   }
 `;
 
-const RatingRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 1rem;
-  color: ${({ theme }) => theme.colors.dustyGold};
-  margin-bottom: 16px;
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`;
-
 const Description = styled.p`
   font-size: 1.05rem;
   line-height: 1.6;
@@ -125,16 +110,29 @@ const Description = styled.p`
   margin: 0 0 24px;
 `;
 
-const NavRow = styled.div`
+const AccordionWrap = styled.div``;
+
+const AccordionItem = styled.div`
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border200};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const AccordionHeader = styled.button<{ $open?: boolean }>`
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border200};
   font-size: 1.1rem;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.text900};
+  color: ${({ theme, $open }) => ($open ? theme.colors.primary600 : theme.colors.text900)};
+  background: none;
+  border: none;
   cursor: pointer;
+  text-align: left;
 
   &:hover {
     color: ${({ theme }) => theme.colors.primary600};
@@ -144,7 +142,27 @@ const NavRow = styled.div`
     width: 20px;
     height: 20px;
     color: ${({ theme }) => theme.colors.text700};
+    transform: ${({ $open }) => ($open ? "rotate(90deg)" : "none")};
+    transition: transform 0.2s ease;
   }
+`;
+
+const AccordionBodyWrap = styled.div<{ $open?: boolean }>`
+  display: grid;
+  grid-template-rows: ${({ $open }) => ($open ? "1fr" : "0fr")};
+  transition: grid-template-rows 0.3s ease;
+  overflow: hidden;
+`;
+
+const AccordionBodyInner = styled.div`
+  overflow: hidden;
+`;
+
+const AccordionBody = styled.div`
+  padding: 0 0 16px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.text700};
 `;
 
 const FacilitiesSection = styled.section`
@@ -221,26 +239,36 @@ const MapWrap = styled.div`
 `;
 
 const NotFoundWrap = styled.div`
+  min-height: 60vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
   padding: 48px 24px;
   text-align: center;
+  background: linear-gradient(180deg, ${({ theme }) => theme.colors.primary50} 0%, ${({ theme }) => theme.colors.warmCream} 100%);
 `;
 
-const NotFoundOwl = styled.img`
-  width: 200px;
-  height: auto;
-  margin-bottom: 28px;
-  object-fit: contain;
+const NotFoundTitle3D = styled.div`
+  font-size: clamp(4rem, 15vw, 8rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, ${({ theme }) => theme.colors.primary300} 0%, ${({ theme }) => theme.colors.primary500} 40%, ${({ theme }) => theme.colors.primary600} 70%, ${({ theme }) => theme.colors.primary800} 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 2px rgba(75, 0, 130, 0.25))
+          drop-shadow(0 4px 4px rgba(75, 0, 130, 0.15))
+          drop-shadow(0 8px 16px rgba(0, 0, 0, 0.1));
+  transform: perspective(200px) rotateX(5deg);
+  margin-bottom: 12px;
 `;
 
 const NotFoundMessage = styled.p`
-  font-size: 1.15rem;
-  color: ${({ theme }) => theme.colors.text700};
-  margin: 0 0 28px;
+  font-size: 1.1rem;
+  color: ${({ theme }) => theme.colors.primary400};
+  margin: 0 0 24px;
   line-height: 1.6;
 `;
 
@@ -251,15 +279,16 @@ const NotFoundButton = styled.button`
   padding: 14px 24px;
   font-size: 1rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.white};
+  color: #fff;
   background: ${({ theme }) => theme.colors.primary600};
   border: none;
   border-radius: ${({ theme }) => theme.radii.pill};
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.15s ease;
 
   &:hover {
     background: ${({ theme }) => theme.colors.primary700};
+    transform: translateY(-1px);
   }
 
   &:focus-visible {
@@ -292,8 +321,13 @@ const MeditationDetailPage = () => {
   const programSection = place?.detailSections.find((s) =>
     s.title.toLowerCase().includes("프로그램")
   );
-  const rating = place?.rating ?? 4.5;
-  const reviewCount = place?.reviewCount ?? 120;
+  const noticeSection = place?.detailSections.find((s) =>
+    s.title.toLowerCase().includes("유의사항")
+  );
+  const prepSection = place?.detailSections.find((s) =>
+    s.title.toLowerCase().includes("준비물")
+  );
+  const [openTab, setOpenTab] = useState<string | null>(null);
 
   useEffect(() => {
     if (!place) return;
@@ -311,7 +345,7 @@ const MeditationDetailPage = () => {
       const defaultCenter = new naver.maps.LatLng(37.5665, 126.978);
       const map = new naver.maps.Map(mapEl, {
         center: defaultCenter,
-        zoom: 15,
+        zoom: 17,
         mapTypeControl: true,
       });
 
@@ -321,20 +355,49 @@ const MeditationDetailPage = () => {
         new naver.maps.Marker({ position, map });
       };
 
-      naver.maps.Service!.geocode({ address: place.address }, (status: string, response: unknown) => {
-        if (status !== "OK") return;
-        const res = response as {
-          result?: { items?: Array<{ point: { x: number; y: number }; isRoadAddress?: boolean }> };
-          v2?: { addresses?: Array<{ x: string; y: string }> };
-          addresses?: Array<{ x: string; y: string }>;
-        };
-        const items = res?.result?.items ?? [];
-        const item = items.find((i) => i.isRoadAddress) ?? items[0];
-        const addr = res?.v2?.addresses?.[0] ?? res?.addresses?.[0];
-        if (item?.point != null) {
-          showAt(item.point.y, item.point.x);
-        } else if (addr != null) {
-          showAt(Number(addr.y), Number(addr.x));
+      const isValidCoord = (lat: number, lng: number) =>
+        Number.isFinite(lat) && Number.isFinite(lng);
+
+      naver.maps.Service!.geocode({ address: place.address }, (status: string | number, response: unknown) => {
+        if (status === "ERROR") {
+          console.warn(`[지도] 주소 변환 실패 - "${place.name}" (${place.address}): status=${status}`);
+          showAt(37.5665, 126.978);
+          return;
+        }
+
+        const res = response as Record<string, unknown>;
+        const parseNum = (v: unknown): number => (typeof v === "number" ? v : parseFloat(String(v ?? "")));
+
+        let lat: number | null = null;
+        let lng: number | null = null;
+
+        const items = (res?.result as { items?: Array<{ point?: { x?: unknown; y?: unknown } }> } | undefined)?.items ?? [];
+        const item = items.find((i) => (i as { isRoadAddress?: boolean }).isRoadAddress) ?? items[0];
+        if (item?.point) {
+          lat = parseNum(item.point.y);
+          lng = parseNum(item.point.x);
+        }
+        if ((lat == null || lng == null || !isValidCoord(lat, lng)) && items.length > 0) {
+          const first = items[0];
+          if (first?.point) {
+            lat = parseNum(first.point.y);
+            lng = parseNum(first.point.x);
+          }
+        }
+        if (lat == null || lng == null || !isValidCoord(lat, lng)) {
+          const addr =
+            (res?.v2 as { addresses?: Array<{ x?: unknown; y?: unknown }> } | undefined)?.addresses?.[0] ??
+            (res?.addresses as Array<{ x?: unknown; y?: unknown }> | undefined)?.[0];
+          if (addr) {
+            lat = parseNum(addr.y);
+            lng = parseNum(addr.x);
+          }
+        }
+
+        if (lat != null && lng != null && isValidCoord(lat, lng)) {
+          showAt(lat, lng);
+        } else {
+          showAt(37.5665, 126.978);
         }
       });
       return true;
@@ -393,7 +456,7 @@ const MeditationDetailPage = () => {
           <HeaderTitle>상세 페이지</HeaderTitle>
         </Header>
         <NotFoundWrap>
-          <NotFoundOwl src={owlQuestionImg} alt="" aria-hidden />
+          <NotFoundTitle3D>404</NotFoundTitle3D>
           <NotFoundMessage>
             해당 명상센터를 찾지 못했어요.
             <br />
@@ -438,28 +501,91 @@ const MeditationDetailPage = () => {
           </svg>
           {place.address}
         </LocationRow>
-        <RatingRow>
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-          {rating.toFixed(1)} ({reviewCount} 리뷰)
-        </RatingRow>
         <Description>{place.shortDescription}</Description>
 
-        {programSection && (
-          <NavRow>
-            <span>프로그램</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </NavRow>
-        )}
-        <NavRow>
-          <span>일정</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 18l6-6-6-6" />
-          </svg>
-        </NavRow>
+        <AccordionWrap>
+          {programSection && (
+            <AccordionItem>
+              <AccordionHeader
+                type="button"
+                $open={openTab === "program"}
+                onClick={() => setOpenTab(openTab === "program" ? null : "program")}
+              >
+                <span>프로그램</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </AccordionHeader>
+              <AccordionBodyWrap $open={openTab === "program"}>
+                <AccordionBodyInner>
+                  <AccordionBody>{programSection.body}</AccordionBody>
+                </AccordionBodyInner>
+              </AccordionBodyWrap>
+            </AccordionItem>
+          )}
+          <AccordionItem>
+            <AccordionHeader
+              type="button"
+              $open={openTab === "schedule"}
+              onClick={() => setOpenTab(openTab === "schedule" ? null : "schedule")}
+            >
+              <span>일정</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </AccordionHeader>
+            <AccordionBodyWrap $open={openTab === "schedule"}>
+              <AccordionBodyInner>
+                <AccordionBody>
+                  소요 시간: {place.duration}
+                  {place.organization?.name && (
+                    <p style={{ marginTop: 8, marginBottom: 0 }}>
+                      운영: {place.organization.name}
+                    </p>
+                  )}
+                </AccordionBody>
+              </AccordionBodyInner>
+            </AccordionBodyWrap>
+          </AccordionItem>
+          <AccordionItem>
+            <AccordionHeader
+              type="button"
+              $open={openTab === "prep"}
+              onClick={() => setOpenTab(openTab === "prep" ? null : "prep")}
+            >
+              <span>준비물</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </AccordionHeader>
+            <AccordionBodyWrap $open={openTab === "prep"}>
+              <AccordionBodyInner>
+                <AccordionBody>
+                  {prepSection?.body ?? "등록된 준비물이 없습니다."}
+                </AccordionBody>
+              </AccordionBodyInner>
+            </AccordionBodyWrap>
+          </AccordionItem>
+          <AccordionItem>
+            <AccordionHeader
+              type="button"
+              $open={openTab === "notice"}
+              onClick={() => setOpenTab(openTab === "notice" ? null : "notice")}
+            >
+              <span>유의사항</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </AccordionHeader>
+            <AccordionBodyWrap $open={openTab === "notice"}>
+              <AccordionBodyInner>
+                <AccordionBody>
+                  {noticeSection?.body ?? "등록된 유의사항이 없습니다."}
+                </AccordionBody>
+              </AccordionBodyInner>
+            </AccordionBodyWrap>
+          </AccordionItem>
+        </AccordionWrap>
 
         <FacilitiesSection>
           <h3>시설 정보</h3>

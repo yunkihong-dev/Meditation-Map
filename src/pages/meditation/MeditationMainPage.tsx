@@ -25,6 +25,7 @@ const Page = styled.div`
   margin: 0 auto;
   padding: 16px 12px 24px;
   color: ${({ theme }) => theme.colors.text900};
+  background: ${({ theme }) => theme.colors.warmCream};
 
   @media (max-width: 960px) {
     padding: 14px 10px 24px;
@@ -125,7 +126,7 @@ const RegionChips = styled.section`
     height: 6px;
   }
   &::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.colors.bg100};
+    background: ${({ theme }) => theme.colors.warmCream};
     border-radius: 3px;
   }
   &::-webkit-scrollbar-thumb {
@@ -136,6 +137,7 @@ const RegionChips = styled.section`
 
 const PopularSection = styled.section`
   margin-top: 28px;
+  background: ${({ theme }) => theme.colors.warmCream};
 `;
 
 const SectionTitle = styled.h2`
@@ -181,19 +183,28 @@ const RegionChip = styled.button<{ $active?: boolean }>`
 
 const SearchResults = styled.div`
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 280px 1fr;
+  grid-template-areas:
+    "filter content";
   gap: 28px;
   animation: ${fadeSlideIn} 0.35s ease both;
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
+    grid-template-areas: "content";
   }
 `;
 
 const FilterAside = styled.aside`
+  grid-area: filter;
+
   @media (max-width: 960px) {
     display: none;
   }
+`;
+
+const SearchContentWrapper = styled.div`
+  grid-area: content;
 `;
 
 const SearchContent = styled.main`
@@ -490,26 +501,6 @@ const MeditationMainPage = () => {
         </MainContent>
       ) : (
         <SearchResults>
-          <SearchContent>
-            <SearchResultHeader>
-              <SearchResultTitle>총 {sortedPlaces.length}곳의 명상센터</SearchResultTitle>
-              <FilterIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
-              </FilterIconButton>
-            </SearchResultHeader>
-            <List>
-              {visibleItems.length === 0 && (
-                <Empty>조건에 맞는 명상센터가 없어요.</Empty>
-              )}
-              {visibleItems.map((place) => (
-                <PlaceListItem key={place.id} place={place} />
-              ))}
-            </List>
-            {hasMore && <ScrollSentinel ref={sentinelRef} />}
-          </SearchContent>
-
           <FilterAside>
             <FilterPanel
               filters={filters}
@@ -520,6 +511,27 @@ const MeditationMainPage = () => {
               onReset={resetFilters}
             />
           </FilterAside>
+          <SearchContentWrapper>
+            <SearchContent>
+              <SearchResultHeader>
+                <SearchResultTitle>총 {sortedPlaces.length}곳의 명상센터</SearchResultTitle>
+                <FilterIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                </FilterIconButton>
+              </SearchResultHeader>
+              <List>
+                {visibleItems.length === 0 && (
+                  <Empty>조건에 맞는 명상센터가 없어요.</Empty>
+                )}
+                {visibleItems.map((place) => (
+                  <PlaceListItem key={place.id} place={place} />
+                ))}
+              </List>
+              {hasMore && <ScrollSentinel ref={sentinelRef} />}
+            </SearchContent>
+          </SearchContentWrapper>
         </SearchResults>
       )}
 

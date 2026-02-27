@@ -10,6 +10,7 @@ const LayoutShell = styled.div`
 
 const Content = styled.main`
   padding: 0 20px calc(56px + env(safe-area-inset-bottom, 0px) + 24px);
+  background: ${({ theme }) => theme.colors.warmCream};
 
   @media (max-width: 768px) {
     padding: 0 12px calc(56px + env(safe-area-inset-bottom, 0px) + 24px);

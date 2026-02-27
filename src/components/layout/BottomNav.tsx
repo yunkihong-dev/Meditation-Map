@@ -14,7 +14,6 @@ const Nav = styled.nav`
   justify-content: space-around;
   align-items: center;
   z-index: 100;
-  box-shadow: 0 -2px 12px rgba(75, 0, 130, 0.06);
 `;
 
 const NavItem = styled(NavLink)`

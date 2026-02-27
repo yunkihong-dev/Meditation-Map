@@ -9,6 +9,7 @@ import InquiryPage from "@/pages/InquiryPage";
 import FavoritesPage from "@/pages/FavoritesPage";
 import PlaceholderPage from "@/pages/PlaceholderPage";
 import ServiceInfoPage from "@/pages/ServiceInfoPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 export const routes: RouteObject[] = [
   {
@@ -25,6 +26,7 @@ export const routes: RouteObject[] = [
       { path: "notice", element: <NoticePage /> },
       { path: "inquiry", element: <InquiryPage /> },
       { path: "service-info", element: <ServiceInfoPage /> },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ];
