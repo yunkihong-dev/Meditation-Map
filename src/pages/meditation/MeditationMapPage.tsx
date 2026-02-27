@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import RegionMap from "@/components/meditation/RegionMap";
@@ -58,6 +58,7 @@ const MapSection = styled.section`
   border-radius: ${({ theme }) => theme.radii.lg};
   margin-bottom: 20px;
   min-height: 280px;
+  overflow: visible;
 
   svg {
     max-height: 360px;
@@ -75,31 +76,36 @@ const popIn = keyframes`
   }
 `;
 
-const RegionPopover = styled.div<{ $x: number; $y: number }>`
+const RegionPopoverWrap = styled.div<{ $x: number; $y: number }>`
   position: absolute;
   left: ${({ $x }) => $x}px;
   top: ${({ $y }) => $y}px;
   transform: translate(-50%, -100%);
-  margin-bottom: 8px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const RegionPopover = styled.div`
   background: ${({ theme }) => theme.colors.white};
   border-radius: ${({ theme }) => theme.radii.lg};
-  box-shadow: 0 12px 32px rgba(75, 0, 130, 0.2);
+  box-shadow: 0 6px 20px rgba(75, 0, 130, 0.12);
   border: 1px solid ${({ theme }) => theme.colors.primary200};
   padding: 16px;
   min-width: 220px;
   max-width: 280px;
   animation: ${popIn} 0.2s ease;
-  z-index: 10;
+`;
 
-  &::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: -8px;
-    transform: translateX(-50%);
-    border: 8px solid transparent;
-    border-top-color: ${({ theme }) => theme.colors.white};
-  }
+const PopoverTail = styled.div`
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid ${({ theme }) => theme.colors.white};
+  filter: drop-shadow(0 0 1px ${({ theme }) => theme.colors.primary200});
+  margin-top: -1px;
 `;
 
 const CloseButton = styled.button`
@@ -224,6 +230,36 @@ const MeditationMapPage = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [hoveredRegion]);
 
+  const getRegionCenterInSection = useCallback((regionId: string): { x: number; y: number } | null => {
+    const section = mapSectionRef.current;
+    if (!section) return null;
+    if (regionId === "all") {
+      const rect = section.getBoundingClientRect();
+      return { x: rect.width / 2, y: rect.height / 2 - 40 };
+    }
+    const path = section.querySelector(`path.land[id="${regionId}"]`) as SVGPathElement | null;
+    if (!path) return null;
+    const svg = path.closest("svg") as SVGSVGElement | null;
+    if (!svg) return null;
+    const bbox = path.getBBox();
+    let cx = bbox.x + bbox.width / 2;
+    let cy = bbox.y + bbox.height / 2;
+    if (regionId === "KR-42") {
+      cy = bbox.y + bbox.height * 0.65;
+    }
+    const pt = svg.createSVGPoint();
+    pt.x = cx;
+    pt.y = cy;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    const screenPt = pt.matrixTransform(ctm);
+    const sectionRect = section.getBoundingClientRect();
+    return {
+      x: screenPt.x - sectionRect.left,
+      y: screenPt.y - sectionRect.top,
+    };
+  }, []);
+
   // 메인에서 지역 선택 후 해당 지역 표시, 없으면 전체 기본 선택
   useEffect(() => {
     const regionToShow = selectedRegionId ?? "all";
@@ -231,25 +267,20 @@ const MeditationMapPage = () => {
     const el = mapSectionRef.current;
     if (el) {
       requestAnimationFrame(() => {
-        const rect = el.getBoundingClientRect();
-        setPopoverPos({ x: rect.width / 2, y: rect.height / 2 - 40 });
+        const pos = getRegionCenterInSection(regionToShow);
+        setPopoverPos(pos ?? { x: el.getBoundingClientRect().width / 2, y: el.getBoundingClientRect().height / 2 - 40 });
       });
     } else {
       setPopoverPos({ x: 200, y: 120 });
     }
-  }, [selectedRegionId]);
+  }, [selectedRegionId, getRegionCenterInSection]);
 
-  const handleMapRegionSelect = (regionId: string, e?: MouseEvent) => {
-    if (e && mapSectionRef.current) {
-      const rect = mapSectionRef.current.getBoundingClientRect();
-      setPopoverPos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    } else {
-      setPopoverPos({ x: 0, y: 0 });
-    }
+  const handleMapRegionSelect = (regionId: string) => {
     setHoveredRegion(regionId);
+    requestAnimationFrame(() => {
+      const pos = getRegionCenterInSection(regionId);
+      setPopoverPos(pos ?? { x: 200, y: 120 });
+    });
   };
 
   const handleConfirmSelect = () => {
@@ -280,7 +311,8 @@ const MeditationMapPage = () => {
           onSelectRegion={handleMapRegionSelect}
         />
         {selectedRegion && (
-          <RegionPopover ref={popoverRef} $x={popoverPos.x} $y={popoverPos.y}>
+          <RegionPopoverWrap ref={popoverRef} $x={popoverPos.x} $y={popoverPos.y}>
+            <RegionPopover>
             <CloseButton
               type="button"
               onClick={() => setHoveredRegion(null)}
@@ -305,7 +337,9 @@ const MeditationMapPage = () => {
             >
               선택하기
             </SelectButton>
-          </RegionPopover>
+            </RegionPopover>
+            <PopoverTail />
+          </RegionPopoverWrap>
         )}
       </MapSection>
 
@@ -315,19 +349,12 @@ const MeditationMapPage = () => {
             key={r.id}
             type="button"
             $active={hoveredRegion === r.id}
-            onClick={(e) => {
+            onClick={() => {
               setHoveredRegion(r.id);
-              const chip = e.currentTarget;
-              const chipRect = chip.getBoundingClientRect();
-              const mapRect = mapSectionRef.current?.getBoundingClientRect();
-              if (mapRect) {
-                setPopoverPos({
-                  x: chipRect.left - mapRect.left + chipRect.width / 2,
-                  y: chipRect.top - mapRect.top,
-                });
-              } else {
-                setPopoverPos({ x: 200, y: 120 });
-              }
+              requestAnimationFrame(() => {
+                const pos = getRegionCenterInSection(r.id);
+                setPopoverPos(pos ?? { x: 200, y: 120 });
+              });
             }}
           >
             {r.name}
