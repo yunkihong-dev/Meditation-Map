@@ -103,6 +103,17 @@ const RegionPopover = styled.div`
   min-width: 220px;
   max-width: 280px;
 
+  &::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -11px;
+    transform: translateX(-50%);
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 11px solid ${({ theme }) => theme.colors.primary200};
+  }
+
   &::after {
     content: "";
     position: absolute;
