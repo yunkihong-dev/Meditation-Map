@@ -65,6 +65,14 @@ const MapSection = styled.section`
   }
 `;
 
+const MapBackdrop = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  cursor: pointer;
+  border-radius: ${({ theme }) => theme.radii.lg};
+`;
+
 const popIn = keyframes`
   from {
     opacity: 0;
@@ -82,30 +90,29 @@ const RegionPopoverWrap = styled.div<{ $x: number; $y: number }>`
   top: ${({ $y }) => $y}px;
   transform: translate(-50%, -100%);
   z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  filter: drop-shadow(0 6px 20px rgba(75, 0, 130, 0.12));
+  animation: ${popIn} 0.2s ease;
 `;
 
 const RegionPopover = styled.div`
+  position: relative;
   background: ${({ theme }) => theme.colors.white};
   border-radius: ${({ theme }) => theme.radii.lg};
-  box-shadow: 0 6px 20px rgba(75, 0, 130, 0.12);
   border: 1px solid ${({ theme }) => theme.colors.primary200};
   padding: 16px;
   min-width: 220px;
   max-width: 280px;
-  animation: ${popIn} 0.2s ease;
-`;
 
-const PopoverTail = styled.div`
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 10px solid ${({ theme }) => theme.colors.white};
-  filter: drop-shadow(0 0 1px ${({ theme }) => theme.colors.primary200});
-  margin-top: -1px;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -10px;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid ${({ theme }) => theme.colors.white};
+  }
 `;
 
 const CloseButton = styled.button`
@@ -254,9 +261,17 @@ const MeditationMapPage = () => {
     if (!ctm) return null;
     const screenPt = pt.matrixTransform(ctm);
     const sectionRect = section.getBoundingClientRect();
+    const yOffset =
+      regionId === "KR-42"
+        ? 5
+        : regionId === "KR-11"
+          ? 0
+          : regionId === "KR-41"
+            ? -15
+            : 15;
     return {
       x: screenPt.x - sectionRect.left,
-      y: screenPt.y - sectionRect.top,
+      y: screenPt.y - sectionRect.top - yOffset,
     };
   }, []);
 
@@ -311,7 +326,12 @@ const MeditationMapPage = () => {
           onSelectRegion={handleMapRegionSelect}
         />
         {selectedRegion && (
-          <RegionPopoverWrap ref={popoverRef} $x={popoverPos.x} $y={popoverPos.y}>
+          <>
+            <MapBackdrop
+              onClick={() => setHoveredRegion(null)}
+              aria-label="모달 닫기"
+            />
+            <RegionPopoverWrap ref={popoverRef} $x={popoverPos.x} $y={popoverPos.y}>
             <RegionPopover>
             <CloseButton
               type="button"
@@ -338,8 +358,8 @@ const MeditationMapPage = () => {
               선택하기
             </SelectButton>
             </RegionPopover>
-            <PopoverTail />
           </RegionPopoverWrap>
+          </>
         )}
       </MapSection>
 
