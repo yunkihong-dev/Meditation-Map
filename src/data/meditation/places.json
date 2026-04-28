@@ -37,7 +37,92 @@
         "body": "- 따뜻한 외투\n- 개인 담요\n- **편한 복장** 권장"
       }
     ],
-    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)",
+    "venueKind": "명상지",
+    "programs": [
+      {
+        "id": "place1-ongoing",
+        "title": "새벽 호흡 · 바디스캔",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=60",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=900&q=60",
+          "https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?auto=format&fit=crop&w=900&q=60"
+        ],
+        "bodyFromVenue": "**운영** 새벽 5:30 집결 · 약 60분\n\n간단한 스트레칭 후 호흡 카운트와 바디스캔으로 긴장을 낮춥니다. 초보자도 따라오실 수 있도록 단계 안내를 드립니다.",
+        "reviews": [
+          { "author": "윤**", "body": "물소리랑 같이 하니까 집중이 잘 됐어요. 다음에 또 신청할게요.", "rating": 5 },
+          { "author": "김**", "body": "새벽 기온이 걱정됐는데 준비물 안내 덕에 무리 없었어요.", "rating": 5 },
+          { "author": "이**", "body": "처음이라 어색했는데 단계별로 천천히 알려주셔서 따라가기 좋았습니다.", "rating": 4 },
+          { "author": "박**", "body": "한강 뷰가 너무 좋아요. 출근 전에 한 번씩 하고 싶어지네요.", "rating": 5 },
+          { "author": "최**", "body": "바디스캔 파트에서 어깨가 풀리는 느낌이 들었어요.", "rating": 5 },
+          { "author": "정**", "body": "소규모라 편하게 질문할 수 있었어요.", "rating": 4 },
+          { "author": "강**", "body": "주차 정보 미리 알려주셔서 찾기 쉬웠습니다.", "rating": 5 },
+          { "author": "조**", "body": "호흡 리듬이 처음엔 빨랐는데 끝날 때쯤 맞춰졌어요.", "rating": 5 },
+          { "author": "한**", "body": "가을이라 쌀쌀했지만 담요 챙기라는 공지가 정확했어요.", "rating": 4 },
+          { "author": "서**", "body": "명상 후에 커피 한 잔하면서 정리한 시간이 좋았습니다.", "rating": 5 },
+          { "author": "홍**", "body": "동료 추천으로 왔는데 재택근무 스트레스가 조금 가라앉았어요.", "rating": 5 },
+          { "author": "유**", "body": "음향 장비 없이 자연 소리만으로 진행돼서 더 몰입됐어요.", "rating": 5 },
+          { "author": "임**", "body": "운동화 필수 안내가 도움 됐고 산책로까지 안내해 주셔서 좋았어요.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place1-past",
+        "title": "봄맞이 한강 야외 명상 시즌",
+        "status": "past",
+        "imageUrl": "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "2025년 3~4월에만 진행했던 **해 질 녘** 일정입니다. 동일 커리큘럼을 올해 말 다시 열 예정입니다.",
+        "reviews": [
+          { "author": "문**", "body": "지난 시즌 참여했는데 분위기가 너무 좋았어요. 사진보다 실제가 훨씬 예뻤습니다.", "rating": 5 },
+          { "author": "서**", "body": "야외라 쌀쌀할 줄 알았는데 담요 챙겨주셔서 괜찮았어요.", "rating": 4 },
+          { "author": "나**", "body": "해 질 녘 색감이 인상 깊었고 안내가 친절했습니다.", "rating": 5 },
+          { "author": "오**", "body": "그룹 인원이 많지 않아서 좋았어요.", "rating": 4 },
+          { "author": "신**", "body": "다음 시즌도 열리면 알림 받고 싶어요.", "rating": 5 },
+          { "author": "권**", "body": "발열 텀블러 챙기라는 팁이 정말 유용했어요.", "rating": 5 },
+          { "author": "장**", "body": "처음 야외 명상이라 설렘 반 걱정 반였는데 만족합니다.", "rating": 5 },
+          { "author": "윤**", "body": "사진 촬영 구역도 정해져 있어서 방해받지 않았어요.", "rating": 4 },
+          { "author": "배**", "body": "가족이랑 같이 왔는데 서로 말 없이도 편안했습니다.", "rating": 5 },
+          { "author": "송**", "body": "체온 조절이 어려웠던 분들을 위해 온열매트도 있었으면 좋겠어요.", "rating": 3 },
+          { "author": "노**", "body": "강사님 목소리 톤이 차분해서 금방 이완됐어요.", "rating": 5 },
+          { "author": "하**", "body": "시즌 한정이라 아쉽지만 그만큼 특별하게 느껴졌습니다.", "rating": 5 }
+        ]
+      },
+      {
+        "id": "place1-ongoing-weekend",
+        "title": "주말 낮·가족 동반 힐링 명상",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=900&q=60",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=900&q=60"
+        ],
+        "bodyFromVenue": "토·일 **오전 10시** · 약 50분.\n\n가벼운 소개 후 **호흡·감각 명상**을 진행하며, 어린이동반 가족은 따로 안내석에서 활동합니다.",
+        "reviews": [
+          { "author": "오**", "body": "아이 데리고 왔는데 분리 안내가 차분해서 좋았어요.", "rating": 5 },
+          { "author": "남**", "body": "주말이라 새벽반보다 부담이 덜했습니다.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place1-past-winter",
+        "title": "겨울 한파 시즌 실내 호흡 캠프",
+        "status": "past",
+        "imageUrl": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "2025년 1~2월 **인근 카페 연계** 실내 진행 분입니다. 지금은 종료되었으며 여름 실내 안내는 추후 공지합니다.",
+        "reviews": [
+          { "author": "고**", "body": "추운데 실내에서 할 수 있어서 다행이었어요.", "rating": 5 },
+          { "author": "단**", "body": "짧게 30분 코스도 있었으면 좋겠어요.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place1-ongoing-corporate",
+        "title": "기업·팀 단위 프라이빗 세션",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "**사전 협의**로 일정·인원 맞춤 운영. 연수·팀빌딩용 **60~90분** 패키지 문의 환영합니다.\n\n한강 인근 야외 또는 실내 공간 중 선택 가능합니다.",
+        "reviews": [
+          { "author": "팀장**", "body": "부서 워크샵으로 진행했는데 만족도가 높았습니다.", "rating": 5 }
+        ]
+      }
+    ]
   },
   {
     "id": "2",
@@ -76,7 +161,45 @@
         "body": "- **편한 운동화** 필수 착용\n- 야외 진행 시 우의 준비 권장"
       }
     ],
-    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)",
+    "venueKind": "명상지",
+    "programs": [
+      {
+        "id": "place2-ongoing-forest",
+        "title": "숲길 걷기 명상 · 오전 코스",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=60"
+        ],
+        "bodyFromVenue": "**09:00 만남** 후 둘레길 구간별 걸음 호흡·멈춤 명상을 진행합니다.\n\n우천 시 실내 대체 루트 안내.",
+        "reviews": [
+          { "author": "산**", "body": "걸으면서 하는 명상이 생각보다 어렵지만 시원했어요.", "rating": 5 },
+          { "author": "길**", "body": "가이드 속도가 천천해서 부담 없었습니다.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place2-ongoing-hike-breath",
+        "title": "오후반 · 짧은 오르막 호흡 트레이닝",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "**14:00** 출발 · 난이도 **초·중급**. 오르막 구간에서 호흡 길이 맞추기 연습을 합니다.",
+        "reviews": [
+          { "author": "님**", "body": "운동화 필수 안내 잘 지켰어요.", "rating": 5 }
+        ]
+      },
+      {
+        "id": "place2-past-fog",
+        "title": "안개 낀 남산 새벽 6시 특집",
+        "status": "past",
+        "imageUrl": "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "2024년 가을 한정 **새벽 일정**이었습니다. 봄 시즌에 비슷한 일정 오픈 시 공지 예정입니다.",
+        "reviews": [
+          { "author": "새**", "body": "안개 속 고요함이 인상적이었어요.", "rating": 5 },
+          { "author": "범**", "body": "일찍 일어나기 힘들었지만 그만큼 보람.", "rating": 4 }
+        ]
+      }
+    ]
   },
   {
     "id": "3",
@@ -115,7 +238,44 @@
         "body": "- 조용한 **집중**이 필요한 분\n- 차 문화에 관심 있는 분"
       }
     ],
-    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)",
+    "venueKind": "명상지",
+    "programs": [
+      {
+        "id": "place3-ongoing-tea-sit",
+        "title": "전통 다실 · 차 명상 & 정좌",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=60",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1544787219-7f626044c58c?auto=format&fit=crop&w=900&q=60"
+        ],
+        "bodyFromVenue": "**11:00 / 15:00** · 약 45분. 차 탕 향 관찰 후 30분 정좌, 마무리에 짧은 기록 시간을 드립니다.\n\n소규모(최대 8명).",
+        "reviews": [
+          { "author": "다**", "body": "차 향이 진해서 잡생각이 덜 났어요.", "rating": 5 },
+          { "author": "실**", "body": "정좌 자세 서포트가 친절했습니다.", "rating": 5 }
+        ]
+      },
+      {
+        "id": "place3-ongoing-evening-tea",
+        "title": "저녁반 · 저소음 차 음미 명상",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1544787219-7f626044c58c?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "**19:30** 일 1회. 조명을 낮춘 다실에서 **한 모금씩** 천천히 음미하며 호흡에 맞춥니다.",
+        "reviews": [
+          { "author": "저**", "body": "퇴근 후 딱 좋은 길이었어요.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place3-past-hanok",
+        "title": "한옥 개관 기념 초청 세션",
+        "status": "past",
+        "imageUrl": "https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "공간 리뉴얼 오픈 시 진행했던 **한정 초청** 일정입니다. 유사 이벤트는 인스타 공지로 안내드립니다.",
+        "reviews": [
+          { "author": "초**", "body": "한옥 마당 뷰가 특별했어요.", "rating": 5 }
+        ]
+      }
+    ]
   },
   {
     "id": "4",
@@ -221,7 +381,126 @@
         "body": "- 인원 **12명** 소규모\n- 1:1 피드백 가능"
       }
     ],
-    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)",
+    "venueKind": "명상센터",
+    "programs": [
+      {
+        "id": "place6-ongoing",
+        "title": "퇴근 후 MBSR 스타일 마음챙김",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=900&q=60",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=900&q=60"
+        ],
+        "bodyFromVenue": "월·수 **저녁 7시** 고정반. 호흡, 바디스캔, 감정에 이름 붙이기 연습을 포함합니다.\n\n소규모(최대 12명)로 진행합니다.",
+        "reviews": [
+          { "author": "장**", "body": "직장에서 쌓인 게 조금 풀려요. 안내가 차분해요.", "rating": 5 },
+          { "author": "윤**", "body": "퇴근 후 딱 1시간이라 부담 덜했어요.", "rating": 4 },
+          { "author": "허**", "body": "MBSR 느낌이라 익숙한 분들도 만족할 거예요.", "rating": 5 },
+          { "author": "남**", "body": "감정 라벨링 파트가 일상에도 도움 됩니다.", "rating": 5 },
+          { "author": "오**", "body": "실내 온도·조명이 편안해서 졸음이 아니라 안정이 왔어요.", "rating": 4 },
+          { "author": "류**", "body": "책자 없이도 따라갈 수 있게 정리해 주셨어요.", "rating": 5 },
+          { "author": "코**", "body": "온라인 병행 수업 안내도 명확했습니다.", "rating": 5 },
+          { "author": "모**", "body": "중간에 체어 명상 옵션이 있어서 무릎이 안 좋은 분도 괜찮아요.", "rating": 5 },
+          { "author": "탁**", "body": "동기들이랑 같이 신청했는데 나눔 시간이 의미 있었어요.", "rating": 4 },
+          { "author": "표**", "body": "연장 근무 끝나고 가기엔 빡빡했지만 그래도 할 만했어요.", "rating": 4 },
+          { "author": "길**", "body": "4주차쯤부터 숨이 자연스럽게 길어지는 게 느껴졌어요.", "rating": 5 },
+          { "author": "추**", "body": "물·담요 제공이 세심해서 좋았습니다.", "rating": 5 },
+          { "author": "반**", "body": "주차는 빌딩 안내대 따라가면 됩니다.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place6-past",
+        "title": "연말 스페셜 라이브 길드 명상 4주",
+        "status": "past",
+        "imageUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "2024년 12월 한정 과정입니다. 매주 다른 **테마 음악**과 짧은 나눔을 곁들였습니다.",
+        "reviews": [
+          { "author": "한**", "body": "연말에 하기 좋았어요. 같이 한 분들이랑도 친해졌어요.", "rating": 5 },
+          { "author": "노**", "body": "음악 볼륨이 살짝 컸지만 명상 자체는 만족.", "rating": 4 },
+          { "author": "채**", "body": "매주 테마가 달라서 지루하지 않았어요.", "rating": 5 },
+          { "author": "편**", "body": "촛불 향이 은은해서 분위기 좋았습니다.", "rating": 4 },
+          { "author": "구**", "body": "연말 스트레스 풀기에 딱이었어요.", "rating": 5 },
+          { "author": "라**", "body": "친구랑 같이 신청해서 더 편했어요.", "rating": 5 },
+          { "author": "마**", "body": "좌석 간격이 넓어서 호흡하기 편했습니다.", "rating": 4 },
+          { "author": "사**", "body": "라이브 연주가 생각보다 긴장을 풀어줬어요.", "rating": 5 },
+          { "author": "아**", "body": "마지막 주 가볍게 나누는 시간이 좋았어요.", "rating": 5 },
+          { "author": "차**", "body": "겨울이라 실내 습도만 조금 아쉬웠어요.", "rating": 3 },
+          { "author": "카**", "body": "4주 끝나고도 혼자 연습할 수 있게 자료를 주셨어요.", "rating": 5 }
+        ]
+      },
+      {
+        "id": "place6-ongoing-lunch",
+        "title": "금요 점심 30분 마인드 리셋",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "매주 금요일 **12:15–12:45**. 의자 앉은 자세로 짧은 **호흡·전신 스캔**만 진행합니다.\n\n밀 도시락 가능 구역 안내 드립니다.",
+        "reviews": [
+          { "author": "직장인**", "body": "점심 시간에 딱 맞아요. 회사에서 가깝다면 추천.", "rating": 5 },
+          { "author": "류**", "body": "짧은데도 집중이 잘 됐어요.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place6-past-spring",
+        "title": "봄맞이 오프닝 위크 무료 체험",
+        "status": "past",
+        "imageUrl": "https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "2025년 3월 오픈 기념 **1주간** 진행한 무료 체험입니다. 동일 커리큘럼은 퇴근반 일정에서 만나보실 수 있어요.",
+        "reviews": [
+          { "author": "새**", "body": "처음 접하는 분들에게 문턱 낮춰준 이벤트였어요.", "rating": 5 },
+          { "author": "봄**", "body": "이후 정식 반도 등록했습니다.", "rating": 5 }
+        ]
+      },
+      {
+        "id": "place6-ongoing-focus-lab",
+        "title": "딥 포커스 · 디지털 디톡스 데이",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=900&q=60",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?auto=format&fit=crop&w=900&q=60"
+        ],
+        "bodyFromVenue": "월 1회 **토요일 오후** · 스마트폰 **수납 후** 진행.\n\n긴 호흡, **묵언 나눔**, 짧은 산책(날씨 허용 시 연결)으로 구성됩니다.",
+        "reviews": [
+          { "author": "개**", "body": "폰 없이 3시간이 이렇게 길었나 싶었어요. 좋은 의미로요.", "rating": 5 },
+          { "author": "발**", "body": "집중이 필요한 시기에 딱이었습니다.", "rating": 5 }
+        ]
+      }
+    ],
+    "instructors": [
+      {
+        "id": "ins-6a",
+        "name": "박선",
+        "photoUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=60",
+        "intro": "임상심리 석사 수료 · MBSR 지도 8년. 호흡과 감정 라벨링 과정을 집중적으로 안내합니다.",
+        "reviews": [
+          { "author": "강**", "body": "박선 선생님 설명이 이해하기 쉬워요.", "rating": 5 },
+          { "author": "도**", "body": "호흡 타이밍을 손동작으로 알려주셔서 좋았어요.", "rating": 5 },
+          { "author": "버**", "body": "질문해도 부담 없이 답해 주셨습니다.", "rating": 4 },
+          { "author": "너**", "body": "감정 이름 붙이기 연습이 실생활에 유용해요.", "rating": 5 },
+          { "author": "더**", "body": "처음엔 낯설었는데 3주차부터 익숙해졌어요.", "rating": 5 },
+          { "author": "러**", "body": "녹음 가이드 주신 거 집에서도 듣고 있어요.", "rating": 5 },
+          { "author": "머**", "body": "목소리가 안정적이에요.", "rating": 4 },
+          { "author": "어**", "body": "노트 필기 시간이 있어서 정리가 잘 됐습니다.", "rating": 5 },
+          { "author": "저**", "body": "센터 시설도 깔끔했어요.", "rating": 5 }
+        ]
+      },
+      {
+        "id": "ins-6b",
+        "name": "오민",
+        "photoUrl": "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=60",
+        "intro": "요가·명상 복합 지도자. 퇴근반에서는 바디 스캔과 부드러운 스트레칭을 담당합니다.",
+        "reviews": [
+          { "author": "신**", "body": "몸이 뻐근했는데 풀어주셔서 좋았어요.", "rating": 5 },
+          { "author": "거**", "body": "부드러운 스트레칭 후 명상이라 이어지기 좋았어요.", "rating": 5 },
+          { "author": "너**", "body": "퇴근 후 몸이 뭉쳐 있을 때 특히 추천합니다.", "rating": 4 },
+          { "author": "더**", "body": "요가 경험 없어도 따라할 수 있는 난이도였어요.", "rating": 5 },
+          { "author": "러**", "body": "매트·블럭 준비되어 있어서 편했습니다.", "rating": 5 },
+          { "author": "머**", "body": "호흡·스트레칭 비율이 균형 잡혀 있어요.", "rating": 4 },
+          { "author": "버**", "body": "오민 선생님 워밍업 설명이 친절해요.", "rating": 5 },
+          { "author": "서**", "body": "무리한 자세 안 하셔도 된다고 하셔서 안심됐어요.", "rating": 5 }
+        ]
+      }
+    ]
   },
   {
     "id": "7",
@@ -256,7 +535,44 @@
         "body": "- **차 전문가** 직접 진행\n- 프리미엄 차 제공"
       }
     ],
-    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)",
+    "venueKind": "명상지",
+    "programs": [
+      {
+        "id": "place7-ongoing-evening",
+        "title": "저녁 차 명상 · 호흡 리듬",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?auto=format&fit=crop&w=900&q=60",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1544787219-7f626044c58c?auto=format&fit=crop&w=900&q=60"
+        ],
+        "bodyFromVenue": "**19:00** 집결 · 약 50분.\n\n차 명상 20분, 호흡 리듬 맞추기, **저널·짧은 나눔**(선택)으로 마무리합니다.",
+        "reviews": [
+          { "author": "아**", "body": "차 전문가님이 향 설명도 해주셔서 좋았어요.", "rating": 5 },
+          { "author": "틀**", "body": "마지막 기록 시간이 정리에 도움 됐습니다.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place7-ongoing-silent",
+        "title": "무소음(말 없음) 심화 차정 명상",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "**토요일 16:00** · 말 없이 진행. 초보는 사전 안내 영상 시청 후 참여를 권장합니다.",
+        "reviews": [
+          { "author": "말**", "body": "조용해서 처음엔 어색했는데 몰입이 깊어졌어요.", "rating": 5 }
+        ]
+      },
+      {
+        "id": "place7-past-tea-fair",
+        "title": "삼청 차 박람 연계 특별 시음 명상",
+        "status": "past",
+        "imageUrl": "https://images.unsplash.com/photo-1528164344705-47542687000d?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "지역 행사 연계 **주말 3회** 한정이었습니다. 행사 재개 시 동일 포맷으로 열 수 있습니다.",
+        "reviews": [
+          { "author": "박**", "body": "다양한 차를 비교하며 했던 게 재밌었어요.", "rating": 5 }
+        ]
+      }
+    ]
   },
   {
     "id": "8",
@@ -292,7 +608,44 @@
         "body": "- **퇴근 후** 짧은 휴식\n- 도심에서 자연 느끼기"
       }
     ],
-    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)",
+    "venueKind": "명상지",
+    "programs": [
+      {
+        "id": "place8-ongoing-sunset",
+        "title": "선셋 타이밍 맞춤 일몰 호흡",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=900&q=60",
+        "imageUrls": [
+          "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=900&q=60"
+        ],
+        "bodyFromVenue": "일몰 **30분 전** 루프탑 입장 · 약 40분.\n\n스카이라인 관찰, 호흡, **25분 집중 명상** 후 짧은 스트레칭.",
+        "reviews": [
+          { "author": "루**", "body": "도심뷰가 달라 보이는 시간이었어요.", "rating": 5 },
+          { "author": "탑**", "body": "바람이 있어 겉옷 챙기라는 공지가 맞았습니다.", "rating": 4 }
+        ]
+      },
+      {
+        "id": "place8-ongoing-bluehour",
+        "title": "블루아워 · 야경 정리 명상",
+        "status": "ongoing",
+        "imageUrl": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "**계절별** 일몰 후 20분 시작. 어두워진 후 불빛을 배경으로 **짧은 바디스캔** 위주입니다.",
+        "reviews": [
+          { "author": "야**", "body": "퇴근 직후라 머리가 복잡했는데 정리됐어요.", "rating": 5 }
+        ]
+      },
+      {
+        "id": "place8-past-typhoon",
+        "title": "8월 태풍 대체 실내 미니 세션",
+        "status": "past",
+        "imageUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
+        "bodyFromVenue": "야외 일정이 **안전상 취소**되었을 때 건물 내 라운지에서 **25분** 대체 진행했습니다.",
+        "reviews": [
+          { "author": "대**", "body": "취소만 당한 줄 알았는데 대안이 있어서 감사했어요.", "rating": 4 }
+        ]
+      }
+    ]
   },
   {
     "id": "9",

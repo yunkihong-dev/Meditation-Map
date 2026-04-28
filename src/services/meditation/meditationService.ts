@@ -1,5 +1,3 @@
-import regionsData from "@/data/meditation/regions.json";
-import placesData from "@/data/meditation/places.json";
 import type {
   MeditationFilters,
   MeditationPlace,
@@ -7,27 +5,42 @@ import type {
   Region,
   SortBy,
 } from "./types";
+import {
+  fetchPlaceById,
+  fetchPlaces,
+  fetchPlacesByRegionId,
+  getPlacesRepository,
+  getPlacesTableSnapshot,
+} from "./repositories/placesRepository";
+import {
+  fetchRegions,
+  getRegionsRepository,
+  getRegionsTableSnapshot,
+} from "./repositories/regionsRepository";
 
-const regions = regionsData as Region[];
-const places = placesData as MeditationPlace[];
-
-export const getRegions = (): Region[] => regions;
+const regions = getRegionsTableSnapshot();
+const places = getPlacesTableSnapshot();
 
 const ALL_REGION: Region = { id: "all", name: "전체", slug: "all" };
+
+/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchRegions() 사용 권장 */
+export const getRegions = (): Region[] => regions;
 
 export const getRegionById = (regionId: string): Region | undefined =>
   regionId === "all"
     ? ALL_REGION
     : regions.find((region) => region.id === regionId);
 
+/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchPlaces() 사용 권장 */
 export const getPlaces = (): MeditationPlace[] => places;
 
+/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchPlacesByRegionId() 사용 권장 */
 export const getPlacesByRegion = (regionId: string): MeditationPlace[] =>
   regionId === "all" ? [...places] : places.filter((place) => place.regionId === regionId);
 
-export const getPopularPlaces = (limit = 8): MeditationPlace[] =>
-  places.slice(0, limit);
+export const getPopularPlaces = (limit = 8): MeditationPlace[] => places.slice(0, limit);
 
+/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchPlaceById() 사용 권장 */
 export const getPlaceById = (placeId: string): MeditationPlace | undefined =>
   places.find((place) => place.id === placeId);
 
@@ -40,6 +53,10 @@ export const getAvailableTags = (): string[] => {
     .filter((tag) => tag !== "템플스테이")
     .sort();
 };
+
+/** HTTP/로컬 레포와 동일 엔드포인트 의미의 비동기 API */
+export { fetchPlaces, fetchPlaceById, fetchPlacesByRegionId, getPlacesRepository };
+export { fetchRegions, getRegionsRepository };
 
 const resolveCategory = (place: MeditationPlace) => {
   if (place.hashtags.some((t) => /프리랜서|코칭|개인지도|1:1/.test(t))) {

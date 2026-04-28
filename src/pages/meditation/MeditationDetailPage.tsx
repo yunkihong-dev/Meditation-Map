@@ -4,6 +4,7 @@ import styled from "styled-components";
 import ReactMarkdown from "react-markdown";
 import { getPlaceById, getRegionById } from "@/services/meditation/meditationService";
 import FavoriteButton from "@/components/meditation/FavoriteButton";
+import PlaceProgramsModal from "@/components/meditation/PlaceProgramsModal";
 
 const Page = styled.div`
   max-width: 1200px;
@@ -109,6 +110,94 @@ const Description = styled.p`
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.text700};
   margin: 0 0 24px;
+`;
+
+const ProgramsPreviewSection = styled.section`
+  margin: 0 0 28px;
+`;
+
+const ProgramsPreviewLabel = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+`;
+
+const ProgramsPreviewHeading = styled.h3`
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+`;
+
+const VenueKindTag = styled.span`
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.primary100};
+  color: ${({ theme }) => theme.colors.primary700};
+`;
+
+const ProgramsPhotoStrip = styled.div`
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+`;
+
+const ProgramThumbBtn = styled.button`
+  flex-shrink: 0;
+  width: 120px;
+  padding: 0;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  overflow: hidden;
+  cursor: pointer;
+  scroll-snap-align: start;
+  background: ${({ theme }) => theme.colors.bg100};
+  box-shadow: 0 2px 12px rgba(75, 0, 130, 0.08);
+
+  img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+  }
+`;
+
+const ProgramThumbCaption = styled.span`
+  display: block;
+  padding: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  line-height: 1.35;
+  color: ${({ theme }) => theme.colors.text900};
+  background: ${({ theme }) => theme.colors.white};
+`;
+
+const OpenProgramsModalBtn = styled.button`
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px 18px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: linear-gradient(
+    135deg,
+    ${({ theme }) => theme.colors.primary500} 0%,
+    ${({ theme }) => theme.colors.primary700} 100%
+  );
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
 `;
 
 const AccordionWrap = styled.div``;
@@ -468,14 +557,13 @@ const MeditationDetailPage = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
 
   const facilities = place?.facilities ?? defaultFacilities;
-  const programSection = place?.detailSections.find((s) =>
-    s.title.toLowerCase().includes("프로그램")
-  );
   const noticeSection = place?.detailSections.find((s) =>
     s.title.toLowerCase().includes("유의사항")
   );
   const [openTab, setOpenTab] = useState<string | null>(null);
   const [addressCopied, setAddressCopied] = useState(false);
+  const [programsModalOpen, setProgramsModalOpen] = useState(false);
+  const [modalInitialProgramId, setModalInitialProgramId] = useState<string | undefined>();
 
   const copyAddress = () => {
     if (!place) return;
@@ -630,6 +718,10 @@ const MeditationDetailPage = () => {
     );
   }
 
+  const programList = place.programs ?? [];
+  const hasProgramModal = programList.length > 0;
+  const venueLabel = place.venueKind === "명상센터" ? "명상센터" : "명상지";
+
   return (
     <Page>
       {addressCopied && (
@@ -664,28 +756,40 @@ const MeditationDetailPage = () => {
         </LocationRow>
         <Description>{place.shortDescription}</Description>
 
+        {hasProgramModal && (
+          <ProgramsPreviewSection>
+            <ProgramsPreviewLabel>
+              <ProgramsPreviewHeading>프로그램 · 후기</ProgramsPreviewHeading>
+              <VenueKindTag>{venueLabel}</VenueKindTag>
+            </ProgramsPreviewLabel>
+            <ProgramsPhotoStrip aria-label="프로그램 사진">
+              {programList.map((p) => (
+                <ProgramThumbBtn
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setModalInitialProgramId(p.id);
+                    setProgramsModalOpen(true);
+                  }}
+                >
+                  <img src={p.imageUrl} alt="" draggable={false} />
+                  <ProgramThumbCaption>{p.title}</ProgramThumbCaption>
+                </ProgramThumbBtn>
+              ))}
+            </ProgramsPhotoStrip>
+            <OpenProgramsModalBtn
+              type="button"
+              onClick={() => {
+                setModalInitialProgramId(undefined);
+                setProgramsModalOpen(true);
+              }}
+            >
+              사진으로 프로그램 열람하기
+            </OpenProgramsModalBtn>
+          </ProgramsPreviewSection>
+        )}
+
         <AccordionWrap>
-          {programSection && (
-            <AccordionItem>
-              <AccordionHeader
-                type="button"
-                $open={openTab === "program"}
-                onClick={() => setOpenTab(openTab === "program" ? null : "program")}
-              >
-                <span>프로그램</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </AccordionHeader>
-              <AccordionBodyWrap $open={openTab === "program"}>
-                <AccordionBodyInner>
-                  <AccordionBody>
-                    <ReactMarkdown>{programSection.body}</ReactMarkdown>
-                  </AccordionBody>
-                </AccordionBodyInner>
-              </AccordionBodyWrap>
-            </AccordionItem>
-          )}
           <AccordionItem>
             <AccordionHeader
               type="button"
@@ -793,6 +897,15 @@ const MeditationDetailPage = () => {
       <BookButton href={place.externalLink} target="_blank" rel="noreferrer">
         예약하기
       </BookButton>
+
+      {hasProgramModal && (
+        <PlaceProgramsModal
+          place={place}
+          open={programsModalOpen}
+          onClose={() => setProgramsModalOpen(false)}
+          initialProgramId={modalInitialProgramId}
+        />
+      )}
     </Page>
   );
 };

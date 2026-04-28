@@ -1,13 +1,44 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
+import ReviewsListSheet from "@/components/meditation/ReviewsListSheet";
 import { getExpertById } from "@/services/meditation/expertService";
 import { getPlaceById } from "@/services/meditation/meditationService";
+import type { MeditationExpert } from "@/services/meditation/types";
+
+function findProgramForClassLabel(expert: MeditationExpert, label: string) {
+  const t = label.trim();
+  if (!t) return undefined;
+
+  const explicit = expert.programs.find((p) => p.linksClassTypes?.includes(t));
+  if (explicit) return explicit;
+
+  const simplified = t.replace(/\([^)]*\)/g, " ").replace(/[·]/g, " ");
+  const words = simplified
+    .split(/\s+/)
+    .map((w) => w.replace(/[()]/g, "").trim())
+    .filter((w) => w.length >= 2);
+
+  const haystackFor = (p: (typeof expert.programs)[0]) =>
+    `${p.title} ${p.description}`.toLowerCase();
+
+  const fuzzy = expert.programs.find((p) => {
+    const hay = haystackFor(p);
+    if (hay.includes(t.toLowerCase())) return true;
+    return words.some((w) => hay.includes(w.toLowerCase()));
+  });
+  if (fuzzy) return fuzzy;
+
+  return expert.programs.find((p) => p.status === "ongoing") ?? expert.programs[0];
+}
 
 const Page = styled.div`
   max-width: 720px;
   margin: 0 auto;
-  padding: 0 0 calc(88px + env(safe-area-inset-bottom, 0px));
+  padding: 0 0 calc(120px + env(safe-area-inset-bottom, 0px));
   color: ${({ theme }) => theme.colors.text900};
+  position: relative;
+  z-index: 1;
 `;
 
 const Header = styled.header`
@@ -78,6 +109,33 @@ const SpecChip = styled.span`
   color: ${({ theme }) => theme.colors.primary700};
 `;
 
+const ClassChipButton = styled.button`
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.primary50};
+  color: ${({ theme }) => theme.colors.primary700};
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.primary100};
+    border-color: ${({ theme }) => theme.colors.primary200};
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  &:disabled:hover {
+    background: ${({ theme }) => theme.colors.primary50};
+    border-color: transparent;
+  }
+`;
+
 const Section = styled.section`
   padding: 0 20px 24px;
 `;
@@ -106,12 +164,48 @@ const BulletList = styled.ul`
   }
 `;
 
-const ProgramCard = styled.article`
+/** button 내부는 phrasing만 허용 — h4·p 넣지 않음 (모바일 탭 무반응 방지) */
+const ProgramCardButton = styled.button`
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 14px;
+  text-align: left;
   border: 1px solid ${({ theme }) => theme.colors.primary100};
   border-radius: ${({ theme }) => theme.radii.lg};
   overflow: hidden;
-  margin-bottom: 14px;
   background: ${({ theme }) => theme.colors.white};
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary300};
+    box-shadow: 0 4px 14px rgba(75, 0, 130, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 2px;
+  }
+`;
+
+const ProgramCardTitle = styled.span`
+  display: block;
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text900};
+`;
+
+const ProgramCardDesc = styled.span`
+  display: block;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: ${({ theme }) => theme.colors.text700};
 `;
 
 const ProgramImage = styled.img`
@@ -119,6 +213,8 @@ const ProgramImage = styled.img`
   height: 140px;
   object-fit: cover;
   display: block;
+  pointer-events: none;
+  user-select: none;
 `;
 
 const ProgramBody = styled.div`
@@ -136,11 +232,6 @@ const ProgramBadge = styled.span<{ $past?: boolean }>`
   color: ${({ theme, $past }) => ($past ? theme.colors.text700 : theme.colors.primary700)};
 `;
 
-const ProgramTitle = styled.h4`
-  margin: 0 0 6px;
-  font-size: 1.05rem;
-`;
-
 const CenterLink = styled.button`
   display: inline-flex;
   align-items: center;
@@ -156,25 +247,58 @@ const CenterLink = styled.button`
   cursor: pointer;
 `;
 
-const ReviewCard = styled.div`
+const ReviewSnippet = styled.div`
   padding: 14px 16px;
   border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.warmCream};
   margin-bottom: 10px;
 `;
 
-const ReviewAuthor = styled.p`
+const ReviewSnippetAuthor = styled.p`
   margin: 0 0 6px;
   font-size: 0.9rem;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text900};
 `;
 
-const ReviewBody = styled.p`
+const ReviewSnippetText = styled.p`
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.55;
   color: ${({ theme }) => theme.colors.text700};
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+const OpenAllReviewsBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid ${({ theme }) => theme.colors.primary300};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.primary700};
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.primary50};
+    border-color: ${({ theme }) => theme.colors.primary600};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 2px;
+  }
 `;
 
 const EmptyReviews = styled.p`
@@ -188,6 +312,7 @@ const MeditationExpertDetailPage = () => {
   const { expertId } = useParams();
   const expert = expertId ? getExpertById(expertId) : undefined;
   const linkedPlace = expert?.centerPlaceId ? getPlaceById(expert.centerPlaceId) : undefined;
+  const [allReviewsOpen, setAllReviewsOpen] = useState(false);
 
   if (!expert) {
     return (
@@ -257,9 +382,23 @@ const MeditationExpertDetailPage = () => {
       <Section>
         <SectionTitle>클래스·분야</SectionTitle>
         <SpecList style={{ justifyContent: "flex-start" }}>
-          {expert.classTypes.map((c) => (
-            <SpecChip key={c}>{c}</SpecChip>
-          ))}
+          {expert.classTypes.map((c) => {
+            const linked = findProgramForClassLabel(expert, c);
+            return (
+              <ClassChipButton
+                key={c}
+                type="button"
+                disabled={!linked}
+                title={linked ? `${linked.title} 상세 보기` : "등록된 클래스가 없어요"}
+                onClick={() => {
+                  if (!linked) return;
+                  navigate(`/meditation/expert/${expert.id}/class/${linked.id}`);
+                }}
+              >
+                {c}
+              </ClassChipButton>
+            );
+          })}
         </SpecList>
       </Section>
 
@@ -285,14 +424,21 @@ const MeditationExpertDetailPage = () => {
         <SectionTitle>진행 중인 클래스</SectionTitle>
         {ongoing.length === 0 && <BodyText>현재 모집 중인 공개 일정이 없어요.</BodyText>}
         {ongoing.map((p) => (
-          <ProgramCard key={p.id}>
-            {p.imageUrl && <ProgramImage src={p.imageUrl} alt="" />}
+          <ProgramCardButton
+            key={p.id}
+            type="button"
+            aria-label={`${p.title} 클래스 상세`}
+            onClick={() =>
+              navigate(`/meditation/expert/${expert.id}/class/${p.id}`)
+            }
+          >
+            {p.imageUrl && <ProgramImage src={p.imageUrl} alt="" draggable={false} />}
             <ProgramBody>
               <ProgramBadge>진행 중</ProgramBadge>
-              <ProgramTitle>{p.title}</ProgramTitle>
-              <BodyText>{p.description}</BodyText>
+              <ProgramCardTitle>{p.title}</ProgramCardTitle>
+              <ProgramCardDesc>{p.description}</ProgramCardDesc>
             </ProgramBody>
-          </ProgramCard>
+          </ProgramCardButton>
         ))}
       </Section>
 
@@ -300,30 +446,55 @@ const MeditationExpertDetailPage = () => {
         <SectionTitle>이전 프로그램</SectionTitle>
         {past.length === 0 && <BodyText>아직 공개된 이력이 없어요.</BodyText>}
         {past.map((p) => (
-          <ProgramCard key={p.id}>
-            {p.imageUrl && <ProgramImage src={p.imageUrl} alt="" />}
+          <ProgramCardButton
+            key={p.id}
+            type="button"
+            aria-label={`${p.title} 클래스 상세`}
+            onClick={() =>
+              navigate(`/meditation/expert/${expert.id}/class/${p.id}`)
+            }
+          >
+            {p.imageUrl && <ProgramImage src={p.imageUrl} alt="" draggable={false} />}
             <ProgramBody>
               <ProgramBadge $past>종료</ProgramBadge>
-              <ProgramTitle>{p.title}</ProgramTitle>
-              <BodyText>{p.description}</BodyText>
+              <ProgramCardTitle>{p.title}</ProgramCardTitle>
+              <ProgramCardDesc>{p.description}</ProgramCardDesc>
             </ProgramBody>
-          </ProgramCard>
+          </ProgramCardButton>
         ))}
       </Section>
 
       <Section>
         <SectionTitle>후기</SectionTitle>
         {expert.reviews.length === 0 && <EmptyReviews>등록된 후기가 없어요.</EmptyReviews>}
-        {expert.reviews.map((r, i) => (
-          <ReviewCard key={`${r.author}-${i}`}>
-            <ReviewAuthor>
-              {r.author}
-              {r.rating != null ? ` · ${"★".repeat(r.rating)}` : ""}
-            </ReviewAuthor>
-            <ReviewBody>{r.body}</ReviewBody>
-          </ReviewCard>
-        ))}
+        {expert.reviews.length > 0 && (
+          <>
+            {expert.reviews.slice(0, 2).map((r, i) => (
+              <ReviewSnippet key={`${r.author}-${i}`}>
+                <ReviewSnippetAuthor>
+                  {r.author}
+                  {r.rating != null ? ` · ${"★".repeat(r.rating)}` : ""}
+                </ReviewSnippetAuthor>
+                <ReviewSnippetText>{r.body}</ReviewSnippetText>
+              </ReviewSnippet>
+            ))}
+            {expert.reviews.length > 2 && (
+              <EmptyReviews style={{ marginBottom: 10 }}>
+                외 {expert.reviews.length - 2}건의 후기가 더 있어요.
+              </EmptyReviews>
+            )}
+            <OpenAllReviewsBtn type="button" onClick={() => setAllReviewsOpen(true)}>
+              전체 후기 보기 · {expert.reviews.length}건
+            </OpenAllReviewsBtn>
+          </>
+        )}
       </Section>
+      <ReviewsListSheet
+        open={allReviewsOpen}
+        onClose={() => setAllReviewsOpen(false)}
+        heading="후기"
+        reviews={expert.reviews}
+      />
     </Page>
   );
 };

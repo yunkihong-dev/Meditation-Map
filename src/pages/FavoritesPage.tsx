@@ -48,7 +48,7 @@ const FavoritesPage = () => {
     <Page>
       <PageTitle>찜 목록</PageTitle>
       {places.length === 0 ? (
-        <EmptyMessage>찜한 명상 장소가 없어요. 리스트에서 하트를 눌러 찜해보세요.</EmptyMessage>
+        <EmptyMessage>찜한 명상아이템이 없어요. 리스트에서 하트를 눌러 찜해보세요.</EmptyMessage>
       ) : (
         <List>
           {places.map((place) => (

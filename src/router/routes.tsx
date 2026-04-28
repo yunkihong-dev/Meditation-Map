@@ -5,6 +5,7 @@ import MeditationMapPage from "@/pages/meditation/MeditationMapPage";
 import MeditationRegionPage from "@/pages/meditation/MeditationRegionPage";
 import MeditationExpertsListPage from "@/pages/meditation/MeditationExpertsListPage";
 import MeditationExpertDetailPage from "@/pages/meditation/MeditationExpertDetailPage";
+import MeditationExpertClassDetailPage from "@/pages/meditation/MeditationExpertClassDetailPage";
 import MeditationDetailPage from "@/pages/meditation/MeditationDetailPage";
 import NoticePage from "@/pages/NoticePage";
 import InquiryPage from "@/pages/InquiryPage";
@@ -21,6 +22,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <MeditationMainPage /> },
       { path: "meditation", element: <MeditationMainPage /> },
       { path: "meditation/map", element: <MeditationMapPage /> },
+      { path: "meditation/expert/:expertId/class/:programId", element: <MeditationExpertClassDetailPage /> },
       { path: "meditation/expert/:expertId", element: <MeditationExpertDetailPage /> },
       { path: "meditation/region/:regionId/experts", element: <MeditationExpertsListPage /> },
       { path: "meditation/region/:regionId", element: <MeditationRegionPage /> },
