@@ -108,10 +108,26 @@ const MainContent = styled.div`
   animation: ${fadeSlideIn} 0.35s ease both;
 `;
 
+const MainGrid = styled.div`
+  display: block;
+
+  @media (min-width: 961px) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+`;
+
 const MapSection = styled.section`
   padding: 12px;
   border-radius: ${({ theme }) => theme.radii.lg};
   margin-bottom: 20px;
+
+  @media (min-width: 961px) {
+    max-width: 500px;
+    width: 100%;
+  }
 `;
 
 const RegionChips = styled.section`
@@ -153,6 +169,13 @@ const PopularScroll = styled.div`
   overflow-x: auto;
   padding-bottom: 12px;
   -webkit-overflow-scrolling: touch;
+`;
+
+const SideColumn = styled.div`
+  @media (min-width: 961px) {
+    position: sticky;
+    top: 92px;
+  }
 `;
 
 const RegionChip = styled.button<{ $active?: boolean }>`
@@ -470,34 +493,38 @@ const MeditationMainPage = () => {
 
       {!isSearching ? (
         <MainContent>
-          <MapSection>
-            <RegionMap
-              activeRegionId={selectedRegionId}
-              onSelectRegion={handleMapRegionClick}
-            />
-          </MapSection>
+          <MainGrid>
+            <MapSection>
+              <RegionMap
+                activeRegionId={selectedRegionId}
+                onSelectRegion={handleMapRegionClick}
+              />
+            </MapSection>
 
-          <RegionChips>
-            {allRegions.map((region) => (
-              <RegionChip
-                key={region.id}
-                type="button"
-                $active={selectedRegionId === region.id}
-                onClick={() => handleMapRegionClick(region.id)}
-              >
-                {region.name}
-              </RegionChip>
-            ))}
-          </RegionChips>
+            <SideColumn>
+              <RegionChips>
+                {allRegions.map((region) => (
+                  <RegionChip
+                    key={region.id}
+                    type="button"
+                    $active={selectedRegionId === region.id}
+                    onClick={() => handleMapRegionClick(region.id)}
+                  >
+                    {region.name}
+                  </RegionChip>
+                ))}
+              </RegionChips>
 
-          <PopularSection>
-            <SectionTitle>인기 명상지</SectionTitle>
-            <PopularScroll>
-              {popularPlaces.map((place) => (
-                <PopularPlaceCard key={place.id} place={place} />
-              ))}
-            </PopularScroll>
-          </PopularSection>
+              <PopularSection>
+                <SectionTitle>인기 명상지</SectionTitle>
+                <PopularScroll>
+                  {popularPlaces.map((place) => (
+                    <PopularPlaceCard key={place.id} place={place} />
+                  ))}
+                </PopularScroll>
+              </PopularSection>
+            </SideColumn>
+          </MainGrid>
         </MainContent>
       ) : (
         <SearchResults>

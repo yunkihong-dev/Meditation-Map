@@ -7,8 +7,16 @@
     "description": "새벽의 고요함 속에서 호흡을 따라가며 몸과 마음을 정리하는 프로그램입니다. 초보자도 참여할 수 있도록 안내자가 동행합니다.",
     "address": "서울 영등포구 여의동로 330",
     "thumbnailUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["도심", "새벽", "호흡"],
-    "themes": ["강변", "마음챙김"],
+    "hashtags": [
+      "도심",
+      "새벽",
+      "호흡",
+      "코칭"
+    ],
+    "themes": [
+      "강변",
+      "마음챙김"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -28,7 +36,8 @@
         "title": "준비물",
         "body": "- 따뜻한 외투\n- 개인 담요\n- **편한 복장** 권장"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
   },
   {
     "id": "2",
@@ -38,8 +47,15 @@
     "description": "남산 둘레길에서 걷기 명상과 호흡 명상을 결합한 프로그램으로, 스트레스 해소에 집중합니다.",
     "address": "서울 중구 남산공원길 105",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["숲", "걷기", "호흡"],
-    "themes": ["자연", "마음챙김"],
+    "hashtags": [
+      "숲",
+      "걷기",
+      "호흡"
+    ],
+    "themes": [
+      "자연",
+      "마음챙김"
+    ],
     "hasTempleStay": false,
     "duration": "1시간 30분",
     "organization": {
@@ -59,7 +75,8 @@
         "title": "유의사항",
         "body": "- **편한 운동화** 필수 착용\n- 야외 진행 시 우의 준비 권장"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
   },
   {
     "id": "3",
@@ -69,8 +86,15 @@
     "description": "전통 다실에서 차를 음미하며 집중력을 높이는 명상 프로그램입니다.",
     "address": "서울 종로구 북촌로 12길 28",
     "thumbnailUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["전통", "차명상", "정좌"],
-    "themes": ["실내", "고요"],
+    "hashtags": [
+      "전통",
+      "차명상",
+      "정좌"
+    ],
+    "themes": [
+      "실내",
+      "고요"
+    ],
     "hasTempleStay": false,
     "duration": "45분",
     "organization": {
@@ -90,7 +114,8 @@
         "title": "추천 대상",
         "body": "- 조용한 **집중**이 필요한 분\n- 차 문화에 관심 있는 분"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
   },
   {
     "id": "4",
@@ -100,8 +125,15 @@
     "description": "요가와 명상 호흡을 결합해 몸의 긴장을 풀어주는 프로그램입니다.",
     "address": "서울 성동구 뚝섬로 273",
     "thumbnailUrl": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["요가", "강변", "스트레칭"],
-    "themes": ["도심", "움직임"],
+    "hashtags": [
+      "요가",
+      "강변",
+      "스트레칭"
+    ],
+    "themes": [
+      "도심",
+      "움직임"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -117,7 +149,8 @@
         "title": "난이도",
         "body": "**초급** - 누구나 참여 가능"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
   },
   {
     "id": "5",
@@ -127,8 +160,16 @@
     "description": "사운드 테라피 도구를 활용해 마음의 파동을 안정시키는 프로그램입니다.",
     "address": "서울 마포구 와우산로 21길 36",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["사운드", "실내", "힐링"],
-    "themes": ["실내", "마음챙김"],
+    "hashtags": [
+      "사운드",
+      "실내",
+      "힐링",
+      "1:1"
+    ],
+    "themes": [
+      "실내",
+      "마음챙김"
+    ],
     "hasTempleStay": false,
     "duration": "30분",
     "organization": {
@@ -144,7 +185,8 @@
         "title": "추천 대상",
         "body": "- **30분** 짧게 집중을 원하는 분\n- 바쁜 일상의 쉼이 필요한 분"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
   },
   {
     "id": "6",
@@ -154,8 +196,15 @@
     "description": "직장인을 위한 저녁 명상 클래스입니다. 감정 정리와 집중 회복에 초점을 둡니다.",
     "address": "서울 영등포구 국제금융로 10",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["도심", "퇴근", "집중"],
-    "themes": ["실내", "마음챙김"],
+    "hashtags": [
+      "도심",
+      "퇴근",
+      "집중"
+    ],
+    "themes": [
+      "실내",
+      "마음챙김"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -171,7 +220,8 @@
         "title": "구성",
         "body": "- 인원 **12명** 소규모\n- 1:1 피드백 가능"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
   },
   {
     "id": "7",
@@ -181,8 +231,15 @@
     "description": "차 향을 따라 집중을 높이고, 짧은 명상과 대화를 포함하는 프로그램입니다.",
     "address": "서울 종로구 삼청로 98",
     "thumbnailUrl": "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["차명상", "전통", "저녁"],
-    "themes": ["실내", "고요"],
+    "hashtags": [
+      "차명상",
+      "전통",
+      "저녁"
+    ],
+    "themes": [
+      "실내",
+      "고요"
+    ],
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
@@ -198,7 +255,8 @@
         "title": "특징",
         "body": "- **차 전문가** 직접 진행\n- 프리미엄 차 제공"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
   },
   {
     "id": "8",
@@ -208,8 +266,16 @@
     "description": "도심 스카이라인을 보며 일몰 시간에 맞춰 진행되는 명상 프로그램입니다.",
     "address": "서울 송파구 올림픽로 300",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["루프탑", "선셋", "도심"],
-    "themes": ["도심", "마음챙김"],
+    "hashtags": [
+      "루프탑",
+      "선셋",
+      "도심",
+      "프리랜서"
+    ],
+    "themes": [
+      "도심",
+      "마음챙김"
+    ],
     "hasTempleStay": false,
     "duration": "40분",
     "organization": {
@@ -225,7 +291,8 @@
         "title": "추천",
         "body": "- **퇴근 후** 짧은 휴식\n- 도심에서 자연 느끼기"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
   },
   {
     "id": "9",
@@ -235,8 +302,15 @@
     "description": "호흡 패턴 교정을 통해 긴장을 완화하는 실내 명상 프로그램입니다.",
     "address": "서울 강남구 테헤란로 152",
     "thumbnailUrl": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["호흡", "실내", "리트릿"],
-    "themes": ["실내", "집중"],
+    "hashtags": [
+      "호흡",
+      "실내",
+      "리트릿"
+    ],
+    "themes": [
+      "실내",
+      "집중"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -252,7 +326,8 @@
         "title": "특징",
         "body": "- **1:1 상담** 포함\n- 호흡 교정 맞춤 프로그램"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
   },
   {
     "id": "10",
@@ -262,8 +337,15 @@
     "description": "한옥의 고즈넉한 분위기에서 몸과 마음을 천천히 풀어가는 프로그램입니다.",
     "address": "서울 은평구 진관길 73",
     "thumbnailUrl": "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["한옥", "고요", "전통"],
-    "themes": ["전통", "고요"],
+    "hashtags": [
+      "한옥",
+      "고요",
+      "전통"
+    ],
+    "themes": [
+      "전통",
+      "고요"
+    ],
     "hasTempleStay": false,
     "duration": "70분",
     "organization": {
@@ -279,7 +361,8 @@
         "title": "준비물",
         "body": "- **따뜻한 양말** (마루 착석 시)\n- 편한 한복 또는 와이드 팬츠"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
   },
   {
     "id": "11",
@@ -289,8 +372,15 @@
     "description": "몸의 감각을 깨우는 움직임 명상 프로그램으로 초보자도 쉽게 참여할 수 있습니다.",
     "address": "서울 종로구 자하문로 9길 24",
     "thumbnailUrl": "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["움직임", "감각", "실내"],
-    "themes": ["움직임", "마음챙김"],
+    "hashtags": [
+      "움직임",
+      "감각",
+      "실내"
+    ],
+    "themes": [
+      "움직임",
+      "마음챙김"
+    ],
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
@@ -306,7 +396,8 @@
         "title": "난이도",
         "body": "**초급** - 운동 경험 없어도 OK"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
   },
   {
     "id": "12",
@@ -316,8 +407,15 @@
     "description": "하루를 마무리하며 마음을 정리하는 심야 명상 프로그램입니다.",
     "address": "서울 중구 장충단로 275",
     "thumbnailUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["심야", "도심", "집중"],
-    "themes": ["실내", "집중"],
+    "hashtags": [
+      "심야",
+      "도심",
+      "집중"
+    ],
+    "themes": [
+      "실내",
+      "집중"
+    ],
     "hasTempleStay": false,
     "duration": "40분",
     "organization": {
@@ -333,7 +431,8 @@
         "title": "특징",
         "body": "- **야간 예약제** 운영 (22:00~)\n- 조용한 분위기"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
   },
   {
     "id": "13",
@@ -343,8 +442,15 @@
     "description": "해운대 해변에서 진행되는 일출 명상 프로그램입니다.",
     "address": "부산 해운대구 해운대해변로 264",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["해변", "일출", "호흡"],
-    "themes": ["바다", "자연"],
+    "hashtags": [
+      "해변",
+      "일출",
+      "호흡"
+    ],
+    "themes": [
+      "바다",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -360,7 +466,8 @@
         "title": "준비물",
         "body": "- **돗자리** (모래 위 착석)\n- 따뜻한 겉옷\n- 선크림 권장"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
   },
   {
     "id": "14",
@@ -370,8 +477,15 @@
     "description": "팔공산 자락의 숲에서 정좌와 걷기 명상을 함께 진행합니다.",
     "address": "대구 동구 팔공산로 185길 89",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["산", "걷기", "고요"],
-    "themes": ["산림", "자연"],
+    "hashtags": [
+      "산",
+      "걷기",
+      "고요"
+    ],
+    "themes": [
+      "산림",
+      "자연"
+    ],
     "hasTempleStay": true,
     "duration": "반나절",
     "organization": {
@@ -387,7 +501,8 @@
         "title": "특징",
         "body": "- **템플스테이** 옵션 제공\n- 산사 식사 체험 가능"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
   },
   {
     "id": "15",
@@ -397,8 +512,15 @@
     "description": "영종도 해안 산책로에서 진행되는 바람 명상 프로그램입니다.",
     "address": "인천 중구 운서동 2850",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["바람", "해안", "산책"],
-    "themes": ["바다", "자연"],
+    "hashtags": [
+      "바람",
+      "해안",
+      "산책"
+    ],
+    "themes": [
+      "바다",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -414,7 +536,8 @@
         "title": "준비물",
         "body": "- **편한 운동화** 필수\n- 겉옷 (해안 바람)\n- 모자/선크림"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
   },
   {
     "id": "16",
@@ -424,8 +547,15 @@
     "description": "무등산 자락에서 진행되는 호흡 명상과 걷기 명상을 포함합니다.",
     "address": "광주 북구 무등로 1550",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["산림", "리트릿", "호흡"],
-    "themes": ["자연", "산림"],
+    "hashtags": [
+      "산림",
+      "리트릿",
+      "호흡"
+    ],
+    "themes": [
+      "자연",
+      "산림"
+    ],
     "hasTempleStay": false,
     "duration": "2시간",
     "organization": {
@@ -441,7 +571,8 @@
         "title": "추천",
         "body": "- **자연 속** 재충전이 필요한 분\n- 2시간 여유 있는 분"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
   },
   {
     "id": "17",
@@ -451,8 +582,15 @@
     "description": "대청호 수변길을 따라 진행되는 집중 명상 프로그램입니다.",
     "address": "대전 동구 회남로 123",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["호수", "저녁", "고요"],
-    "themes": ["물", "자연"],
+    "hashtags": [
+      "호수",
+      "저녁",
+      "고요"
+    ],
+    "themes": [
+      "물",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -468,7 +606,8 @@
         "title": "구성",
         "body": "- **1:1 상담** 가능\n- 소규모 그룹 (8명)"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
   },
   {
     "id": "18",
@@ -478,8 +617,15 @@
     "description": "울산 동구 해송 숲길에서 진행되는 걷기 명상 프로그램입니다.",
     "address": "울산 동구 등대길 95",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["해송", "걷기", "바다"],
-    "themes": ["바다", "숲"],
+    "hashtags": [
+      "해송",
+      "걷기",
+      "바다"
+    ],
+    "themes": [
+      "바다",
+      "숲"
+    ],
     "hasTempleStay": false,
     "duration": "1시간 20분",
     "organization": {
@@ -495,7 +641,8 @@
         "title": "추천",
         "body": "- **자연 소리** 명상을 원하는 분\n- 해송 풍경 좋아하는 분"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
   },
   {
     "id": "19",
@@ -505,8 +652,15 @@
     "description": "남한강변에서 진행되는 야외 명상 프로그램입니다.",
     "address": "경기 양평군 양평읍 강변로 51",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["강변", "자연", "야외"],
-    "themes": ["물", "자연"],
+    "hashtags": [
+      "강변",
+      "자연",
+      "야외"
+    ],
+    "themes": [
+      "물",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -522,7 +676,8 @@
         "title": "준비물",
         "body": "- **돗자리** (야외 착석)\n- 편한 복장\n- 개인 물통"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
   },
   {
     "id": "20",
@@ -532,8 +687,15 @@
     "description": "가평 숲속에서 차향과 함께 호흡 명상을 진행합니다.",
     "address": "경기 가평군 상면 수목원로 190",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["숲", "차명상", "휴식"],
-    "themes": ["숲", "고요"],
+    "hashtags": [
+      "숲",
+      "차명상",
+      "휴식"
+    ],
+    "themes": [
+      "숲",
+      "고요"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -549,7 +711,8 @@
         "title": "추천",
         "body": "- **자연 속** 휴식을 원하는 분\n- 침엽수 향 좋아하는 분"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
   },
   {
     "id": "21",
@@ -559,8 +722,15 @@
     "description": "수원 정원에서 산책과 정좌 명상을 조합한 프로그램입니다.",
     "address": "경기 수원시 권선구 세류로 215",
     "thumbnailUrl": "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["정원", "산책", "도심"],
-    "themes": ["도심", "자연"],
+    "hashtags": [
+      "정원",
+      "산책",
+      "도심"
+    ],
+    "themes": [
+      "도심",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
@@ -576,7 +746,8 @@
         "title": "특징",
         "body": "- **가족** 참여 가능\n- 아이 동반 시 사전 문의"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
   },
   {
     "id": "22",
@@ -586,8 +757,15 @@
     "description": "속초 해변에서 진행되는 일출 호흡 명상 프로그램입니다.",
     "address": "강원 속초시 해오름로 186",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["동해", "일출", "호흡"],
-    "themes": ["바다", "자연"],
+    "hashtags": [
+      "동해",
+      "일출",
+      "호흡"
+    ],
+    "themes": [
+      "바다",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -603,7 +781,8 @@
         "title": "추천",
         "body": "- **동해 여행자**\n- 일출을 함께 맞고 싶은 분"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
   },
   {
     "id": "23",
@@ -613,8 +792,15 @@
     "description": "평창 산림에서 진행되는 고요한 정좌 명상 프로그램입니다.",
     "address": "강원 평창군 봉평면 태기로 111",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["산림", "고요", "힐링"],
-    "themes": ["숲", "고요"],
+    "hashtags": [
+      "산림",
+      "고요",
+      "힐링"
+    ],
+    "themes": [
+      "숲",
+      "고요"
+    ],
     "hasTempleStay": true,
     "duration": "반나절",
     "organization": {
@@ -630,7 +816,8 @@
         "title": "특징",
         "body": "- **템플스테이** 선택 가능\n- 반나절/1박 프로그램"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
   },
   {
     "id": "24",
@@ -640,8 +827,15 @@
     "description": "산사 분위기에서 마음을 정리하는 반나절 프로그램입니다.",
     "address": "충북 제천시 청풍면 산사길 32",
     "thumbnailUrl": "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["산사", "템플스테이", "고요"],
-    "themes": ["전통", "산림"],
+    "hashtags": [
+      "산사",
+      "템플스테이",
+      "고요"
+    ],
+    "themes": [
+      "전통",
+      "산림"
+    ],
     "hasTempleStay": true,
     "duration": "반나절",
     "organization": {
@@ -657,7 +851,8 @@
         "title": "특징",
         "body": "- **숙박형** 옵션\n- 산사 식사 포함 가능"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
   },
   {
     "id": "25",
@@ -667,8 +862,15 @@
     "description": "부여 연꽃 정원에서 진행되는 고요한 명상 프로그램입니다.",
     "address": "충남 부여군 부여읍 연꽃로 96",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["정원", "연꽃", "고요"],
-    "themes": ["자연", "고요"],
+    "hashtags": [
+      "정원",
+      "연꽃",
+      "고요"
+    ],
+    "themes": [
+      "자연",
+      "고요"
+    ],
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
@@ -684,7 +886,8 @@
         "title": "추천",
         "body": "- **여유로운** 휴식을 원하는 분\n- 연꽃 시즌(7~8월) 추천"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
   },
   {
     "id": "26",
@@ -694,8 +897,15 @@
     "description": "전주 한옥마을에서 진행되는 전통 명상 프로그램입니다.",
     "address": "전북 전주시 완산구 기린대로 99",
     "thumbnailUrl": "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["한옥", "전통", "고요"],
-    "themes": ["전통", "고요"],
+    "hashtags": [
+      "한옥",
+      "전통",
+      "고요"
+    ],
+    "themes": [
+      "전통",
+      "고요"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -711,7 +921,8 @@
         "title": "특징",
         "body": "- **전통 문화** 체험 포함\n- 한옥마을 산책"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
   },
   {
     "id": "27",
@@ -721,8 +932,15 @@
     "description": "담양 대나무 숲에서 진행되는 걷기 명상 프로그램입니다.",
     "address": "전남 담양군 담양읍 죽향대로 111",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["대나무", "걷기", "힐링"],
-    "themes": ["숲", "자연"],
+    "hashtags": [
+      "대나무",
+      "걷기",
+      "힐링"
+    ],
+    "themes": [
+      "숲",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -738,7 +956,8 @@
         "title": "추천",
         "body": "- **가볍게** 걷고 싶은 분\n- 대나무 풍경 좋아하는 분"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
   },
   {
     "id": "28",
@@ -748,8 +967,15 @@
     "description": "경주의 문화 유적 근처에서 진행되는 정좌 명상 프로그램입니다.",
     "address": "경북 경주시 계림로 94",
     "thumbnailUrl": "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["문화", "고요", "전통"],
-    "themes": ["전통", "고요"],
+    "hashtags": [
+      "문화",
+      "고요",
+      "전통"
+    ],
+    "themes": [
+      "전통",
+      "고요"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -765,7 +991,8 @@
         "title": "특징",
         "body": "- **문화 탐방** 포함\n- 경주 월정교 등 인근"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
   },
   {
     "id": "29",
@@ -775,8 +1002,15 @@
     "description": "거제 해안에서 진행되는 야외 호흡 명상 프로그램입니다.",
     "address": "경남 거제시 일운면 해안로 220",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["남해", "바다", "호흡"],
-    "themes": ["바다", "자연"],
+    "hashtags": [
+      "남해",
+      "바다",
+      "호흡"
+    ],
+    "themes": [
+      "바다",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "1시간",
     "organization": {
@@ -792,7 +1026,8 @@
         "title": "추천",
         "body": "- **해안 여행자**\n- 거제도 일정에 맞추기 좋은"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 2만원~ (예약·현장 안내)"
   },
   {
     "id": "30",
@@ -802,8 +1037,15 @@
     "description": "제주 오름에서 맞이하는 일출과 함께 호흡 명상을 진행합니다.",
     "address": "제주 제주시 구좌읍 오름길 33",
     "thumbnailUrl": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["오름", "일출", "자연"],
-    "themes": ["산", "자연"],
+    "hashtags": [
+      "오름",
+      "일출",
+      "자연"
+    ],
+    "themes": [
+      "산",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "1시간 30분",
     "organization": {
@@ -819,7 +1061,8 @@
         "title": "준비물",
         "body": "- **운동화** (등산화 X)\n- 물\n- 겉옷 (새벽 쌀쌀함)"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 3만원~ (예약·현장 안내)"
   },
   {
     "id": "31",
@@ -829,8 +1072,15 @@
     "description": "서귀포 해안길에서 진행되는 치유 명상 프로그램입니다.",
     "address": "제주 서귀포시 해안로 120",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["해안", "치유", "휴식"],
-    "themes": ["바다", "자연"],
+    "hashtags": [
+      "해안",
+      "치유",
+      "휴식"
+    ],
+    "themes": [
+      "바다",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "2시간",
     "organization": {
@@ -846,7 +1096,8 @@
         "title": "특징",
         "body": "- **소규모** 운영 (6명)\n- 맞춤형 진행"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 4만원~ (예약·현장 안내)"
   },
   {
     "id": "32",
@@ -856,8 +1107,15 @@
     "description": "세종 호수공원에서 진행되는 야외 명상 프로그램입니다.",
     "address": "세종 호수공원길 45",
     "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=60",
-    "hashtags": ["호수", "야외", "고요"],
-    "themes": ["물", "자연"],
+    "hashtags": [
+      "호수",
+      "야외",
+      "고요"
+    ],
+    "themes": [
+      "물",
+      "자연"
+    ],
     "hasTempleStay": false,
     "duration": "50분",
     "organization": {
@@ -873,6 +1131,7 @@
         "title": "추천",
         "body": "- **야외 명상**을 원하는 분\n- 세종 지역 거주자"
       }
-    ]
+    ],
+    "admissionFee": "1회 체험 별도 문의 (예약·현장 안내)"
   }
 ]

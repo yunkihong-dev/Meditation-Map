@@ -39,6 +39,13 @@ export const GlobalStyle = createGlobalStyle`
 
   button {
     font: inherit;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input[type="checkbox"]:focus,
+  input[type="checkbox"]:focus-visible {
+    outline: none;
   }
 
   svg {

@@ -89,7 +89,7 @@ const FilterPanel = ({
     { label: "템플스테이", value: "템플스테이" },
     { label: "명상센터", value: "명상센터" },
     { label: "프리랜서(공간없음)", value: "프리랜서(공간없음)" },
-    { label: "요가센터", value: "요가센터" },
+    { label: "힐링명상", value: "힐링명상" },
     { label: "기타", value: "기타" },
   ];
 

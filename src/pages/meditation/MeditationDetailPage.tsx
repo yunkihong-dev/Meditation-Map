@@ -471,14 +471,8 @@ const MeditationDetailPage = () => {
   const programSection = place?.detailSections.find((s) =>
     s.title.toLowerCase().includes("프로그램")
   );
-  const scheduleSection = place?.detailSections.find((s) =>
-    s.title.toLowerCase().includes("일정")
-  );
   const noticeSection = place?.detailSections.find((s) =>
     s.title.toLowerCase().includes("유의사항")
-  );
-  const prepSection = place?.detailSections.find((s) =>
-    s.title.toLowerCase().includes("준비물")
   );
   const [openTab, setOpenTab] = useState<string | null>(null);
   const [addressCopied, setAddressCopied] = useState(false);
@@ -695,52 +689,18 @@ const MeditationDetailPage = () => {
           <AccordionItem>
             <AccordionHeader
               type="button"
-              $open={openTab === "schedule"}
-              onClick={() => setOpenTab(openTab === "schedule" ? null : "schedule")}
+              $open={openTab === "fee"}
+              onClick={() => setOpenTab(openTab === "fee" ? null : "fee")}
             >
-              <span>일정</span>
+              <span>입장료·이용 요금</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 18l6-6-6-6" />
               </svg>
             </AccordionHeader>
-            <AccordionBodyWrap $open={openTab === "schedule"}>
+            <AccordionBodyWrap $open={openTab === "fee"}>
               <AccordionBodyInner>
                 <AccordionBody>
-                  {scheduleSection?.body ? (
-                    <ReactMarkdown>{scheduleSection.body}</ReactMarkdown>
-                  ) : (
-                    <>
-                      소요 시간: {place.duration}
-                      {place.organization?.name && (
-                        <p style={{ marginTop: 8, marginBottom: 0 }}>
-                          운영: {place.organization.name}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </AccordionBody>
-              </AccordionBodyInner>
-            </AccordionBodyWrap>
-          </AccordionItem>
-          <AccordionItem>
-            <AccordionHeader
-              type="button"
-              $open={openTab === "prep"}
-              onClick={() => setOpenTab(openTab === "prep" ? null : "prep")}
-            >
-              <span>준비물</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </AccordionHeader>
-            <AccordionBodyWrap $open={openTab === "prep"}>
-              <AccordionBodyInner>
-                <AccordionBody>
-                  {prepSection?.body ? (
-                    <ReactMarkdown>{prepSection.body}</ReactMarkdown>
-                  ) : (
-                    "등록된 준비물이 없습니다."
-                  )}
+                  {place.admissionFee ?? "현장·예약 시 안내"}
                 </AccordionBody>
               </AccordionBodyInner>
             </AccordionBodyWrap>

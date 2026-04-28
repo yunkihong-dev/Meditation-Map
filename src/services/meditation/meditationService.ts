@@ -42,6 +42,9 @@ export const getAvailableTags = (): string[] => {
 };
 
 const resolveCategory = (place: MeditationPlace) => {
+  if (place.hashtags.some((t) => /프리랜서|코칭|개인지도|1:1/.test(t))) {
+    return "프리랜서(공간없음)";
+  }
   if (place.hasTempleStay) {
     return "템플스테이";
   }
@@ -57,8 +60,10 @@ export const applyFilters = (
 ): MeditationPlace[] => {
   return items.filter((place) => {
     if (filters.category && filters.category !== "all") {
-      const category = resolveCategory(place);
-      if (category !== filters.category) {
+      const resolved = resolveCategory(place);
+      if (filters.category === "힐링명상") {
+        if (resolved === "요가센터") return false;
+      } else if (resolved !== filters.category) {
         return false;
       }
     }
@@ -115,3 +120,5 @@ export const paginate = <T>(
     pageSize,
   };
 };
+
+export { getRegionIdFromCoordinates } from "./regionFromLocation";

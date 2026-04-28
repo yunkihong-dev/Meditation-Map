@@ -1,10 +1,16 @@
 import { useEffect, useRef } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import mapSvg from "@/assets/southKoreaLow.svg?raw";
 
-const MapWrapper = styled.div`
+const MapWrapper = styled.div<{ $maxMapHeight?: string }>`
   cursor: pointer;
   overflow: hidden;
+  ${({ $maxMapHeight }) =>
+    $maxMapHeight
+      ? css`
+          max-height: ${$maxMapHeight};
+        `
+      : undefined}
 
   svg {
     width: 100%;
@@ -13,6 +19,12 @@ const MapWrapper = styled.div`
     display: block;
     margin: 0 auto;
     pointer-events: none;
+    ${({ $maxMapHeight }) =>
+      $maxMapHeight
+        ? css`
+            max-height: ${$maxMapHeight};
+          `
+        : undefined}
   }
 
   path.land {
@@ -42,9 +54,11 @@ const MapWrapper = styled.div`
 interface RegionMapProps {
   activeRegionId?: string;
   onSelectRegion: (regionId: string, event?: MouseEvent) => void;
+  /** 뷰포트 안에 맞추기 위한 지도+SVG 최대 높이 (CSS 길이) */
+  maxMapHeight?: string;
 }
 
-const RegionMap = ({ activeRegionId, onSelectRegion }: RegionMapProps) => {
+const RegionMap = ({ activeRegionId, onSelectRegion, maxMapHeight }: RegionMapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const hoveredIdRef = useRef<string | null>(null);
 
@@ -160,6 +174,7 @@ const RegionMap = ({ activeRegionId, onSelectRegion }: RegionMapProps) => {
   return (
     <MapWrapper
       ref={containerRef}
+      $maxMapHeight={maxMapHeight}
       role="img"
       aria-label="대한민국 행정구역 지도"
       dangerouslySetInnerHTML={{ __html: mapSvg }}

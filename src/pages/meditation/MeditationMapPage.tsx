@@ -2,11 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import RegionMap from "@/components/meditation/RegionMap";
-import {
-  getPlacesByRegion,
-  getRegionById,
-  getRegions,
-} from "@/services/meditation/meditationService";
+import { getRegionById, getRegions } from "@/services/meditation/meditationService";
 import { useMeditationStore } from "@/stores/meditationStore";
 
 const Page = styled.div`
@@ -156,39 +152,35 @@ const PopoverRegion = styled.p`
   padding-right: 28px;
 `;
 
-const PopoverCount = styled.p`
-  font-size: 1rem;
+const PopoverHint = styled.p`
+  font-size: 0.95rem;
   color: ${({ theme }) => theme.colors.text700};
   margin: 0 0 12px;
+  line-height: 1.45;
 `;
 
-const ThumbRow = styled.div`
+const TypePickList = styled.div`
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-bottom: 12px;
-
-  img {
-    width: 48px;
-    height: 48px;
-    object-fit: cover;
-    border-radius: 8px;
-  }
 `;
 
-const SelectButton = styled.button`
+const TypePickButton = styled.button`
   width: 100%;
-  padding: 10px 16px;
-  background: ${({ theme }) => theme.colors.primary600};
-  color: #fff;
-  border: none;
+  padding: 12px 14px;
+  text-align: left;
+  background: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.text900};
+  border: 1px solid ${({ theme }) => theme.colors.primary200};
   border-radius: ${({ theme }) => theme.radii.md};
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.primary700};
+    background: ${({ theme }) => theme.colors.primary50};
+    border-color: ${({ theme }) => theme.colors.primary400};
   }
 `;
 
@@ -219,6 +211,15 @@ const RegionChip = styled.button<{ $active?: boolean }>`
   }
 `;
 
+type RegionEntryKind = "place" | "center" | "expert";
+
+/** 지역 선택 후 명상지 / 센터는 필터와 함께 목록, 전문가는 별도 리스트 */
+const REGION_ENTRY_TYPES: { label: string; kind: RegionEntryKind }[] = [
+  { label: "명상지", kind: "place" },
+  { label: "명상센터", kind: "center" },
+  { label: "명상 전문가", kind: "expert" },
+];
+
 const MeditationMapPage = () => {
   const navigate = useNavigate();
   const mapSectionRef = useRef<HTMLDivElement>(null);
@@ -228,7 +229,7 @@ const MeditationMapPage = () => {
   ];
   const popoverRef = useRef<HTMLDivElement>(null);
   const chipsRef = useRef<HTMLElement>(null);
-  const { selectedRegionId, setRegion } = useMeditationStore();
+  const { selectedRegionId, setRegion, setCategory } = useMeditationStore();
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [popoverPos, setPopoverPos] = useState({ x: 0, y: 0 });
 
@@ -309,16 +310,18 @@ const MeditationMapPage = () => {
     });
   };
 
-  const handleConfirmSelect = () => {
-    if (hoveredRegion) {
-      setRegion(hoveredRegion);
-      navigate(`/meditation/region/${hoveredRegion}`);
+  const handlePickEntryType = (kind: RegionEntryKind) => {
+    if (!hoveredRegion) return;
+    setRegion(hoveredRegion);
+    if (kind === "expert") {
+      navigate(`/meditation/region/${hoveredRegion}/experts`);
+      return;
     }
+    setCategory(kind === "place" ? "템플스테이" : "명상센터");
+    navigate(`/meditation/region/${hoveredRegion}`);
   };
 
   const selectedRegion = hoveredRegion ? getRegionById(hoveredRegion) : null;
-  const placesInRegion = hoveredRegion ? getPlacesByRegion(hoveredRegion) : [];
-  const thumbnails = placesInRegion.slice(0, 3).map((p) => p.thumbnailUrl);
 
   return (
     <Page>
@@ -354,20 +357,18 @@ const MeditationMapPage = () => {
               </svg>
             </CloseButton>
             <PopoverRegion>{selectedRegion.name}</PopoverRegion>
-            <PopoverCount>{placesInRegion.length}곳 명상센터</PopoverCount>
-            {thumbnails.length > 0 && (
-              <ThumbRow>
-                {thumbnails.map((url, i) => (
-                  <img key={i} src={url} alt="" />
-                ))}
-              </ThumbRow>
-            )}
-            <SelectButton
-              type="button"
-              onClick={handleConfirmSelect}
-            >
-              선택하기
-            </SelectButton>
+            <PopoverHint>찾으시는 유형을 선택해 주세요</PopoverHint>
+            <TypePickList>
+              {REGION_ENTRY_TYPES.map(({ label, kind }) => (
+                <TypePickButton
+                  key={kind}
+                  type="button"
+                  onClick={() => handlePickEntryType(kind)}
+                >
+                  {label}
+                </TypePickButton>
+              ))}
+            </TypePickList>
             </RegionPopover>
           </RegionPopoverWrap>
           </>
