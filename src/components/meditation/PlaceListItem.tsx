@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
 import type { MeditationPlace } from "@/services/meditation/types";
 import { getRegionById } from "@/services/meditation/meditationService";
@@ -85,7 +85,8 @@ const Tags = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 12px;
+  flex: 1;
+  min-width: 0;
   font-size: 0.85rem;
 
   span {
@@ -97,32 +98,16 @@ const Tags = styled.div`
   }
 `;
 
-const Actions = styled.div`
-  position: relative;
+const TagRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
-const FavoriteWrap = styled.div`
-  position: absolute;
-  bottom: 100%;
-  right: 0;
-  margin-bottom: 6px;
-`;
-
-const BookButton = styled.button`
-  width: 100%;
-  padding: 12px 20px;
-  background: ${({ theme }) => theme.colors.primary600};
-  color: #fff;
-  border: none;
-  border-radius: ${({ theme }) => theme.radii.md};
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease;
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.primary700};
-  }
+const FavoriteSlot = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 `;
 
 interface PlaceListItemProps {
@@ -130,14 +115,7 @@ interface PlaceListItemProps {
 }
 
 const PlaceListItem = ({ place }: PlaceListItemProps) => {
-  const navigate = useNavigate();
   const region = getRegionById(place.regionId);
-
-  const handleBook = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    navigate(`/meditation/place/${place.id}`);
-  };
 
   return (
     <Card>
@@ -156,19 +134,16 @@ const PlaceListItem = ({ place }: PlaceListItemProps) => {
               {region?.name ?? place.regionId}
             </Location>
           </Meta>
-          <Tags>
-            {place.hashtags.slice(0, 4).map((tag) => (
-              <span key={tag}>{tag}</span>
-            ))}
-          </Tags>
-          <Actions>
-            <FavoriteWrap>
+          <TagRow>
+            <Tags>
+              {place.hashtags.slice(0, 4).map((tag) => (
+                <span key={tag}>{tag}</span>
+              ))}
+            </Tags>
+            <FavoriteSlot>
               <FavoriteButton placeId={place.id} />
-            </FavoriteWrap>
-            <BookButton type="button" onClick={handleBook}>
-              예약하기
-            </BookButton>
-          </Actions>
+            </FavoriteSlot>
+          </TagRow>
         </Body>
       </CardLink>
     </Card>

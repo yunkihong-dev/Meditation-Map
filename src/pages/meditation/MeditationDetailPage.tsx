@@ -31,12 +31,8 @@ function buildPlaceHeroGalleryUrls(place: MeditationPlace): string[] {
 const Page = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 0 calc(80px + env(safe-area-inset-bottom, 0px));
+  padding: 0 0 calc(28px + env(safe-area-inset-bottom, 0px));
   color: ${({ theme }) => theme.colors.text900};
-
-  @media (max-width: 960px) {
-    padding: 0 0 calc(72px + env(safe-area-inset-bottom, 0px));
-  }
 `;
 
 const Header = styled.header`
@@ -441,29 +437,6 @@ const FacilityItem = styled.div`
     width: 28px;
     height: 28px;
     color: ${({ theme }) => theme.colors.primary600};
-  }
-`;
-
-const BookButton = styled.a`
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: block;
-  padding: 16px 20px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  background: ${({ theme }) => theme.colors.primary600};
-  color: #fff;
-  text-align: center;
-  font-size: 1.2rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.2s ease;
-  z-index: 20;
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.primary700};
-    color: #fff;
   }
 `;
 
@@ -873,6 +846,10 @@ const MeditationDetailPage = () => {
   const pastPrograms = allPrograms.filter((p) => p.status === "past");
   const hasProgramModal = allPrograms.length > 0;
   const venueLabel = place.venueKind === "명상센터" ? "명상센터" : "명상지";
+  const programCountParts: string[] = [];
+  if (ongoingPrograms.length > 0) programCountParts.push(`진행 중 ${ongoingPrograms.length}`);
+  if (pastPrograms.length > 0) programCountParts.push(`지난 ${pastPrograms.length}`);
+  const programCountSubline = programCountParts.join(" · ");
 
   return (
     <Page>
@@ -983,9 +960,9 @@ const MeditationDetailPage = () => {
             <ProgramsPreviewLabel>
               <ProgramsPreviewTitleBlock>
                 <ProgramsPreviewHeading>프로그램 · 후기</ProgramsPreviewHeading>
-                <ProgramsPreviewSubline>
-                  진행 중 {ongoingPrograms.length} · 지난 {pastPrograms.length}
-                </ProgramsPreviewSubline>
+                {programCountSubline ? (
+                  <ProgramsPreviewSubline>{programCountSubline}</ProgramsPreviewSubline>
+                ) : null}
               </ProgramsPreviewTitleBlock>
               <VenueKindTag>{venueLabel}</VenueKindTag>
             </ProgramsPreviewLabel>
@@ -1123,10 +1100,6 @@ const MeditationDetailPage = () => {
           <MapWrap id="naver-map" ref={mapRef} />
         </MapSection>
       </Content>
-
-      <BookButton href={place.externalLink} target="_blank" rel="noreferrer">
-        예약하기
-      </BookButton>
 
       {hasProgramModal && (
         <PlaceProgramsModal

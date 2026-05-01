@@ -181,6 +181,8 @@ const MapPlacePeekCard = ({ place, onClose, onOpenDetail }: MapPlacePeekCardProp
   const region = getRegionById(place.regionId);
   const venue = place.venueKind ?? "명상지";
   const subline = [region?.name, place.hashtags[0] ?? venue].filter(Boolean).join(" · ");
+  const showRatingLine =
+    place.rating != null || (place.reviewCount != null && place.reviewCount > 0);
 
   const onCardClick = useCallback(() => {
     onOpenDetail();
@@ -218,7 +220,7 @@ const MapPlacePeekCard = ({ place, onClose, onOpenDetail }: MapPlacePeekCardProp
             <FavAbsolute onClick={stop} onPointerDown={stop}>
               <FavoriteButton placeId={place.id} />
             </FavAbsolute>
-            {(place.rating != null || place.reviewCount != null) && (
+            {showRatingLine && (
               <RatingLine>
                 {place.rating != null && (
                   <>

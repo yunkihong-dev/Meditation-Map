@@ -1109,6 +1109,10 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
 
   const showCenterInstructors =
     place.venueKind === "명상센터" && (place.instructors?.length ?? 0) > 0;
+  const showProgramTabs = ongoing.length > 0 && past.length > 0;
+  const anyInstructorReviews =
+    showCenterInstructors &&
+    (place.instructors?.some((ins) => ins.reviews.length > 0) ?? false);
 
   const openProgramImageViewer = useCallback(() => {
     if (galleryUrls.length === 0) return;
@@ -1201,7 +1205,8 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
               )}
             </Hero>
 
-            <TabRow>
+            {showProgramTabs ? (
+              <TabRow>
               <TabBtn
                 type="button"
                 $active={tab === "ongoing"}
@@ -1229,6 +1234,7 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
                 지난 프로그램 {past.length > 0 ? `(${past.length})` : ""}
               </TabBtn>
             </TabRow>
+            ) : null}
 
             <ThumbRow>
               {listForTab.length === 0 && <EmptyLine>이 구간에 등록된 프로그램이 없어요.</EmptyLine>}
@@ -1250,24 +1256,23 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
               <VenueBody>
                 <ReactMarkdown>{selected.bodyFromVenue}</ReactMarkdown>
               </VenueBody>
-              <ReviewBlock>
-                <ReviewHeading>프로그램 후기</ReviewHeading>
-                {selected.reviews.length === 0 && <EmptyLine>아직 등록된 후기가 없어요.</EmptyLine>}
-                {selected.reviews.slice(0, 2).map((r, i) => (
-                  <ReviewSnippet key={`${r.author}-${i}`}>
-                    <ReviewSnippetAuthor>
-                      {r.author}
-                      {r.rating != null ? ` · ${formatFiveStarRow(r.rating)}` : ""}
-                    </ReviewSnippetAuthor>
-                    <ReviewSnippetText>{r.body}</ReviewSnippetText>
-                  </ReviewSnippet>
-                ))}
-                {selected.reviews.length > 2 && (
-                  <EmptyLine style={{ marginBottom: 10, fontSize: "0.88rem" }}>
-                    외 {selected.reviews.length - 2}건의 후기가 더 있어요.
-                  </EmptyLine>
-                )}
-                {selected.reviews.length > 0 && (
+              {selected.reviews.length > 0 && (
+                <ReviewBlock>
+                  <ReviewHeading>프로그램 후기</ReviewHeading>
+                  {selected.reviews.slice(0, 2).map((r, i) => (
+                    <ReviewSnippet key={`${r.author}-${i}`}>
+                      <ReviewSnippetAuthor>
+                        {r.author}
+                        {r.rating != null ? ` · ${formatFiveStarRow(r.rating)}` : ""}
+                      </ReviewSnippetAuthor>
+                      <ReviewSnippetText>{r.body}</ReviewSnippetText>
+                    </ReviewSnippet>
+                  ))}
+                  {selected.reviews.length > 2 && (
+                    <EmptyLine style={{ marginBottom: 10, fontSize: "0.88rem" }}>
+                      외 {selected.reviews.length - 2}건의 후기가 더 있어요.
+                    </EmptyLine>
+                  )}
                   <OpenAllReviewsBtn
                     type="button"
                     onClick={() =>
@@ -1279,12 +1284,14 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
                   >
                     전체 후기 보기 · {selected.reviews.length}건
                   </OpenAllReviewsBtn>
-                )}
-              </ReviewBlock>
+                </ReviewBlock>
+              )}
 
               {showCenterInstructors && (
                 <InstructorSection>
-                  <InstructorHeading>강사 소개 · 강사 후기</InstructorHeading>
+                  <InstructorHeading>
+                    {anyInstructorReviews ? "강사 소개 · 강사 후기" : "강사 소개"}
+                  </InstructorHeading>
                   {place.instructors!.map((ins) => (
                     <InstructorCard key={ins.id}>
                       <InstructorTop>

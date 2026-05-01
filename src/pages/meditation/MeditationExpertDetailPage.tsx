@@ -443,53 +443,51 @@ const MeditationExpertDetailPage = () => {
         ))}
       </Section>
 
-      <Section>
-        <SectionTitle>이전 프로그램</SectionTitle>
-        {past.length === 0 && <BodyText>아직 공개된 이력이 없어요.</BodyText>}
-        {past.map((p) => (
-          <ProgramCardButton
-            key={p.id}
-            type="button"
-            aria-label={`${p.title} 클래스 상세`}
-            onClick={() =>
-              navigate(`/meditation/expert/${expert.id}/class/${p.id}`)
-            }
-          >
-            {p.imageUrl && <ProgramImage src={p.imageUrl} alt="" draggable={false} />}
-            <ProgramBody>
-              <ProgramBadge $past>종료</ProgramBadge>
-              <ProgramCardTitle>{p.title}</ProgramCardTitle>
-              <ProgramCardDesc>{p.description}</ProgramCardDesc>
-            </ProgramBody>
-          </ProgramCardButton>
-        ))}
-      </Section>
+      {past.length > 0 && (
+        <Section>
+          <SectionTitle>이전 프로그램</SectionTitle>
+          {past.map((p) => (
+            <ProgramCardButton
+              key={p.id}
+              type="button"
+              aria-label={`${p.title} 클래스 상세`}
+              onClick={() =>
+                navigate(`/meditation/expert/${expert.id}/class/${p.id}`)
+              }
+            >
+              {p.imageUrl && <ProgramImage src={p.imageUrl} alt="" draggable={false} />}
+              <ProgramBody>
+                <ProgramBadge $past>종료</ProgramBadge>
+                <ProgramCardTitle>{p.title}</ProgramCardTitle>
+                <ProgramCardDesc>{p.description}</ProgramCardDesc>
+              </ProgramBody>
+            </ProgramCardButton>
+          ))}
+        </Section>
+      )}
 
-      <Section>
-        <SectionTitle>후기</SectionTitle>
-        {expert.reviews.length === 0 && <EmptyReviews>등록된 후기가 없어요.</EmptyReviews>}
-        {expert.reviews.length > 0 && (
-          <>
-            {expert.reviews.slice(0, 2).map((r, i) => (
-              <ReviewSnippet key={`${r.author}-${i}`}>
-                <ReviewSnippetAuthor>
-                  {r.author}
-                  {r.rating != null ? ` · ${formatFiveStarRow(r.rating)}` : ""}
-                </ReviewSnippetAuthor>
-                <ReviewSnippetText>{r.body}</ReviewSnippetText>
-              </ReviewSnippet>
-            ))}
-            {expert.reviews.length > 2 && (
-              <EmptyReviews style={{ marginBottom: 10 }}>
-                외 {expert.reviews.length - 2}건의 후기가 더 있어요.
-              </EmptyReviews>
-            )}
-            <OpenAllReviewsBtn type="button" onClick={() => setAllReviewsOpen(true)}>
-              전체 후기 보기 · {expert.reviews.length}건
-            </OpenAllReviewsBtn>
-          </>
-        )}
-      </Section>
+      {expert.reviews.length > 0 && (
+        <Section>
+          <SectionTitle>후기</SectionTitle>
+          {expert.reviews.slice(0, 2).map((r, i) => (
+            <ReviewSnippet key={`${r.author}-${i}`}>
+              <ReviewSnippetAuthor>
+                {r.author}
+                {r.rating != null ? ` · ${formatFiveStarRow(r.rating)}` : ""}
+              </ReviewSnippetAuthor>
+              <ReviewSnippetText>{r.body}</ReviewSnippetText>
+            </ReviewSnippet>
+          ))}
+          {expert.reviews.length > 2 && (
+            <EmptyReviews style={{ marginBottom: 10 }}>
+              외 {expert.reviews.length - 2}건의 후기가 더 있어요.
+            </EmptyReviews>
+          )}
+          <OpenAllReviewsBtn type="button" onClick={() => setAllReviewsOpen(true)}>
+            전체 후기 보기 · {expert.reviews.length}건
+          </OpenAllReviewsBtn>
+        </Section>
+      )}
       <ReviewsListSheet
         open={allReviewsOpen}
         onClose={() => setAllReviewsOpen(false)}

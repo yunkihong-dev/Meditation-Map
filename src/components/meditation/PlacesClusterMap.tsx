@@ -139,14 +139,13 @@ const SIGNPOST_SIGN_H = 34;
 const SIGNPOST_POLE_H = 13;
 const SIGNPOST_POLE_W = 7;
 const MARKER_W = SIGNPOST_W;
-const MARKER_H = SIGNPOST_SIGN_H + SIGNPOST_POLE_H - 2;
+const MARKER_H = SIGNPOST_SIGN_H + SIGNPOST_POLE_H;
 const PIN_TIP_X = SIGNPOST_W / 2;
 const PIN_TIP_Y = MARKER_H;
 
 /* 채도 높은 바이올렛 — 지도에서 잘 들어오도록 */
 const SIGN_BOARD = "#7c3aed";
 const SIGN_POLE = "#6d28d9";
-const SIGN_OUTLINE = "#4c1d95";
 const CLUSTER_FILL = "#7c3aed";
 
 /**
@@ -155,10 +154,10 @@ const CLUSTER_FILL = "#7c3aed";
 function buildSinglePinHtml(_placeId: string, placeName: string): string {
   const name = escapeHtmlText(placeName);
   return `<div style="width:${MARKER_W}px;height:${MARKER_H}px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.24));pointer-events:auto" aria-hidden="true">
-<div style="width:100%;height:${SIGNPOST_SIGN_H}px;box-sizing:border-box;background:${SIGN_BOARD};border:2px solid ${SIGN_OUTLINE};border-radius:6px;padding:3px 4px;display:flex;align-items:center;justify-content:center">
-<span style="display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;box-sizing:border-box;margin:0;color:#fff;font-size:10px;font-weight:800;line-height:1.2;text-align:center;word-break:keep-all;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:-0.02em;text-shadow:1px 1px 0 ${SIGN_OUTLINE},-1px -1px 0 ${SIGN_OUTLINE},1px -1px 0 ${SIGN_OUTLINE},-1px 1px 0 ${SIGN_OUTLINE},0 1px 0 rgba(0,0,0,.2)">${name}</span>
+<div style="width:100%;height:${SIGNPOST_SIGN_H}px;box-sizing:border-box;background:${SIGN_BOARD};border-radius:6px;padding:3px 4px;display:flex;align-items:center;justify-content:center">
+<span style="display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;box-sizing:border-box;margin:0;color:#fff;font-size:10px;font-weight:800;line-height:1.2;text-align:center;word-break:keep-all;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:-0.02em;text-shadow:0 1px 2px rgba(0,0,0,.45)">${name}</span>
 </div>
-<div style="width:${SIGNPOST_POLE_W}px;height:${SIGNPOST_POLE_H}px;box-sizing:border-box;background:${SIGN_POLE};border:2px solid ${SIGN_OUTLINE};border-top:none;border-radius:0 0 3px 3px;margin-top:-2px;flex-shrink:0"></div>
+<div style="width:${SIGNPOST_POLE_W}px;height:${SIGNPOST_POLE_H}px;box-sizing:border-box;background:${SIGN_POLE};border-radius:0 0 3px 3px;flex-shrink:0"></div>
 </div>`;
 }
 
