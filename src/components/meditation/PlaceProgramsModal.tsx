@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import styled, { keyframes } from "styled-components";
 import ReactMarkdown from "react-markdown";
 import ReviewsListSheet from "@/components/meditation/ReviewsListSheet";
+import { formatFiveStarRow } from "@/services/meditation/starRating";
 import type { MeditationPlace, PlaceProgram, PlaceProgramReview } from "@/services/meditation/types";
 
 const fadeIn = keyframes`
@@ -122,6 +123,126 @@ const HeroImgSingle = styled.img`
   user-select: none;
 `;
 
+const HeroClickable = styled.button<{ $clickable?: boolean }>`
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: inherit;
+  cursor: ${({ $clickable }) => ($clickable ? "zoom-in" : "default")};
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary600};
+    outline-offset: -2px;
+  }
+`;
+
+const ViewerOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  flex-direction: column;
+  animation: ${fadeIn} 0.2s ease both;
+`;
+
+const ViewerTopBar = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 12px;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+`;
+
+const ViewerCloseBtn = styled.button`
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+`;
+
+const ViewerStage = styled.div`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px 28px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+`;
+
+const ViewerPhotoPullWrap = styled.div<{ $snap: boolean }>`
+  height: 100%;
+  width: 100%;
+  will-change: transform;
+  transition: ${({ $snap }) =>
+    $snap ? "transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)" : "none"};
+`;
+
+const ViewerViewport = styled.div`
+  position: relative;
+  width: 100%;
+  max-width: min(96vw, 720px);
+  height: min(85dvh, 900px);
+  max-height: min(85dvh, 900px);
+  overflow: hidden;
+  touch-action: none;
+  background: transparent;
+  border-radius: ${({ theme }) => theme.radii.md};
+`;
+
+const ViewerTrack = styled.div`
+  display: flex;
+  height: 100%;
+  will-change: transform;
+`;
+
+const ViewerSlide = styled.div`
+  flex-shrink: 0;
+  height: 100%;
+`;
+
+const ViewerSlideImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+`;
+
+const ViewerImgSingle = styled.img`
+  width: 100%;
+  height: 100%;
+  max-height: min(85dvh, 900px);
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+  display: block;
+  user-select: none;
+`;
+
 const HeroNav = styled.div`
   position: absolute;
   bottom: 10px;
@@ -131,6 +252,20 @@ const HeroNav = styled.div`
   display: flex;
   justify-content: center;
   gap: 6px;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
+  }
+`;
+
+const ViewerNav = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+  width: 100%;
   pointer-events: none;
 
   & > * {
@@ -361,6 +496,516 @@ const EmptyLine = styled.p`
   color: ${({ theme }) => theme.colors.text700};
 `;
 
+export function useProgramGalleryLoop(urls: string[], measureActive: boolean) {
+  const urlsKey = urls.join("\0");
+  const [loopIndex, setLoopIndex] = useState(1);
+  const [transOff, setTransOff] = useState(false);
+  const [vpWidth, setVpWidth] = useState(0);
+  const [dragPx, setDragPx] = useState(0);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const loopIndexRef = useRef(1);
+  const touchStartX = useRef<number | null>(null);
+  const dragPxRef = useRef(0);
+  const gestureRawRef = useRef(0);
+  const prevUrlsKeyRef = useRef<string | null>(null);
+
+  const endTouch = useCallback(() => {
+    touchStartX.current = null;
+    dragPxRef.current = 0;
+    gestureRawRef.current = 0;
+    setDragPx(0);
+  }, []);
+
+  useEffect(() => {
+    if (prevUrlsKeyRef.current === null) {
+      prevUrlsKeyRef.current = urlsKey;
+      return;
+    }
+    if (prevUrlsKeyRef.current !== urlsKey) {
+      prevUrlsKeyRef.current = urlsKey;
+      setLoopIndex(1);
+      setTransOff(false);
+      setVpWidth(0);
+      endTouch();
+    }
+  }, [urlsKey, endTouch]);
+
+  useLayoutEffect(() => {
+    if (!measureActive || urls.length <= 1) {
+      setVpWidth(0);
+      return;
+    }
+    const el = viewportRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) setVpWidth(w);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measureActive, urls.length, urlsKey]);
+
+  const loopUrls = useMemo(() => {
+    const n = urls.length;
+    if (n <= 1) return urls;
+    return [urls[n - 1], ...urls, urls[0]];
+  }, [urls]);
+
+  const slideCount = loopUrls.length;
+
+  const activeDot = useMemo(() => {
+    const n = urls.length;
+    if (n <= 1) return 0;
+    if (loopIndex === 0) return n - 1;
+    if (loopIndex === n + 1) return 0;
+    return loopIndex - 1;
+  }, [urls.length, loopIndex]);
+
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (urls.length <= 1) return;
+      touchStartX.current = e.touches[0].clientX;
+      dragPxRef.current = 0;
+      gestureRawRef.current = 0;
+      setDragPx(0);
+    },
+    [urls.length]
+  );
+
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (touchStartX.current == null || urls.length <= 1) return;
+      const w = viewportRef.current?.offsetWidth ?? 320;
+      const n = urls.length;
+      let raw = e.touches[0].clientX - touchStartX.current;
+      const max = w * 0.45;
+      raw = Math.max(-max, Math.min(max, raw));
+      gestureRawRef.current = raw;
+
+      const idx = loopIndexRef.current;
+      let visual = raw;
+      if (idx === 1 && raw > 0) visual = 0;
+      if (idx === n && raw < 0) visual = 0;
+
+      dragPxRef.current = visual;
+      setDragPx(visual);
+    },
+    [urls.length]
+  );
+
+  const onTouchEnd = useCallback(() => {
+    if (touchStartX.current == null || urls.length <= 1) {
+      endTouch();
+      return;
+    }
+    const w = viewportRef.current?.offsetWidth ?? 320;
+    const threshold = Math.min(48, w * 0.14);
+    const d = gestureRawRef.current;
+    const n = urls.length;
+    setLoopIndex((prev) => {
+      if (d > threshold) {
+        if (prev === 0) return n - 1;
+        if (prev === 1) return 0;
+        return prev - 1;
+      }
+      if (d < -threshold) {
+        if (prev === n + 1) return 2;
+        if (prev === n) return n + 1;
+        return prev + 1;
+      }
+      return prev;
+    });
+    endTouch();
+  }, [urls.length, endTouch]);
+
+  const onTransitionEnd = useCallback(
+    (e: React.TransitionEvent<HTMLDivElement>) => {
+      if (!e.propertyName.toLowerCase().includes("transform")) return;
+      if (e.target !== e.currentTarget) return;
+      const n = urls.length;
+      if (n <= 1) return;
+      const prev = loopIndexRef.current;
+      if (prev === n + 1) {
+        setTransOff(true);
+        setLoopIndex(1);
+      } else if (prev === 0) {
+        setTransOff(true);
+        setLoopIndex(n);
+      }
+    },
+    [urls.length]
+  );
+
+  useLayoutEffect(() => {
+    if (!transOff) return;
+    const track = trackRef.current;
+    if (track) void track.offsetWidth;
+    let innerId: number | null = null;
+    const outerId = requestAnimationFrame(() => {
+      innerId = requestAnimationFrame(() => {
+        setTransOff(false);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(outerId);
+      if (innerId != null) cancelAnimationFrame(innerId);
+    };
+  }, [loopIndex, transOff]);
+
+  useEffect(() => {
+    endTouch();
+  }, [urlsKey, endTouch]);
+
+  loopIndexRef.current = loopIndex;
+
+  const usePx = urls.length > 1 && vpWidth > 0;
+  const trackWidthPx = usePx ? slideCount * vpWidth : undefined;
+  const translatePx = usePx ? -(loopIndex * vpWidth) + dragPx : 0;
+
+  const syncToLoopIndex = useCallback(
+    (idx: number) => {
+      setTransOff(false);
+      setLoopIndex(idx);
+      endTouch();
+    },
+    [endTouch]
+  );
+
+  return {
+    loopIndex,
+    setLoopIndex,
+    activeDot,
+    loopUrls,
+    slideCount,
+    usePx,
+    trackWidthPx,
+    translatePx,
+    transOff,
+    dragPx,
+    viewportRef,
+    trackRef,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    onTouchCancel: endTouch,
+    onTransitionEnd,
+    vpWidth,
+    syncToLoopIndex,
+  };
+}
+
+const VIEWER_AXIS_PX = 14;
+const VIEWER_DISMISS_PX = 115;
+const VIEWER_PULL_CAP = 360;
+
+function dampViewerPull(raw: number) {
+  const sign = Math.sign(raw);
+  const a = Math.abs(raw);
+  return sign * Math.min(a * 0.88, VIEWER_PULL_CAP);
+}
+
+export function ProgramPhotoExpandOverlay({
+  urls,
+  initialLoopIndex,
+  onClose,
+  lockBodyScroll = true,
+}: {
+  urls: string[];
+  initialLoopIndex: number;
+  onClose: () => void;
+  /** 이미 부모(예: 프로그램 모달)에서 body 스크롤을 막은 경우 false */
+  lockBodyScroll?: boolean;
+}) {
+  const measureActive = urls.length > 1;
+  const g = useProgramGalleryLoop(urls, measureActive);
+  const {
+    syncToLoopIndex,
+    viewportRef,
+    trackRef,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+    onTouchCancel,
+    onTransitionEnd,
+    usePx,
+    trackWidthPx,
+    translatePx,
+    transOff,
+    dragPx,
+    loopUrls,
+    vpWidth,
+    setLoopIndex,
+    activeDot,
+  } = g;
+
+  const [pullY, setPullY] = useState(0);
+  const [pullSnap, setPullSnap] = useState(false);
+  const pullYRef = useRef(0);
+  const dismissStartRef = useRef<{ x: number; y: number } | null>(null);
+  const axisRef = useRef<"n" | "h" | "v">("n");
+  const passiveCleanupRef = useRef<(() => void) | null>(null);
+  const mouseDownRef = useRef(false);
+
+  const assignViewportRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      passiveCleanupRef.current?.();
+      passiveCleanupRef.current = null;
+      (viewportRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      if (node) {
+        const prevent = (ev: TouchEvent) => {
+          if (axisRef.current === "v") ev.preventDefault();
+        };
+        node.addEventListener("touchmove", prevent, { passive: false });
+        passiveCleanupRef.current = () => node.removeEventListener("touchmove", prevent);
+      }
+    },
+    [viewportRef]
+  );
+
+  useEffect(() => {
+    if (!lockBodyScroll) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [lockBodyScroll]);
+
+  useLayoutEffect(() => {
+    if (urls.length <= 1) return;
+    syncToLoopIndex(initialLoopIndex);
+  }, [urls.length, initialLoopIndex, syncToLoopIndex]);
+
+  useEffect(() => {
+    pullYRef.current = 0;
+    setPullY(0);
+    axisRef.current = "n";
+    dismissStartRef.current = null;
+    mouseDownRef.current = false;
+  }, [urls.join("\0")]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(
+    () => () => {
+      passiveCleanupRef.current?.();
+      passiveCleanupRef.current = null;
+    },
+    []
+  );
+
+  const onBackdrop = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget) onClose();
+    },
+    [onClose]
+  );
+
+  const finishVerticalPull = useCallback(() => {
+    if (Math.abs(pullYRef.current) >= VIEWER_DISMISS_PX) {
+      pullYRef.current = 0;
+      setPullY(0);
+      onClose();
+      return;
+    }
+    setPullSnap(true);
+    pullYRef.current = 0;
+    setPullY(0);
+    window.setTimeout(() => setPullSnap(false), 320);
+  }, [onClose]);
+
+  const onPullTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    setPullSnap(false);
+    dismissStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    axisRef.current = "n";
+  }, []);
+
+  const onPullTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!dismissStartRef.current || e.touches.length !== 1) return;
+      const x = e.touches[0].clientX;
+      const y = e.touches[0].clientY;
+      const dx = x - dismissStartRef.current.x;
+      const dy = y - dismissStartRef.current.y;
+
+      if (axisRef.current === "n") {
+        if (Math.abs(dx) < VIEWER_AXIS_PX && Math.abs(dy) < VIEWER_AXIS_PX) return;
+        if (Math.abs(dy) >= Math.abs(dx)) {
+          axisRef.current = "v";
+        } else {
+          axisRef.current = "h";
+          if (urls.length > 1) onTouchStart(e);
+        }
+      }
+
+      if (axisRef.current === "v") {
+        const d = dampViewerPull(dy);
+        pullYRef.current = d;
+        setPullY(d);
+        return;
+      }
+      if (axisRef.current === "h" && urls.length > 1) {
+        onTouchMove(e);
+      }
+    },
+    [urls.length, onTouchMove, onTouchStart]
+  );
+
+  const onPullTouchEnd = useCallback(() => {
+    if (axisRef.current === "v") {
+      finishVerticalPull();
+    } else if (axisRef.current === "h" && urls.length > 1) {
+      onTouchEnd();
+    }
+    dismissStartRef.current = null;
+    axisRef.current = "n";
+  }, [finishVerticalPull, onTouchEnd, urls.length]);
+
+  const onPullTouchCancel = useCallback(() => {
+    if (axisRef.current === "v") {
+      finishVerticalPull();
+    } else if (axisRef.current === "h" && urls.length > 1) {
+      onTouchCancel();
+    }
+    dismissStartRef.current = null;
+    axisRef.current = "n";
+  }, [finishVerticalPull, onTouchCancel, urls.length]);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    mouseDownRef.current = true;
+    setPullSnap(false);
+    dismissStartRef.current = { x: e.clientX, y: e.clientY };
+    axisRef.current = "n";
+  }, []);
+
+  const onMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!mouseDownRef.current || !dismissStartRef.current) return;
+      const dx = e.clientX - dismissStartRef.current.x;
+      const dy = e.clientY - dismissStartRef.current.y;
+      if (axisRef.current === "n") {
+        if (Math.abs(dx) < VIEWER_AXIS_PX && Math.abs(dy) < VIEWER_AXIS_PX) return;
+        if (Math.abs(dy) >= Math.abs(dx)) axisRef.current = "v";
+        else {
+          axisRef.current = "h";
+          mouseDownRef.current = false;
+          dismissStartRef.current = null;
+          return;
+        }
+      }
+      if (axisRef.current === "v") {
+        const d = dampViewerPull(dy);
+        pullYRef.current = d;
+        setPullY(d);
+      }
+    },
+    []
+  );
+
+  const onMouseEnd = useCallback(() => {
+    if (!mouseDownRef.current) return;
+    mouseDownRef.current = false;
+    if (axisRef.current === "v") finishVerticalPull();
+    dismissStartRef.current = null;
+    axisRef.current = "n";
+  }, [finishVerticalPull]);
+
+  if (urls.length === 0) return null;
+
+  const viewportHandlers = {
+    ref: assignViewportRef,
+    onTouchStart: onPullTouchStart,
+    onTouchMove: onPullTouchMove,
+    onTouchEnd: onPullTouchEnd,
+    onTouchCancel: onPullTouchCancel,
+    onMouseDown,
+    onMouseMove,
+    onMouseUp: onMouseEnd,
+    onMouseLeave: onMouseEnd,
+  };
+
+  return (
+    <ViewerOverlay
+      role="dialog"
+      aria-modal="true"
+      aria-label="프로그램 사진 크게 보기"
+      onClick={onBackdrop}
+    >
+      <ViewerTopBar onClick={(e) => e.stopPropagation()}>
+        <ViewerCloseBtn type="button" onClick={onClose} aria-label="닫기">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </ViewerCloseBtn>
+      </ViewerTopBar>
+      <ViewerStage onClick={(e) => e.stopPropagation()}>
+        {urls.length <= 1 ? (
+          <ViewerViewport {...viewportHandlers}>
+            <ViewerPhotoPullWrap $snap={pullSnap} style={{ transform: `translate3d(0, ${pullY}px, 0)` }}>
+              <ViewerImgSingle src={urls[0]} alt="" draggable={false} />
+            </ViewerPhotoPullWrap>
+          </ViewerViewport>
+        ) : (
+          <>
+            <ViewerViewport {...viewportHandlers}>
+              <ViewerPhotoPullWrap $snap={pullSnap} style={{ transform: `translate3d(0, ${pullY}px, 0)` }}>
+                {!usePx ? (
+                  <ViewerImgSingle src={urls[0]} alt="" draggable={false} />
+                ) : (
+                  <ViewerTrack
+                    ref={trackRef}
+                    onTransitionEnd={onTransitionEnd}
+                    style={{
+                      width: trackWidthPx,
+                      height: "100%",
+                      transform: `translate3d(${translatePx}px, 0, 0)`,
+                      transition:
+                        dragPx !== 0 || transOff
+                          ? "none"
+                          : "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+                    }}
+                  >
+                    {loopUrls.map((url, i) => (
+                      <ViewerSlide key={`viewer-loop-${i}`} style={{ width: vpWidth, flexShrink: 0 }}>
+                        <ViewerSlideImg src={url} alt="" draggable={false} />
+                      </ViewerSlide>
+                    ))}
+                  </ViewerTrack>
+                )}
+              </ViewerPhotoPullWrap>
+            </ViewerViewport>
+            <ViewerNav>
+              {urls.map((_, i) => (
+                <DotBtn
+                  key={i}
+                  type="button"
+                  aria-label={`${i + 1}번째 사진으로 이동`}
+                  aria-current={i === activeDot ? "true" : undefined}
+                  $active={i === activeDot}
+                  onClick={() => setLoopIndex(i + 1)}
+                />
+              ))}
+            </ViewerNav>
+          </>
+        )}
+      </ViewerStage>
+    </ViewerOverlay>
+  );
+}
+
 interface PlaceProgramsModalProps {
   place: MeditationPlace;
   open: boolean;
@@ -375,25 +1020,11 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
 
   const [tab, setTab] = useState<"ongoing" | "past">("ongoing");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  /** 무한 슬라이드: 0 = 마지막 장 클론, 1..n = 실제, n+1 = 첫 장 클론 (n = galleryUrls.length) */
-  const [heroLoopIndex, setHeroLoopIndex] = useState(1);
-  /** 클론 경계 재정렬 시 한 프레임 transition 끔 */
-  const [heroTransOff, setHeroTransOff] = useState(false);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [reviewsListSheet, setReviewsListSheet] = useState<{
     heading: string;
     reviews: PlaceProgramReview[];
   } | null>(null);
-
-  const heroViewportRef = useRef<HTMLDivElement>(null);
-  const heroTrackRef = useRef<HTMLDivElement>(null);
-  const heroLoopIndexRef = useRef(1);
-  const heroTouchStartX = useRef<number | null>(null);
-  const heroDragPxRef = useRef(0);
-  /** 끝에서는 화면에 드래그를 보이지 않게 하고, 판정만 raw 거리로 함 */
-  const heroGestureRawRef = useRef(0);
-  const [heroDragPx, setHeroDragPx] = useState(0);
-  /** 픽셀 단위 슬라이드 폭 — % 반올림으로 클론↔실제 점프 티 나는 것 방지 */
-  const [heroVpWidth, setHeroVpWidth] = useState(0);
 
   const listForTab = tab === "ongoing" ? ongoing : past;
 
@@ -414,8 +1045,6 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
     } else {
       setSelectedId(null);
     }
-    setHeroTransOff(false);
-    setHeroLoopIndex(1);
   }, [open, initialProgramId, ongoing, past, programs]);
 
   const selected = programs.find((p) => p.id === selectedId) ?? null;
@@ -427,155 +1056,21 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
     return Array.from(new Set(all));
   }, [selected]);
 
-  useLayoutEffect(() => {
-    if (!open || galleryUrls.length <= 1) {
-      setHeroVpWidth(0);
-      return;
-    }
-    const el = heroViewportRef.current;
-    if (!el) return;
-
-    const measure = () => {
-      const w = el.getBoundingClientRect().width;
-      if (w > 0) setHeroVpWidth(w);
-    };
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [open, selectedId, galleryUrls.length]);
-
-  /** [마지막 클론, …원본…, 첫 클론] — 양끝이 이어진 것처럼 넘김 */
-  const heroLoopUrls = useMemo(() => {
-    const n = galleryUrls.length;
-    if (n <= 1) return galleryUrls;
-    return [galleryUrls[n - 1], ...galleryUrls, galleryUrls[0]];
-  }, [galleryUrls]);
-
-  const heroSlideCount = heroLoopUrls.length;
-
-  const heroActiveDot = useMemo(() => {
-    const n = galleryUrls.length;
-    if (n <= 1) return 0;
-    if (heroLoopIndex === 0) return n - 1;
-    if (heroLoopIndex === n + 1) return 0;
-    return heroLoopIndex - 1;
-  }, [galleryUrls.length, heroLoopIndex]);
-
-  const onHeroTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (galleryUrls.length <= 1) return;
-      heroTouchStartX.current = e.touches[0].clientX;
-      heroDragPxRef.current = 0;
-      heroGestureRawRef.current = 0;
-      setHeroDragPx(0);
-    },
-    [galleryUrls.length]
-  );
-
-  const onHeroTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (heroTouchStartX.current == null || galleryUrls.length <= 1) return;
-      const w = heroViewportRef.current?.offsetWidth ?? 320;
-      const n = galleryUrls.length;
-      let raw = e.touches[0].clientX - heroTouchStartX.current;
-      const max = w * 0.45;
-      raw = Math.max(-max, Math.min(max, raw));
-      heroGestureRawRef.current = raw;
-
-      const idx = heroLoopIndexRef.current;
-      let visual = raw;
-      if (idx === 1 && raw > 0) visual = 0;
-      if (idx === n && raw < 0) visual = 0;
-
-      heroDragPxRef.current = visual;
-      setHeroDragPx(visual);
-    },
-    [galleryUrls.length]
-  );
-
-  const endHeroTouch = useCallback(() => {
-    heroTouchStartX.current = null;
-    heroDragPxRef.current = 0;
-    heroGestureRawRef.current = 0;
-    setHeroDragPx(0);
-  }, []);
-
-  const onHeroTouchEnd = useCallback(() => {
-    if (heroTouchStartX.current == null || galleryUrls.length <= 1) {
-      endHeroTouch();
-      return;
-    }
-    const w = heroViewportRef.current?.offsetWidth ?? 320;
-    const threshold = Math.min(48, w * 0.14);
-    const d = heroGestureRawRef.current;
-    const n = galleryUrls.length;
-    setHeroLoopIndex((prev) => {
-      if (d > threshold) {
-        if (prev === 0) return n - 1;
-        if (prev === 1) return 0;
-        return prev - 1;
-      }
-      if (d < -threshold) {
-        if (prev === n + 1) return 2;
-        if (prev === n) return n + 1;
-        return prev + 1;
-      }
-      return prev;
-    });
-    endHeroTouch();
-  }, [galleryUrls.length, endHeroTouch]);
-
-  const handleHeroTrackTransitionEnd = useCallback(
-    (e: React.TransitionEvent<HTMLDivElement>) => {
-      if (!e.propertyName.toLowerCase().includes("transform")) return;
-      if (e.target !== e.currentTarget) return;
-      const n = galleryUrls.length;
-      if (n <= 1) return;
-      const prev = heroLoopIndexRef.current;
-      if (prev === n + 1) {
-        setHeroTransOff(true);
-        setHeroLoopIndex(1);
-      } else if (prev === 0) {
-        setHeroTransOff(true);
-        setHeroLoopIndex(n);
-      }
-    },
-    [galleryUrls.length]
-  );
-
-  useLayoutEffect(() => {
-    if (!heroTransOff) return;
-    const track = heroTrackRef.current;
-    if (track) {
-      void track.offsetWidth;
-    }
-    let innerId: number | null = null;
-    const outerId = requestAnimationFrame(() => {
-      innerId = requestAnimationFrame(() => {
-        setHeroTransOff(false);
-      });
-    });
-    return () => {
-      cancelAnimationFrame(outerId);
-      if (innerId != null) cancelAnimationFrame(innerId);
-    };
-  }, [heroLoopIndex, heroTransOff]);
+  const heroMeasureActive = open && !!selected && galleryUrls.length > 1;
+  const hero = useProgramGalleryLoop(galleryUrls, heroMeasureActive);
 
   useEffect(() => {
-    endHeroTouch();
-  }, [selectedId, endHeroTouch]);
-
-  useEffect(() => {
-    setHeroTransOff(false);
-    setHeroLoopIndex(1);
-    setHeroVpWidth(0);
-  }, [selectedId]);
+    if (!open) return;
+    hero.syncToLoopIndex(1);
+  }, [open, hero.syncToLoopIndex]);
 
   useEffect(() => {
     setReviewsListSheet(null);
   }, [selectedId]);
+
+  useEffect(() => {
+    if (!open) setImageViewerOpen(false);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -593,11 +1088,17 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (imageViewerOpen) {
+        e.preventDefault();
+        setImageViewerOpen(false);
+        return;
+      }
+      onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, imageViewerOpen]);
 
   const onOverlayClick = useCallback(
     (e: React.MouseEvent) => {
@@ -609,15 +1110,14 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
   const showCenterInstructors =
     place.venueKind === "명상센터" && (place.instructors?.length ?? 0) > 0;
 
-  heroLoopIndexRef.current = heroLoopIndex;
+  const openProgramImageViewer = useCallback(() => {
+    if (galleryUrls.length === 0) return;
+    setImageViewerOpen(true);
+  }, [galleryUrls.length]);
 
   if (!open || programs.length === 0) return null;
 
   const venueLabel = place.venueKind === "명상센터" ? "명상센터" : "명상지";
-
-  const heroUsePx = galleryUrls.length > 1 && heroVpWidth > 0;
-  const heroTrackWidthPx = heroUsePx ? heroSlideCount * heroVpWidth : undefined;
-  const heroTranslatePx = heroUsePx ? -(heroLoopIndex * heroVpWidth) + heroDragPx : 0;
 
   return (
     <>
@@ -643,51 +1143,57 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
           <>
             <Hero>
               {galleryUrls.length <= 1 ? (
-                <HeroImgSingle src={galleryUrls[0] ?? selected.imageUrl} alt="" draggable={false} />
+                <HeroClickable type="button" $clickable={galleryUrls.length > 0} onClick={openProgramImageViewer} aria-label="사진 크게 보기">
+                  <HeroImgSingle src={galleryUrls[0] ?? selected.imageUrl} alt="" draggable={false} />
+                </HeroClickable>
               ) : (
                 <>
-                  <HeroViewport
-                    ref={heroViewportRef}
-                    onTouchStart={onHeroTouchStart}
-                    onTouchMove={onHeroTouchMove}
-                    onTouchEnd={onHeroTouchEnd}
-                    onTouchCancel={endHeroTouch}
+                  <HeroClickable
+                    type="button"
+                    $clickable
+                    onClick={openProgramImageViewer}
+                    aria-label="사진 크게 보기"
                   >
-                    {!heroUsePx ? (
-                      <HeroImgSingle src={galleryUrls[0]} alt="" draggable={false} />
-                    ) : (
-                    <HeroTrack
-                      ref={heroTrackRef}
-                      onTransitionEnd={handleHeroTrackTransitionEnd}
-                      style={{
-                        width: heroTrackWidthPx,
-                        transform: `translate3d(${heroTranslatePx}px, 0, 0)`,
-                        transition:
-                          heroDragPx !== 0 || heroTransOff
-                            ? "none"
-                            : "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
-                      }}
+                    <HeroViewport
+                      ref={hero.viewportRef}
+                      onTouchStart={hero.onTouchStart}
+                      onTouchMove={hero.onTouchMove}
+                      onTouchEnd={hero.onTouchEnd}
+                      onTouchCancel={hero.onTouchCancel}
                     >
-                      {heroLoopUrls.map((url, i) => (
-                        <HeroSlide
-                          key={`hero-loop-${i}`}
-                          style={{ width: heroVpWidth, flexShrink: 0 }}
+                      {!hero.usePx ? (
+                        <HeroImgSingle src={galleryUrls[0]} alt="" draggable={false} />
+                      ) : (
+                        <HeroTrack
+                          ref={hero.trackRef}
+                          onTransitionEnd={hero.onTransitionEnd}
+                          style={{
+                            width: hero.trackWidthPx,
+                            transform: `translate3d(${hero.translatePx}px, 0, 0)`,
+                            transition:
+                              hero.dragPx !== 0 || hero.transOff
+                                ? "none"
+                                : "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+                          }}
                         >
-                          <HeroSlideImg src={url} alt="" draggable={false} />
-                        </HeroSlide>
-                      ))}
-                    </HeroTrack>
-                    )}
-                  </HeroViewport>
+                          {hero.loopUrls.map((url, i) => (
+                            <HeroSlide key={`hero-loop-${i}`} style={{ width: hero.vpWidth, flexShrink: 0 }}>
+                              <HeroSlideImg src={url} alt="" draggable={false} />
+                            </HeroSlide>
+                          ))}
+                        </HeroTrack>
+                      )}
+                    </HeroViewport>
+                  </HeroClickable>
                   <HeroNav>
                     {galleryUrls.map((_, i) => (
                       <DotBtn
                         key={i}
                         type="button"
                         aria-label={`${i + 1}번째 사진으로 이동`}
-                        aria-current={i === heroActiveDot ? "true" : undefined}
-                        $active={i === heroActiveDot}
-                        onClick={() => setHeroLoopIndex(i + 1)}
+                        aria-current={i === hero.activeDot ? "true" : undefined}
+                        $active={i === hero.activeDot}
+                        onClick={() => hero.setLoopIndex(i + 1)}
                       />
                     ))}
                   </HeroNav>
@@ -751,7 +1257,7 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
                   <ReviewSnippet key={`${r.author}-${i}`}>
                     <ReviewSnippetAuthor>
                       {r.author}
-                      {r.rating != null ? ` · ${"★".repeat(r.rating)}` : ""}
+                      {r.rating != null ? ` · ${formatFiveStarRow(r.rating)}` : ""}
                     </ReviewSnippetAuthor>
                     <ReviewSnippetText>{r.body}</ReviewSnippetText>
                   </ReviewSnippet>
@@ -797,7 +1303,7 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
                             <ReviewSnippet key={`${ins.id}-ir-${i}`}>
                               <ReviewSnippetAuthor>
                                 {r.author}
-                                {r.rating != null ? ` · ${"★".repeat(r.rating)}` : ""}
+                                {r.rating != null ? ` · ${formatFiveStarRow(r.rating)}` : ""}
                               </ReviewSnippetAuthor>
                               <ReviewSnippetText>{r.body}</ReviewSnippetText>
                             </ReviewSnippet>
@@ -835,6 +1341,14 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
       heading={reviewsListSheet?.heading}
       reviews={reviewsListSheet?.reviews ?? []}
     />
+    {imageViewerOpen && selected && galleryUrls.length > 0 && (
+      <ProgramPhotoExpandOverlay
+        urls={galleryUrls}
+        initialLoopIndex={hero.loopIndex}
+        onClose={() => setImageViewerOpen(false)}
+        lockBodyScroll={false}
+      />
+    )}
     </>
   );
 };

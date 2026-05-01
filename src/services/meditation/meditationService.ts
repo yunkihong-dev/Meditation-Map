@@ -98,7 +98,27 @@ export const applyFilters = (
         .toLowerCase()
         .split(/\s+/)
         .filter((t) => t.length > 0);
-      const haystack = `${place.name} ${place.shortDescription} ${place.address}`.toLowerCase();
+      const sectionText = (place.detailSections ?? [])
+        .map((s) => `${s.title} ${s.body}`)
+        .join(" ");
+      const programTitles = (place.programs ?? []).map((p) => p.title).join(" ");
+      const haystack = [
+        place.name,
+        place.shortDescription,
+        place.description,
+        place.address,
+        place.organization?.name,
+        place.duration,
+        place.admissionFee,
+        place.venueKind,
+        programTitles,
+        ...place.hashtags,
+        ...place.themes,
+        sectionText,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
       const allMatch = terms.every((term) => haystack.includes(term));
       if (!allMatch) {
         return false;

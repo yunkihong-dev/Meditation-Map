@@ -4,6 +4,7 @@ import styled from "styled-components";
 import ReviewsListSheet from "@/components/meditation/ReviewsListSheet";
 import { getExpertById } from "@/services/meditation/expertService";
 import { getPlaceById } from "@/services/meditation/meditationService";
+import { formatFiveStarRow } from "@/services/meditation/starRating";
 import type { MeditationExpert } from "@/services/meditation/types";
 
 function findProgramForClassLabel(expert: MeditationExpert, label: string) {
@@ -473,7 +474,7 @@ const MeditationExpertDetailPage = () => {
               <ReviewSnippet key={`${r.author}-${i}`}>
                 <ReviewSnippetAuthor>
                   {r.author}
-                  {r.rating != null ? ` · ${"★".repeat(r.rating)}` : ""}
+                  {r.rating != null ? ` · ${formatFiveStarRow(r.rating)}` : ""}
                 </ReviewSnippetAuthor>
                 <ReviewSnippetText>{r.body}</ReviewSnippetText>
               </ReviewSnippet>

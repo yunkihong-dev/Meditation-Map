@@ -13,7 +13,7 @@ type BBox = {
 };
 
 /** 앞에 올수록 먼저 매칭 (작은 광역·기초 먼저) */
-const REGION_BBOXES: BBox[] = [
+export const REGION_BBOXES: BBox[] = [
   { id: "KR-11", minLat: 37.41, maxLat: 37.7, minLng: 126.75, maxLng: 127.2 },
   { id: "KR-50", minLat: 36.4, maxLat: 36.62, minLng: 127.18, maxLng: 127.32 },
   { id: "KR-30", minLat: 36.2, maxLat: 36.55, minLng: 127.2, maxLng: 127.55 },

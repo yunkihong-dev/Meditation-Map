@@ -1,7 +1,8 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import FilterPanel from "@/components/meditation/FilterPanel";
+import KeywordSearchBar from "@/components/meditation/KeywordSearchBar";
 import PopularPlaceCard from "@/components/meditation/PopularPlaceCard";
 import PlaceListItem from "@/components/meditation/PlaceListItem";
 import RegionMap from "@/components/meditation/RegionMap";
@@ -29,78 +30,6 @@ const Page = styled.div`
 
   @media (max-width: 960px) {
     padding: 14px 10px 24px;
-  }
-`;
-
-const SearchBar = styled.form`
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 auto 20px;
-  background: ${({ theme }) => theme.colors.white};
-  border: 1px solid ${({ theme }) => theme.colors.primary200};
-  padding: 12px 44px 12px 16px;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  width: 75%;
-  max-width: 420px;
-  box-shadow: 0 2px 8px rgba(75, 0, 130, 0.06);
-  transition: width 0.35s ease, max-width 0.35s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-
-  &:focus-within {
-    width: 100%;
-    max-width: 100%;
-    border-color: ${({ theme }) => theme.colors.primary400};
-    box-shadow: 0 4px 16px rgba(75, 0, 130, 0.12);
-  }
-`;
-
-const SearchIcon = styled.span`
-  color: ${({ theme }) => theme.colors.primary600};
-  display: grid;
-  place-items: center;
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`;
-
-const SearchInput = styled.input`
-  flex: 1;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  font-size: 1.1rem;
-  outline: none;
-  color: ${({ theme }) => theme.colors.text900};
-
-  &::placeholder {
-    color: ${({ theme }) => theme.colors.text700};
-    opacity: 0.8;
-  }
-`;
-
-const ClearButton = styled.button`
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.text700};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: ${({ theme }) => theme.radii.pill};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.primary50};
-    color: ${({ theme }) => theme.colors.text900};
   }
 `;
 
@@ -459,37 +388,14 @@ const MeditationMainPage = () => {
     navigate("/meditation/map");
   };
 
-  const handleSearchSubmit = (e: FormEvent) => {
-    e.preventDefault();
-  };
-
   return (
     <Page>
-      <SearchBar onSubmit={handleSearchSubmit}>
-        <SearchIcon>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="7" />
-            <line x1="16.65" y1="16.65" x2="21" y2="21" />
-          </svg>
-        </SearchIcon>
-        <SearchInput
-          type="text"
-          placeholder={placeholder || "명상센터 검색"}
-          value={filters.keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-        />
-        {filters.keyword && (
-          <ClearButton
-            type="button"
-            onClick={() => setKeyword("")}
-            aria-label="검색어 삭제"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </ClearButton>
-        )}
-      </SearchBar>
+      <KeywordSearchBar
+        layout="main"
+        value={filters.keyword}
+        onChange={setKeyword}
+        placeholder={placeholder || "명상센터 검색"}
+      />
 
       {!isSearching ? (
         <MainContent>
@@ -532,6 +438,7 @@ const MeditationMainPage = () => {
             <FilterPanel
               filters={filters}
               availableTags={availableTags}
+              onChangeKeyword={setKeyword}
               onChangeCategory={setCategory}
               onToggleTag={toggleTag}
               onChangeSortBy={setSortBy}
@@ -577,6 +484,7 @@ const MeditationMainPage = () => {
             <FilterPanel
               filters={filters}
               availableTags={availableTags}
+              onChangeKeyword={setKeyword}
               onChangeCategory={setCategory}
               onToggleTag={toggleTag}
               onChangeSortBy={setSortBy}

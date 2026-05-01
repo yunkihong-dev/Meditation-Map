@@ -70,15 +70,43 @@ const ResetButton = styled.button`
 interface FilterPanelProps {
   filters: MeditationFilters;
   availableTags: string[];
+  onChangeKeyword: (keyword: string) => void;
   onChangeCategory: (value: Category) => void;
   onToggleTag: (tag: string) => void;
   onChangeSortBy: (value: SortBy) => void;
   onReset: () => void;
 }
 
+const KeywordInput = styled.input`
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border200};
+  font-size: 1rem;
+  outline: none;
+  color: ${({ theme }) => theme.colors.text900};
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.primary400};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primary100};
+  }
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.text700};
+    opacity: 0.85;
+  }
+`;
+
+const KeywordHint = styled.span`
+  font-size: 0.88rem;
+  color: ${({ theme }) => theme.colors.text700};
+  line-height: 1.4;
+`;
+
 const FilterPanel = ({
   filters,
   availableTags,
+  onChangeKeyword,
   onChangeCategory,
   onToggleTag,
   onChangeSortBy,
@@ -95,6 +123,20 @@ const FilterPanel = ({
 
   return (
     <Panel>
+      <Section>
+        <Label>검색</Label>
+        <KeywordInput
+          type="search"
+          enterKeyHint="search"
+          autoComplete="off"
+          placeholder="이름, 주소, 기관명, 태그, 소개글…"
+          value={filters.keyword}
+          onChange={(e) => onChangeKeyword(e.target.value)}
+          aria-label="검색어"
+        />
+        <KeywordHint>띄어쓰기로 여러 단어를 넣으면 모두 포함되는 장소만 보여요.</KeywordHint>
+      </Section>
+
       <Section>
         <Label>카테고리</Label>
         <TagList>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styled, { keyframes } from "styled-components";
+import { formatFiveStarRow } from "@/services/meditation/starRating";
 
 const DEFAULT_PAGE_SIZE = 5;
 
@@ -282,7 +283,7 @@ const ReviewsListSheet = ({
             ? null
             : pageSlice.map((r, i) => {
                 const ratingPart =
-                  r.rating != null ? ` · ${"★".repeat(r.rating)}` : "";
+                  r.rating != null ? ` · ${formatFiveStarRow(r.rating)}` : "";
                 const globalIdx = (safePage - 1) * pageSize + i;
                 return (
                   <ReviewEntry key={`${r.author}-${globalIdx}`}>

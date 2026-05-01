@@ -1,10 +1,32 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import ReactMarkdown from "react-markdown";
 import { getPlaceById, getRegionById } from "@/services/meditation/meditationService";
 import FavoriteButton from "@/components/meditation/FavoriteButton";
-import PlaceProgramsModal from "@/components/meditation/PlaceProgramsModal";
+import PlaceProgramsModal, {
+  ProgramPhotoExpandOverlay,
+  useProgramGalleryLoop,
+} from "@/components/meditation/PlaceProgramsModal";
+import type { MeditationPlace } from "@/services/meditation/types";
+
+function buildPlaceHeroGalleryUrls(place: MeditationPlace): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (u: string | undefined) => {
+    const s = u?.trim();
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    out.push(s);
+  };
+  push(place.thumbnailUrl);
+  for (const p of place.programs ?? []) {
+    if (p.status !== "ongoing") continue;
+    push(p.imageUrl);
+    for (const u of p.imageUrls ?? []) push(u);
+  }
+  return out;
+}
 
 const Page = styled.div`
   max-width: 1200px;
@@ -57,15 +79,114 @@ const HeaderTitle = styled.h1`
   margin: 0;
 `;
 
-const HeroImage = styled.div`
+const HeroImage = styled.button`
+  display: block;
   width: 100%;
   height: 280px;
+  padding: 0;
+  border: none;
+  background: ${({ theme }) => theme.colors.bg100};
   overflow: hidden;
+  cursor: zoom-in;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: -2px;
+  }
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+`;
+
+const DetailHeroCarousel = styled.div`
+  position: relative;
+  width: 100%;
+  height: 280px;
+  background: ${({ theme }) => theme.colors.bg100};
+`;
+
+const DetailHeroZoomBtn = styled.button`
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  cursor: zoom-in;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: -2px;
+  }
+`;
+
+const DetailHeroViewportRef = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+`;
+
+const DetailHeroTrack = styled.div`
+  display: flex;
+  height: 100%;
+  will-change: transform;
+`;
+
+const DetailHeroSlide = styled.div`
+  flex-shrink: 0;
+  height: 100%;
+`;
+
+const DetailHeroSlideImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+`;
+
+const DetailHeroNav = styled.div`
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
+  }
+`;
+
+const DetailHeroDot = styled.button<{ $active?: boolean }>`
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: ${({ $active }) => ($active ? "#fff" : "rgba(255,255,255,0.45)")};
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
   }
 `;
 
@@ -130,6 +251,35 @@ const ProgramsPreviewHeading = styled.h3`
   font-weight: 700;
 `;
 
+const ProgramsPreviewTitleBlock = styled.div`
+  min-width: 0;
+`;
+
+const ProgramsPreviewSubline = styled.p`
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text700};
+`;
+
+const ProgramsPastOnlyEntry = styled.button`
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid ${({ theme }) => theme.colors.border200};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.bg100};
+  color: ${({ theme }) => theme.colors.text900};
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 2px;
+  }
+`;
+
 const VenueKindTag = styled.span`
   font-size: 0.75rem;
   font-weight: 700;
@@ -181,23 +331,6 @@ const ProgramThumbCaption = styled.span`
   line-height: 1.35;
   color: ${({ theme }) => theme.colors.text900};
   background: ${({ theme }) => theme.colors.white};
-`;
-
-const OpenProgramsModalBtn = styled.button`
-  width: 100%;
-  margin-top: 4px;
-  padding: 14px 18px;
-  border: none;
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: linear-gradient(
-    135deg,
-    ${({ theme }) => theme.colors.primary500} 0%,
-    ${({ theme }) => theme.colors.primary700} 100%
-  );
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
 `;
 
 const AccordionWrap = styled.div``;
@@ -564,6 +697,17 @@ const MeditationDetailPage = () => {
   const [addressCopied, setAddressCopied] = useState(false);
   const [programsModalOpen, setProgramsModalOpen] = useState(false);
   const [modalInitialProgramId, setModalInitialProgramId] = useState<string | undefined>();
+  const [photoExpand, setPhotoExpand] = useState<{
+    urls: string[];
+    initialLoopIndex: number;
+  } | null>(null);
+
+  const heroGalleryUrls = useMemo(
+    () => (place ? buildPlaceHeroGalleryUrls(place) : []),
+    [place]
+  );
+  const heroMeasureActive = Boolean(place) && heroGalleryUrls.length > 1;
+  const detailHero = useProgramGalleryLoop(heroGalleryUrls, heroMeasureActive);
 
   const copyAddress = () => {
     if (!place) return;
@@ -590,6 +734,7 @@ const MeditationDetailPage = () => {
       const map = new naver.maps.Map(mapEl, {
         center: defaultCenter,
         zoom: 17,
+        scrollWheel: true,
         mapTypeControl: true,
       });
 
@@ -688,6 +833,11 @@ const MeditationDetailPage = () => {
     };
   }, [place]);
 
+  useEffect(() => {
+    if (!place) return;
+    detailHero.syncToLoopIndex(1);
+  }, [place?.id, detailHero.syncToLoopIndex]);
+
   if (!place) {
     return (
       <Page>
@@ -718,8 +868,10 @@ const MeditationDetailPage = () => {
     );
   }
 
-  const programList = place.programs ?? [];
-  const hasProgramModal = programList.length > 0;
+  const allPrograms = place.programs ?? [];
+  const ongoingPrograms = allPrograms.filter((p) => p.status === "ongoing");
+  const pastPrograms = allPrograms.filter((p) => p.status === "past");
+  const hasProgramModal = allPrograms.length > 0;
   const venueLabel = place.venueKind === "명상센터" ? "명상센터" : "명상지";
 
   return (
@@ -738,9 +890,79 @@ const MeditationDetailPage = () => {
         <HeaderTitle>상세 페이지</HeaderTitle>
       </Header>
 
-      <HeroImage>
-        <img src={place.thumbnailUrl} alt={`${place.name} 대표 이미지`} />
-      </HeroImage>
+      {heroGalleryUrls.length <= 1 ? (
+        <HeroImage
+          type="button"
+          onClick={() =>
+            setPhotoExpand({
+              urls: heroGalleryUrls.length === 1 ? heroGalleryUrls : [place.thumbnailUrl],
+              initialLoopIndex: 1,
+            })
+          }
+          aria-label={`${place.name} 대표 사진 크게 보기`}
+        >
+          <img src={heroGalleryUrls[0] ?? place.thumbnailUrl} alt={`${place.name} 대표 이미지`} />
+        </HeroImage>
+      ) : (
+        <DetailHeroCarousel>
+          <DetailHeroZoomBtn
+            type="button"
+            onClick={() =>
+              setPhotoExpand({
+                urls: heroGalleryUrls,
+                initialLoopIndex: detailHero.loopIndex,
+              })
+            }
+            aria-label={`${place.name} 사진 크게 보기`}
+          >
+            <DetailHeroViewportRef
+              ref={detailHero.viewportRef}
+              onTouchStart={detailHero.onTouchStart}
+              onTouchMove={detailHero.onTouchMove}
+              onTouchEnd={detailHero.onTouchEnd}
+              onTouchCancel={detailHero.onTouchCancel}
+            >
+              {!detailHero.usePx ? (
+                <DetailHeroSlideImg src={heroGalleryUrls[0]} alt="" draggable={false} />
+              ) : (
+                <DetailHeroTrack
+                  ref={detailHero.trackRef}
+                  onTransitionEnd={detailHero.onTransitionEnd}
+                  style={{
+                    width: detailHero.trackWidthPx,
+                    transform: `translate3d(${detailHero.translatePx}px, 0, 0)`,
+                    transition:
+                      detailHero.dragPx !== 0 || detailHero.transOff
+                        ? "none"
+                        : "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
+                >
+                  {detailHero.loopUrls.map((url, i) => (
+                    <DetailHeroSlide
+                      key={`detail-hero-${i}`}
+                      style={{ width: detailHero.vpWidth, flexShrink: 0 }}
+                    >
+                      <DetailHeroSlideImg src={url} alt="" draggable={false} />
+                    </DetailHeroSlide>
+                  ))}
+                </DetailHeroTrack>
+              )}
+            </DetailHeroViewportRef>
+          </DetailHeroZoomBtn>
+          <DetailHeroNav>
+            {heroGalleryUrls.map((_, i) => (
+              <DetailHeroDot
+                key={i}
+                type="button"
+                aria-label={`${i + 1}번째 사진으로 이동`}
+                aria-current={i === detailHero.activeDot ? "true" : undefined}
+                $active={i === detailHero.activeDot}
+                onClick={() => detailHero.setLoopIndex(i + 1)}
+              />
+            ))}
+          </DetailHeroNav>
+        </DetailHeroCarousel>
+      )}
 
       <Content>
         <TitleRow>
@@ -759,33 +981,41 @@ const MeditationDetailPage = () => {
         {hasProgramModal && (
           <ProgramsPreviewSection>
             <ProgramsPreviewLabel>
-              <ProgramsPreviewHeading>프로그램 · 후기</ProgramsPreviewHeading>
+              <ProgramsPreviewTitleBlock>
+                <ProgramsPreviewHeading>프로그램 · 후기</ProgramsPreviewHeading>
+                <ProgramsPreviewSubline>
+                  진행 중 {ongoingPrograms.length} · 지난 {pastPrograms.length}
+                </ProgramsPreviewSubline>
+              </ProgramsPreviewTitleBlock>
               <VenueKindTag>{venueLabel}</VenueKindTag>
             </ProgramsPreviewLabel>
-            <ProgramsPhotoStrip aria-label="프로그램 사진">
-              {programList.map((p) => (
-                <ProgramThumbBtn
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setModalInitialProgramId(p.id);
-                    setProgramsModalOpen(true);
-                  }}
-                >
-                  <img src={p.imageUrl} alt="" draggable={false} />
-                  <ProgramThumbCaption>{p.title}</ProgramThumbCaption>
-                </ProgramThumbBtn>
-              ))}
-            </ProgramsPhotoStrip>
-            <OpenProgramsModalBtn
-              type="button"
-              onClick={() => {
-                setModalInitialProgramId(undefined);
-                setProgramsModalOpen(true);
-              }}
-            >
-              사진으로 프로그램 열람하기
-            </OpenProgramsModalBtn>
+            {ongoingPrograms.length > 0 ? (
+              <ProgramsPhotoStrip aria-label="진행 중인 프로그램 사진">
+                {ongoingPrograms.map((p) => (
+                  <ProgramThumbBtn
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setModalInitialProgramId(p.id);
+                      setProgramsModalOpen(true);
+                    }}
+                  >
+                    <img src={p.imageUrl} alt="" draggable={false} />
+                    <ProgramThumbCaption>{p.title}</ProgramThumbCaption>
+                  </ProgramThumbBtn>
+                ))}
+              </ProgramsPhotoStrip>
+            ) : (
+              <ProgramsPastOnlyEntry
+                type="button"
+                onClick={() => {
+                  setModalInitialProgramId(undefined);
+                  setProgramsModalOpen(true);
+                }}
+              >
+                지난 프로그램·후기 보기 ({pastPrograms.length})
+              </ProgramsPastOnlyEntry>
+            )}
           </ProgramsPreviewSection>
         )}
 
@@ -904,6 +1134,13 @@ const MeditationDetailPage = () => {
           open={programsModalOpen}
           onClose={() => setProgramsModalOpen(false)}
           initialProgramId={modalInitialProgramId}
+        />
+      )}
+      {photoExpand && (
+        <ProgramPhotoExpandOverlay
+          urls={photoExpand.urls}
+          initialLoopIndex={photoExpand.initialLoopIndex}
+          onClose={() => setPhotoExpand(null)}
         />
       )}
     </Page>
