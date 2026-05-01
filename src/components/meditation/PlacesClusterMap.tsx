@@ -143,10 +143,10 @@ const MARKER_H = SIGNPOST_SIGN_H + SIGNPOST_POLE_H;
 const PIN_TIP_X = SIGNPOST_W / 2;
 const PIN_TIP_Y = MARKER_H;
 
-/* 채도 높은 바이올렛 — 지도에서 잘 들어오도록 */
-const SIGN_BOARD = "#7c3aed";
-const SIGN_POLE = "#6d28d9";
-const CLUSTER_FILL = "#7c3aed";
+/* 한 톤 더 밝은 바이올렛 */
+const SIGN_BOARD = "#a78bfa";
+const SIGN_POLE = "#8b5cf6";
+const CLUSTER_FILL = "#a78bfa";
 
 /**
  * 단일 장소: 표지판(직사각형 안에 이름) + 기둥. 좌표는 기둥 끝.
