@@ -134,32 +134,31 @@ function escapeHtmlText(s: string): string {
 }
 
 /** 간판 판(표지판 느낌) + 아래 막대 — 앵커는 막대 끝 */
-const SIGNPOST_W = 132;
-const SIGNPOST_SIGN_H = 50;
-const SIGNPOST_POLE_H = 20;
-const SIGNPOST_POLE_W = 11;
+const SIGNPOST_W = 88;
+const SIGNPOST_SIGN_H = 34;
+const SIGNPOST_POLE_H = 13;
+const SIGNPOST_POLE_W = 7;
 const MARKER_W = SIGNPOST_W;
-const MARKER_H = SIGNPOST_SIGN_H + SIGNPOST_POLE_H - 3;
+const MARKER_H = SIGNPOST_SIGN_H + SIGNPOST_POLE_H - 2;
 const PIN_TIP_X = SIGNPOST_W / 2;
 const PIN_TIP_Y = MARKER_H;
 
-const SIGN_BOARD = "#4B0082";
-/* theme.primary800 — 판과 톤 맞는 기둥 */
-const SIGN_POLE = "#2f0051";
-/* theme.primary900 — 표지/글 윤곽 */
-const SIGN_OUTLINE = "#22003a";
-const CLUSTER_FILL = "#4B0082";
+/* 채도 높은 바이올렛 — 지도에서 잘 들어오도록 */
+const SIGN_BOARD = "#7c3aed";
+const SIGN_POLE = "#6d28d9";
+const SIGN_OUTLINE = "#4c1d95";
+const CLUSTER_FILL = "#7c3aed";
 
 /**
  * 단일 장소: 표지판(직사각형 안에 이름) + 기둥. 좌표는 기둥 끝.
  */
 function buildSinglePinHtml(_placeId: string, placeName: string): string {
   const name = escapeHtmlText(placeName);
-  return `<div style="width:${MARKER_W}px;height:${MARKER_H}px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 4px 5px rgba(0,0,0,.28));pointer-events:auto" aria-hidden="true">
-<div style="width:100%;height:${SIGNPOST_SIGN_H}px;box-sizing:border-box;background:${SIGN_BOARD};border:3px solid ${SIGN_OUTLINE};border-radius:10px;padding:5px 8px;display:flex;align-items:center;justify-content:center">
-<span style="display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;box-sizing:border-box;margin:0;color:#fff;font-size:11px;font-weight:800;line-height:1.2;text-align:center;word-break:keep-all;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:-0.02em;text-shadow:1px 1px 0 ${SIGN_OUTLINE},-1px -1px 0 ${SIGN_OUTLINE},1px -1px 0 ${SIGN_OUTLINE},-1px 1px 0 ${SIGN_OUTLINE},0 2px 0 rgba(0,0,0,.2)">${name}</span>
+  return `<div style="width:${MARKER_W}px;height:${MARKER_H}px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.24));pointer-events:auto" aria-hidden="true">
+<div style="width:100%;height:${SIGNPOST_SIGN_H}px;box-sizing:border-box;background:${SIGN_BOARD};border:2px solid ${SIGN_OUTLINE};border-radius:6px;padding:3px 4px;display:flex;align-items:center;justify-content:center">
+<span style="display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;box-sizing:border-box;margin:0;color:#fff;font-size:10px;font-weight:800;line-height:1.2;text-align:center;word-break:keep-all;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:-0.02em;text-shadow:1px 1px 0 ${SIGN_OUTLINE},-1px -1px 0 ${SIGN_OUTLINE},1px -1px 0 ${SIGN_OUTLINE},-1px 1px 0 ${SIGN_OUTLINE},0 1px 0 rgba(0,0,0,.2)">${name}</span>
 </div>
-<div style="width:${SIGNPOST_POLE_W}px;height:${SIGNPOST_POLE_H}px;box-sizing:border-box;background:${SIGN_POLE};border:3px solid ${SIGN_OUTLINE};border-top:none;border-radius:0 0 5px 5px;margin-top:-3px;flex-shrink:0"></div>
+<div style="width:${SIGNPOST_POLE_W}px;height:${SIGNPOST_POLE_H}px;box-sizing:border-box;background:${SIGN_POLE};border:2px solid ${SIGN_OUTLINE};border-top:none;border-radius:0 0 3px 3px;margin-top:-2px;flex-shrink:0"></div>
 </div>`;
 }
 
@@ -167,16 +166,16 @@ function buildSinglePinHtml(_placeId: string, placeName: string): string {
 function buildClusterHtml(count: number, clusterKey: string): string {
   const fid = `clf_${safeMarkerId(clusterKey)}`;
   const label = count > 99 ? "99+" : String(count);
-  const fontSize = count > 99 ? 11 : count > 9 ? 13 : 15;
-  return `<div style="width:52px;height:52px;pointer-events:auto" aria-hidden="true">
-<svg width="52" height="52" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+  const fontSize = count > 99 ? 10 : count > 9 ? 11 : 13;
+  return `<div style="width:38px;height:38px;pointer-events:auto" aria-hidden="true">
+<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
 <defs>
 <filter id="${fid}" x="-40%" y="-40%" width="180%" height="180%">
-<feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#2f0051" flood-opacity="0.42"/>
+<feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#2f0051" flood-opacity="0.42"/>
 </filter>
 </defs>
-<circle cx="26" cy="26" r="22" fill="${CLUSTER_FILL}" filter="url(#${fid})"/>
-<text x="26" y="26" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="${fontSize}" font-weight="800" font-family="system-ui,-apple-system,'Segoe UI',sans-serif">${label}</text>
+<circle cx="19" cy="19" r="15" fill="${CLUSTER_FILL}" filter="url(#${fid})"/>
+<text x="19" y="19" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="${fontSize}" font-weight="800" font-family="system-ui,-apple-system,'Segoe UI',sans-serif">${label}</text>
 </svg>
 </div>`;
 }
