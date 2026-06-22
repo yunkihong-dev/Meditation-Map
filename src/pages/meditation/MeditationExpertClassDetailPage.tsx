@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
-import { getExpertById } from "@/services/meditation/expertService";
+import { fetchExpertById } from "@/services/meditation/expertService";
+import type { MeditationExpert } from "@/services/meditation/types";
 
 const Page = styled.div`
   max-width: 720px;
@@ -107,8 +109,44 @@ const EmptyText = styled.p`
 const MeditationExpertClassDetailPage = () => {
   const navigate = useNavigate();
   const { expertId, programId } = useParams();
-  const expert = expertId ? getExpertById(expertId) : undefined;
+  const [expert, setExpert] = useState<MeditationExpert | undefined>();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!expertId) {
+      setExpert(undefined);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    void fetchExpertById(expertId).then((e) => {
+      if (cancelled) return;
+      setExpert(e ?? undefined);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [expertId]);
+
   const program = expert?.programs.find((p) => p.id === programId);
+
+  if (loading) {
+    return (
+      <Page>
+        <Header>
+          <BackButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </BackButton>
+          <HeaderTitle>클래스</HeaderTitle>
+        </Header>
+        <EmptyText>불러오는 중…</EmptyText>
+      </Page>
+    );
+  }
 
   if (!expert || !program) {
     return (

@@ -1,30 +1,12 @@
-import expertsSeed from "@/data/meditation/experts.json";
 import type { MeditationExpert } from "../types";
-import { getMeditationApiBaseUrl } from "./apiConfig";
+import { requireMeditationApiBaseUrl } from "./apiConfig";
 
 export type ExpertDto = MeditationExpert;
-
-const EXPERTS_SEED = expertsSeed as ExpertDto[];
 
 export interface ExpertsRepository {
   findAll(): Promise<ExpertDto[]>;
   findById(id: string): Promise<ExpertDto | null>;
   findByRegionId(regionId: string): Promise<ExpertDto[]>;
-}
-
-class LocalExpertsRepository implements ExpertsRepository {
-  async findAll(): Promise<ExpertDto[]> {
-    return [...EXPERTS_SEED];
-  }
-
-  async findById(id: string): Promise<ExpertDto | null> {
-    return EXPERTS_SEED.find((e) => e.id === id) ?? null;
-  }
-
-  async findByRegionId(regionId: string): Promise<ExpertDto[]> {
-    if (regionId === "all") return [...EXPERTS_SEED];
-    return EXPERTS_SEED.filter((e) => e.regionIds.includes(regionId));
-  }
 }
 
 class HttpError extends Error {
@@ -69,14 +51,9 @@ let cached: ExpertsRepository | null = null;
 
 export function getExpertsRepository(): ExpertsRepository {
   if (!cached) {
-    const base = getMeditationApiBaseUrl();
-    cached = base ? new HttpExpertsRepository(base) : new LocalExpertsRepository();
+    cached = new HttpExpertsRepository(requireMeditationApiBaseUrl());
   }
   return cached;
-}
-
-export function getExpertsTableSnapshot(): ExpertDto[] {
-  return [...EXPERTS_SEED];
 }
 
 export const fetchExperts = (): Promise<ExpertDto[]> => getExpertsRepository().findAll();

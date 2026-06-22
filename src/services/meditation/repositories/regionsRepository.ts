@@ -1,19 +1,10 @@
-import regionsSeed from "@/data/meditation/regions.json";
 import type { Region } from "../types";
-import { getMeditationApiBaseUrl } from "./apiConfig";
+import { requireMeditationApiBaseUrl } from "./apiConfig";
 
 export type RegionDto = Region;
 
-const REGIONS_SEED = regionsSeed as RegionDto[];
-
 export interface RegionsRepository {
   findAll(): Promise<RegionDto[]>;
-}
-
-class LocalRegionsRepository implements RegionsRepository {
-  async findAll(): Promise<RegionDto[]> {
-    return [...REGIONS_SEED];
-  }
 }
 
 class HttpError extends Error {
@@ -44,14 +35,9 @@ let cached: RegionsRepository | null = null;
 
 export function getRegionsRepository(): RegionsRepository {
   if (!cached) {
-    const base = getMeditationApiBaseUrl();
-    cached = base ? new HttpRegionsRepository(base) : new LocalRegionsRepository();
+    cached = new HttpRegionsRepository(requireMeditationApiBaseUrl());
   }
   return cached;
-}
-
-export function getRegionsTableSnapshot(): RegionDto[] {
-  return [...REGIONS_SEED];
 }
 
 export const fetchRegions = (): Promise<RegionDto[]> => getRegionsRepository().findAll();

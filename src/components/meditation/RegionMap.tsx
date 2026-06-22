@@ -53,12 +53,18 @@ const MapWrapper = styled.div<{ $maxMapHeight?: string }>`
 
 interface RegionMapProps {
   activeRegionId?: string;
+  activeRegionIds?: string[];
   onSelectRegion: (regionId: string, event?: MouseEvent) => void;
   /** 뷰포트 안에 맞추기 위한 지도+SVG 최대 높이 (CSS 길이) */
   maxMapHeight?: string;
 }
 
-const RegionMap = ({ activeRegionId, onSelectRegion, maxMapHeight }: RegionMapProps) => {
+const RegionMap = ({
+  activeRegionId,
+  activeRegionIds,
+  onSelectRegion,
+  maxMapHeight,
+}: RegionMapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const hoveredIdRef = useRef<string | null>(null);
 
@@ -153,8 +159,9 @@ const RegionMap = ({ activeRegionId, onSelectRegion, maxMapHeight }: RegionMapPr
     };
   }, [onSelectRegion]);
 
-  const displayRegionId =
-    activeRegionId === "KR-47" ? "KR-48" : activeRegionId;
+  const displayRegionIds = (activeRegionIds ?? (activeRegionId ? [activeRegionId] : [])).map(
+    (id) => (id === "KR-47" ? "KR-48" : id)
+  );
 
   useEffect(() => {
     const container = containerRef.current;
@@ -163,13 +170,13 @@ const RegionMap = ({ activeRegionId, onSelectRegion, maxMapHeight }: RegionMapPr
     const paths = container.querySelectorAll<SVGPathElement>("svg path.land");
     paths.forEach((path) => {
       const regionId = path.getAttribute("id");
-      if (regionId === displayRegionId) {
+      if (regionId && displayRegionIds.includes(regionId)) {
         path.classList.add("is-active");
       } else {
         path.classList.remove("is-active");
       }
     });
-  }, [displayRegionId]);
+  }, [displayRegionIds.join("|")]);
 
   return (
     <MapWrapper

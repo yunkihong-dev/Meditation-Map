@@ -9,10 +9,10 @@ declare global {
         Marker: new (options: { position: unknown; map: unknown }) => unknown;
         Service?: {
           geocode: (
-            opts: { address: string },
+            opts: { query: string },
             cb: (
-              status: string,
-              response: { result?: { items?: Array<{ point: { x: number; y: number } }> } }
+              status: string | number,
+              response: { v2?: { addresses?: Array<{ x: string; y: string; roadAddress?: string; jibunAddress?: string }> } }
             ) => void
           ) => void;
           Status?: { OK: string; ERROR: string };

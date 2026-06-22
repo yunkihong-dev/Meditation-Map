@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import type { MeditationPlace } from "@/services/meditation/types";
+import { listPlaceThumbnailUrl } from "@/services/meditation/listImageUrl";
 import { getRegionById } from "@/services/meditation/meditationService";
 import FavoriteButton from "./FavoriteButton";
 
@@ -121,7 +122,13 @@ const PlaceListItem = ({ place }: PlaceListItemProps) => {
     <Card>
       <CardLink to={`/meditation/place/${place.id}`}>
         <Thumbnail>
-          <img src={place.thumbnailUrl} alt={`${place.name} 썸네일`} />
+          <img
+            src={listPlaceThumbnailUrl(place.thumbnailUrl)}
+            alt={`${place.name} 썸네일`}
+            loading="lazy"
+            decoding="async"
+            sizes="(min-width: 961px) 220px, 100vw"
+          />
         </Thumbnail>
         <Body>
           <Title>{place.name}</Title>

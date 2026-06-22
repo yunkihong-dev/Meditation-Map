@@ -2,31 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import ReactMarkdown from "react-markdown";
-import { getPlaceById, getRegionById } from "@/services/meditation/meditationService";
+import { MarkdownText } from "@/components/common/MarkdownText";
+import { fetchPlaceById, getRegionById } from "@/services/meditation/meditationService";
 import FavoriteButton from "@/components/meditation/FavoriteButton";
 import PlaceProgramsModal, {
   ProgramPhotoExpandOverlay,
   useProgramGalleryLoop,
 } from "@/components/meditation/PlaceProgramsModal";
 import type { MeditationPlace } from "@/services/meditation/types";
+import { buildPlaceHeroGalleryUrls } from "@/services/meditation/placeGallery";
 
-function buildPlaceHeroGalleryUrls(place: MeditationPlace): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  const push = (u: string | undefined) => {
-    const s = u?.trim();
-    if (!s || seen.has(s)) return;
-    seen.add(s);
-    out.push(s);
-  };
-  push(place.thumbnailUrl);
-  for (const p of place.programs ?? []) {
-    if (p.status !== "ongoing") continue;
-    push(p.imageUrl);
-    for (const u of p.imageUrls ?? []) push(u);
-  }
-  return out;
-}
+export { buildPlaceHeroGalleryUrls };
 
 const Page = styled.div`
   max-width: 1200px;
@@ -222,7 +208,7 @@ const LocationRow = styled.div`
   }
 `;
 
-const Description = styled.p`
+const Description = styled.div`
   font-size: 1.05rem;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.text700};
@@ -653,17 +639,52 @@ const FACILITY_LABELS: Record<string, string> = {
   tea: "Tea",
 };
 
-const defaultFacilities = ["wifi", "parking", "tea"];
 
 const MeditationDetailPage = () => {
   const navigate = useNavigate();
   const { placeId } = useParams();
-  const place = placeId ? getPlaceById(placeId) : undefined;
+  const [place, setPlace] = useState<MeditationPlace | undefined>();
+  const [detailLoading, setDetailLoading] = useState(true);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!placeId) {
+      setPlace(undefined);
+      setDetailLoading(false);
+      setDetailError(null);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    setDetailError(null);
+    void fetchPlaceById(placeId)
+      .then((p) => {
+        if (cancelled) return;
+        if (p) {
+          setPlace(p);
+          setDetailError(null);
+        } else {
+          setPlace(undefined);
+          setDetailError("not_found");
+        }
+        setDetailLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPlace(undefined);
+        setDetailError("network");
+        setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [placeId]);
+
   const region = place ? getRegionById(place.regionId) : undefined;
   const mapRef = useRef<HTMLDivElement | null>(null);
 
-  const facilities = place?.facilities ?? defaultFacilities;
-  const noticeSection = place?.detailSections.find((s) =>
+  const facilities = place?.facilities ?? [];
+  const noticeSection = place?.detailSections?.find((s) =>
     s.title.toLowerCase().includes("유의사항")
   );
   const [openTab, setOpenTab] = useState<string | null>(null);
@@ -720,7 +741,7 @@ const MeditationDetailPage = () => {
       const isValidCoord = (lat: number, lng: number) =>
         Number.isFinite(lat) && Number.isFinite(lng);
 
-      naver.maps.Service!.geocode({ address: place.address }, (status: string | number, response: unknown) => {
+      naver.maps.Service!.geocode({ query: place.address }, (status: string | number, response: unknown) => {
         if (status === "ERROR") {
           console.warn(`[지도] 주소 변환 실패 - "${place.name}" (${place.address}): status=${status}`);
           showAt(37.5665, 126.978);
@@ -811,6 +832,24 @@ const MeditationDetailPage = () => {
     detailHero.syncToLoopIndex(1);
   }, [place?.id, detailHero.syncToLoopIndex]);
 
+  if (detailLoading) {
+    return (
+      <Page>
+        <Header>
+          <BackButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </BackButton>
+          <HeaderTitle>상세 페이지</HeaderTitle>
+        </Header>
+        <NotFoundWrap>
+          <NotFoundMessage>불러오는 중…</NotFoundMessage>
+        </NotFoundWrap>
+      </Page>
+    );
+  }
+
   if (!place) {
     return (
       <Page>
@@ -825,9 +864,11 @@ const MeditationDetailPage = () => {
         <NotFoundWrap>
           <NotFoundTitle3D>404</NotFoundTitle3D>
           <NotFoundMessage>
-            해당 명상센터를 찾지 못했어요.
+            {detailError === "not_found"
+              ? "해당 명상센터를 찾지 못했어요."
+              : "장소 정보를 불러올 수 없어요."}
             <br />
-            URL을 확인하거나 메인에서 다시 탐색해주세요.
+            메인에서 다시 찾아 주세요.
           </NotFoundMessage>
           <NotFoundButton type="button" onClick={() => navigate("/meditation")}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -953,7 +994,9 @@ const MeditationDetailPage = () => {
           </svg>
           {place.address}
         </LocationRow>
-        <Description>{place.shortDescription}</Description>
+        <Description>
+          <MarkdownText markdown={place.shortDescription} />
+        </Description>
 
         {hasProgramModal && (
           <ProgramsPreviewSection>
@@ -1011,7 +1054,11 @@ const MeditationDetailPage = () => {
             <AccordionBodyWrap $open={openTab === "fee"}>
               <AccordionBodyInner>
                 <AccordionBody>
-                  {place.admissionFee ?? "현장·예약 시 안내"}
+                  {place.admissionFee?.trim() ? (
+                    <ReactMarkdown>{place.admissionFee}</ReactMarkdown>
+                  ) : (
+                    "현장·예약 시 안내"
+                  )}
                 </AccordionBody>
               </AccordionBodyInner>
             </AccordionBodyWrap>
@@ -1041,39 +1088,47 @@ const MeditationDetailPage = () => {
           </AccordionItem>
         </AccordionWrap>
 
-        <FacilitiesSection>
-          <h3>시설 정보</h3>
-          <FacilityIcons>
-            {facilities.map((key) => (
-              <FacilityItem key={key}>
-                {key === "wifi" && (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-                    <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-                    <line x1="12" y1="20" x2="12.01" y2="20" />
-                  </svg>
-                )}
-                {key === "parking" && (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <path d="M3 9h18M9 21V9" />
-                  </svg>
-                )}
-                {key === "tea" && (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                    <line x1="6" y1="1" x2="6" y2="4" />
-                    <line x1="10" y1="1" x2="10" y2="4" />
-                    <line x1="14" y1="1" x2="14" y2="4" />
-                  </svg>
-                )}
-                <span>{FACILITY_LABELS[key] ?? key}</span>
-              </FacilityItem>
-            ))}
-          </FacilityIcons>
-        </FacilitiesSection>
+        {facilities.length > 0 && (
+          <FacilitiesSection>
+            <h3>시설 정보</h3>
+            <FacilityIcons>
+              {facilities.map((item) => (
+                <FacilityItem key={item}>
+                  {item === "wifi" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                      <line x1="12" y1="20" x2="12.01" y2="20" />
+                    </svg>
+                  )}
+                  {item === "parking" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <path d="M3 9h18M9 21V9" />
+                    </svg>
+                  )}
+                  {item === "tea" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                      <line x1="6" y1="1" x2="6" y2="4" />
+                      <line x1="10" y1="1" x2="10" y2="4" />
+                      <line x1="14" y1="1" x2="14" y2="4" />
+                    </svg>
+                  )}
+                  {!["wifi", "parking", "tea"].includes(item) && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 8v4M12 16h.01" />
+                    </svg>
+                  )}
+                  <span>{FACILITY_LABELS[item] ?? item}</span>
+                </FacilityItem>
+              ))}
+            </FacilityIcons>
+          </FacilitiesSection>
+        )}
 
         <MapSection>
           <h3>위치</h3>

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import logoImg from "@/assets/logo.png";
 import kakaoImg from "@/assets/kakao.png";
@@ -7,8 +7,13 @@ import naverImg from "@/assets/naver.png";
 import googleImg from "@/assets/google.png";
 import leftArrowImg from "@/assets/left-arrow.png";
 import RegionMap from "@/components/meditation/RegionMap";
+import ProfileEditModal from "@/components/profile/ProfileEditModal";
 import { typography } from "@/styles/typography";
 import { getRegionById, getRegionIdFromCoordinates } from "@/services/meditation/meditationService";
+import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
+import { apiFetch, useAuthStore } from "@/stores/authStore";
+import { useFavoritesStore } from "@/stores/favoritesStore";
+import type { MeProfile } from "@/services/profile/profileApi";
 
 const stepFadeIn = keyframes`
   from {
@@ -102,22 +107,55 @@ const CodeFieldHint = styled.p`
   line-height: 1.45;
 `;
 
-const Page = styled.section`
+const Page = styled.section<{ $dashboard?: boolean }>`
   /* Layout Content 하단: 56px(바) + 24px + safe-area — 한 화면에 고정, body 스크롤 방지 */
   --page-outset-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
-  height: calc(100vh - var(--page-outset-bottom));
-  max-height: calc(100vh - var(--page-outset-bottom));
-  height: calc(100dvh - var(--page-outset-bottom));
-  max-height: calc(100dvh - var(--page-outset-bottom));
+  position: relative;
+  height: ${({ $dashboard }) =>
+    $dashboard ? "auto" : "calc(100vh - var(--page-outset-bottom))"};
+  max-height: ${({ $dashboard }) =>
+    $dashboard ? "none" : "calc(100vh - var(--page-outset-bottom))"};
+  min-height: ${({ $dashboard }) =>
+    $dashboard ? "calc(100dvh - var(--page-outset-bottom))" : "0"};
   min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: hidden;
+  overflow: ${({ $dashboard }) => ($dashboard ? "visible" : "hidden")};
   background: ${({ theme }) => theme.colors.warmCream};
   color: ${({ theme }) => theme.colors.text900};
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding-top: ${({ $dashboard }) =>
+    $dashboard
+      ? "calc(20px + env(safe-area-inset-top, 0px))"
+      : "calc(12px + env(safe-area-inset-top, 0px))"};
+`;
+
+const SignupProgressTrack = styled.div`
+  align-self: stretch;
+  flex-shrink: 0;
+  width: 100%;
+  height: 4px;
+  margin: 0 0 12px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.primary100};
+  overflow: hidden;
+`;
+
+const SignupProgressFill = styled.div<{ $pct: number }>`
+  height: 100%;
+  width: ${({ $pct }) => `${Math.min(100, Math.max(0, $pct))}%`};
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    ${({ theme }) => theme.colors.primary600} 0%,
+    ${({ theme }) => theme.colors.primary400} 100%
+  );
+  transition: width 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 
 const Card = styled.div`
@@ -315,6 +353,12 @@ const FieldSuccess = styled.p`
   }
 `;
 
+const FieldMutedHint = styled.p`
+  margin: 6px 4px 0;
+  ${typography.caption};
+  color: ${({ theme }) => theme.colors.text700};
+`;
+
 const PasswordFieldRow = styled.div<{ $index: number }>`
   display: flex;
   flex-direction: column;
@@ -336,6 +380,81 @@ const PasswordHint = styled(Hint)`
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+`;
+
+const SignupAvatarBlock = styled.div`
+  margin-top: 4px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+`;
+
+const SignupAvatarCircleButton = styled.button`
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid ${({ theme }) => theme.colors.primary200};
+  background: ${({ theme }) => theme.colors.primary50};
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+
+  &:hover:not(:disabled) {
+    transform: scale(1.03);
+    border-color: ${({ theme }) => theme.colors.primary300};
+    box-shadow: 0 4px 14px rgba(75, 0, 130, 0.08);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: wait;
+    transform: none;
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary400};
+    outline-offset: 3px;
+  }
+`;
+
+/** 비어 있을 때 원 안 중앙 표시 */
+const SignupAvatarEmptyMark = styled.span`
+  ${typography.h2};
+  font-weight: 300;
+  line-height: 1;
+  color: ${({ theme }) => theme.colors.text700};
+  opacity: 0.55;
+  user-select: none;
+`;
+
+const SignupAvatarPreviewImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+`;
+
+const SignupAvatarHiddenInput = styled.input`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 `;
 
 const PasswordFieldError = styled(FieldError)`
@@ -728,6 +847,23 @@ const SocialButton = styled.button<{ $bg: string; $color?: string }>`
   padding: 0;
 `;
 
+const SocialOAuthAnchor = styled.a<{ $bg: string; $color?: string }>`
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: ${({ $bg }) => $bg};
+  color: ${({ $color = "#111" }) => $color};
+  font-size: 1.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  text-decoration: none;
+  box-sizing: border-box;
+`;
+
 const SocialIcon = styled.img`
   width: 56px;
   height: 56px;
@@ -788,7 +924,7 @@ const TermsLogoCenter = styled.div`
   justify-content: center;
 `;
 
-/** 안내 문구·약관·전체 동의 — 하단에 고정 */
+/** 안내 문구·약관 목록 — 하단에 고정 */
 const TermsBottomBlock = styled.div`
   width: 100%;
   display: flex;
@@ -896,10 +1032,53 @@ const TermsDetailBtn = styled.button`
   }
 `;
 
-/** 개별 행의 「자세히」 셀과 너비 맞춤 */
-const TermsRowAlignSpacer = styled.span`
+/** 약관 단계 하단 — 왼쪽(필수만 충족 시) : 오른쪽(전체 선택 후 진행) = 2 : 8 */
+const TermsFooterButtonRow = styled.div`
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  align-items: stretch;
+`;
+
+const TermsRequiredConsentButton = styled.button<{ $disabled?: boolean }>`
+  flex: 2;
+  min-width: 0;
+  border: 1px solid ${({ theme }) => theme.colors.primary300};
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.primary300};
+  padding: 12px 8px;
+  ${typography.caption};
+  font-weight: 600;
+  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
+  opacity: ${({ $disabled }) => ($disabled ? 0.55 : 1)};
   flex-shrink: 0;
-  width: 64px;
+  transition: opacity 0.22s ease, background 0.2s ease, transform 0.2s ease;
+
+  &:not(:disabled):hover {
+    background: ${({ theme }) => theme.colors.primary50};
+  }
+
+  &:not(:disabled):active {
+    transform: scale(0.99);
+  }
+`;
+
+const TermsAgreeAllButton = styled.button`
+  flex: 8;
+  min-width: 0;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.primary300};
+  color: ${({ theme }) => theme.colors.white};
+  padding: 16px 20px;
+  ${typography.buttonMd};
+  cursor: pointer;
+  transition: opacity 0.22s ease, transform 0.2s ease;
+
+  &:active {
+    transform: scale(0.99);
+  }
 `;
 
 const TermsDetailModalCard = styled(ModalCard)`
@@ -920,6 +1099,345 @@ const TermsDetailBody = styled.div`
   color: ${({ theme }) => theme.colors.text700};
   line-height: 1.55;
   white-space: pre-line;
+`;
+
+const ProfileDashboard = styled.div`
+  width: min(100%, 680px);
+  padding: 0 2px 32px;
+`;
+
+const ProfilePageTitle = styled.h1`
+  margin: 0 0 20px;
+  text-align: center;
+  ${typography.title};
+`;
+
+const ProfileHero = styled.section`
+  position: relative;
+  overflow: hidden;
+  padding: 26px 22px 22px;
+  border: 1px solid rgba(75, 0, 130, 0.08);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(245, 216, 208, 0.9), transparent 38%),
+    linear-gradient(145deg, #ffffff 0%, #faf5ff 100%);
+  box-shadow: 0 16px 40px rgba(75, 0, 130, 0.09);
+`;
+
+const ProfileHeroTop = styled.div`
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+`;
+
+const ProfileAvatarButton = styled.button`
+  position: relative;
+  flex: 0 0 auto;
+  width: 88px;
+  height: 88px;
+  padding: 0;
+  border: 4px solid ${({ theme }) => theme.colors.white};
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.primary100};
+  box-shadow: 0 8px 24px rgba(75, 0, 130, 0.18);
+  cursor: pointer;
+  overflow: visible;
+`;
+
+const ProfileAvatar = styled.img`
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+`;
+
+const ProfileAvatarFallback = styled.span`
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #d8c5e9, #a88bca);
+  color: ${({ theme }) => theme.colors.white};
+  font-size: 1.65rem;
+  font-weight: 800;
+`;
+
+const CameraBadge = styled.span`
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border: 3px solid ${({ theme }) => theme.colors.white};
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.primary600};
+  color: white;
+  font-size: 0.82rem;
+`;
+
+const ProfileIdentity = styled.div`
+  min-width: 0;
+  flex: 1;
+`;
+
+const ProfileNameRow = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const ProfileName = styled.h2`
+  margin: 0;
+  ${typography.title};
+`;
+
+const MemberBadge = styled.span`
+  padding: 5px 9px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.primary100};
+  color: ${({ theme }) => theme.colors.primary600};
+  ${typography.caption};
+  font-weight: 800;
+`;
+
+const ProfileEmail = styled.p`
+  margin: 6px 0 0;
+  color: ${({ theme }) => theme.colors.text700};
+  ${typography.body2};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const ProfileEditHint = styled.p`
+  margin: 8px 0 0;
+  color: ${({ theme }) => theme.colors.primary500};
+  ${typography.caption};
+  font-weight: 700;
+`;
+
+const ProfileEditButton = styled.button`
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.primary200};
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: rgba(255, 255, 255, 0.76);
+  color: ${({ theme }) => theme.colors.primary600};
+  ${typography.caption};
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const HiddenProfileInput = styled.input`
+  display: none;
+`;
+
+const ProfileStats = styled.div`
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 24px;
+  padding: 17px 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(10px);
+`;
+
+const ProfileStat = styled.div`
+  text-align: center;
+
+  & + & {
+    border-left: 1px solid rgba(75, 0, 130, 0.1);
+  }
+`;
+
+const ProfileStatValue = styled.strong`
+  display: block;
+  color: ${({ theme }) => theme.colors.primary600};
+  ${typography.body1};
+  font-weight: 700;
+`;
+
+const ProfileStatLabel = styled.span`
+  display: block;
+  margin-top: 4px;
+  color: ${({ theme }) => theme.colors.text700};
+  ${typography.caption};
+`;
+
+const JourneyBanner = styled.button`
+  width: 100%;
+  margin-top: 14px;
+  padding: 19px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  border-radius: 22px;
+  background: linear-gradient(120deg, #4b0082, #7a5aab);
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(75, 0, 130, 0.16);
+`;
+
+const JourneyIcon = styled.span`
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 1.35rem;
+`;
+
+const JourneyText = styled.span`
+  flex: 1;
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    ${typography.body2};
+    font-weight: 700;
+  }
+
+  small {
+    margin-top: 5px;
+    color: rgba(255, 255, 255, 0.75);
+    ${typography.caption};
+  }
+`;
+
+const DashboardSection = styled.section`
+  margin-top: 26px;
+`;
+
+const DashboardSectionTitle = styled.h3`
+  margin: 0 4px 11px;
+  ${typography.body1};
+  font-weight: 700;
+`;
+
+const QuickGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+`;
+
+const QuickCard = styled.button`
+  min-height: 112px;
+  padding: 17px;
+  border: 1px solid rgba(75, 0, 130, 0.08);
+  border-radius: 20px;
+  background: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.text900};
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 7px 22px rgba(61, 61, 61, 0.05);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(75, 0, 130, 0.1);
+  }
+`;
+
+const QuickCardIcon = styled.span`
+  display: block;
+  font-size: 1.35rem;
+`;
+
+const QuickCardTitle = styled.strong`
+  display: block;
+  margin-top: 12px;
+  ${typography.body2};
+  font-weight: 700;
+`;
+
+const QuickCardDesc = styled.span`
+  display: block;
+  margin-top: 4px;
+  color: ${({ theme }) => theme.colors.text700};
+  ${typography.caption};
+`;
+
+const SettingsCard = styled.div`
+  overflow: hidden;
+  border: 1px solid rgba(75, 0, 130, 0.08);
+  border-radius: 22px;
+  background: ${({ theme }) => theme.colors.white};
+  box-shadow: 0 7px 22px rgba(61, 61, 61, 0.04);
+`;
+
+const SettingsRow = styled.button`
+  width: 100%;
+  min-height: 58px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 0;
+  border-bottom: 1px solid rgba(75, 0, 130, 0.07);
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text900};
+  text-align: left;
+  cursor: pointer;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+`;
+
+const SettingsIcon = styled.span`
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: ${({ theme }) => theme.colors.primary50};
+`;
+
+const SettingsLabel = styled.span`
+  flex: 1;
+  ${typography.body2};
+  font-weight: 600;
+`;
+
+const SettingsArrow = styled.span`
+  color: ${({ theme }) => theme.colors.mutedMauve};
+  font-size: 1.25rem;
+`;
+
+const ProfileMessage = styled.p<{ $error?: boolean }>`
+  margin: 12px 4px 0;
+  color: ${({ $error, theme }) => ($error ? "#c5221f" : theme.colors.primary600)};
+  ${typography.caption};
+  text-align: center;
+`;
+
+const DashboardLogout = styled.button`
+  display: block;
+  margin: 26px auto 0;
+  padding: 10px 18px;
+  border: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text700};
+  ${typography.caption};
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
 `;
 
 type ProfileStep =
@@ -955,16 +1473,28 @@ const meetsPasswordPolicy = (p: string) => {
 };
 
 const EMAIL_FORMAT_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** `@` 도메인에까지 입력하고 `.`(TLD 시작) 포함 시부터 가입 가능 여부 API 조회 */
+const EMAIL_AVAILABILITY_PROBE_REGEX = /^[^\s@]+@[^\s@]+\./;
 /** 휴대폰: 01x + 7~8자리 (하이픈 없이 숫자만 입력) */
 const PHONE_LOCAL_REGEX = /^01[0-9]\d{7,8}$/;
 /** 데모: 이 번호만 인증 성공, 그 외(예: 222222)는 실패 모달 */
-const DEMO_SMS_AUTH_CODE_OK = "111111";
+const OAUTH_SIGNUP_TICKET_KEY = "meditation-oauth-signup-ticket";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const oauthSignupBootstrapDone = useRef(false);
   const [step, setStep] = useState<ProfileStep>("login");
   const [email, setEmail] = useState("");
   const [emailStepDone, setEmailStepDone] = useState(false);
+  type EmailAvailabilityState = {
+    status: "idle" | "loading" | "available" | "unavailable" | "error";
+    email: string | null;
+  };
+  const [emailAvailability, setEmailAvailability] = useState<EmailAvailabilityState>({
+    status: "idle",
+    email: null,
+  });
   const [phone, setPhone] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
   const [password, setPassword] = useState("");
@@ -976,6 +1506,9 @@ const ProfilePage = () => {
   const [isRegionModalOpen, setRegionModalOpen] = useState(false);
   const [hasRequestedPhoneCode, setHasRequestedPhoneCode] = useState(false);
   const [phoneAuthVerified, setPhoneAuthVerified] = useState(false);
+  const [signupPhoneVerificationToken, setSignupPhoneVerificationToken] = useState<string | null>(
+    null
+  );
   const [authResultToast, setAuthResultToast] = useState<"success" | "error" | null>(null);
   const [codeTimer, setCodeTimer] = useState(300);
   const [showCodeSentNotice, setShowCodeSentNotice] = useState(false);
@@ -986,7 +1519,60 @@ const ProfilePage = () => {
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoMessage, setGeoMessage] = useState<string | null>(null);
   const [geoIsError, setGeoIsError] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const sessionEmail = useAuthStore((s) => s.email);
+  const logout = useAuthStore((s) => s.logout);
+  const favoriteCount = useFavoritesStore((s) => s.favorites.length);
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
+  const [meProfile, setMeProfile] = useState<MeProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileUploading, setProfileUploading] = useState(false);
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<{
+    text: string;
+    error?: boolean;
+  } | null>(null);
   const selectedRegionName = getRegionById(regionId)?.name ?? "서울";
+  const oauthApiBase = useMemo(() => getMeditationApiBaseUrl() ?? "", []);
+
+  const signupAvatarInputRef = useRef<HTMLInputElement>(null);
+  const [signupProfilePendingFile, setSignupProfilePendingFile] = useState<File | null>(null);
+  const [signupProfilePreviewUrl, setSignupProfilePreviewUrl] = useState<string | null>(null);
+
+  const clearSignupProfilePhoto = () => {
+    setSignupProfilePendingFile(null);
+    setSignupProfilePreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) {
+        URL.revokeObjectURL(prev);
+      }
+      return null;
+    });
+  };
+
+  const assignLocalSignupProfileImage = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setAuthError("이미지 파일만 선택할 수 있어요.");
+      return;
+    }
+    const maxBytes = 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setAuthError("사진은 5MB 이하로 선택해 주세요.");
+      return;
+    }
+    setAuthError(null);
+    setSignupProfilePendingFile(file);
+    const blobPreview = URL.createObjectURL(file);
+    setSignupProfilePreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) {
+        URL.revokeObjectURL(prev);
+      }
+      return blobPreview;
+    });
+  };
 
   const normalizedEmail = useMemo(() => email.trim(), [email]);
   const isEmailFormatInvalid = useMemo(() => {
@@ -997,7 +1583,27 @@ const ProfilePage = () => {
     () => normalizedEmail.length > 0 && EMAIL_FORMAT_REGEX.test(normalizedEmail),
     [normalizedEmail]
   );
-  const hasEmailError = isEmailFormatInvalid;
+  const emailAvailabilityApplicable =
+    !!getMeditationApiBaseUrl() &&
+    normalizedEmail.length > 0 &&
+    EMAIL_AVAILABILITY_PROBE_REGEX.test(normalizedEmail);
+
+  const emailAvailabilityForCurrent =
+    emailAvailability.email === normalizedEmail ? emailAvailability : null;
+
+  const emailUnavailable =
+    !!emailAvailabilityForCurrent && emailAvailabilityForCurrent.status === "unavailable";
+
+  const canProceedSignupEmailStep = useMemo(() => {
+    if (!isEmailValid) return false;
+    if (!getMeditationApiBaseUrl()) return true;
+    return (
+      emailAvailabilityForCurrent?.status === "available" &&
+      emailAvailabilityForCurrent.email === normalizedEmail
+    );
+  }, [isEmailValid, normalizedEmail, emailAvailabilityForCurrent]);
+
+  const hasEmailError = isEmailFormatInvalid || emailUnavailable;
   const normalizedPhoneDigits = useMemo(() => phone.replace(/[^\d]/g, ""), [phone]);
   const isPhoneFormatInvalid = useMemo(() => {
     if (!normalizedPhoneDigits) return false;
@@ -1009,6 +1615,94 @@ const ProfilePage = () => {
   );
   const hasPhoneError = isPhoneFormatInvalid;
   const isCodeValid = useMemo(() => /^\d{6}$/.test(verifyCode.trim()), [verifyCode]);
+
+  const sendSignupPhoneOtpRequest = async (): Promise<boolean> => {
+    if (!getMeditationApiBaseUrl() || !PHONE_LOCAL_REGEX.test(normalizedPhoneDigits)) {
+      return false;
+    }
+    try {
+      const res = await apiFetch("/auth/phone/signup/send-otp", {
+        method: "POST",
+        body: JSON.stringify({ phone: normalizedPhoneDigits }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
+  const startSignupPhoneCodeFlow = async () => {
+    if (!getMeditationApiBaseUrl()) {
+      setAuthError("지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    setAuthError(null);
+    setSignupPhoneVerificationToken(null);
+    setPhoneAuthVerified(false);
+    setAuthResultToast(null);
+    setVerifyCode("");
+    setHasRequestedPhoneCode(true);
+    setCodeTimer(300);
+    setShowCodeSentNotice(true);
+
+    window.setTimeout(() => {
+      document.getElementById("signup-code-anchor")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, 120);
+
+    const ok = await sendSignupPhoneOtpRequest();
+    if (!ok) {
+      setAuthError("인증 문자를 보내지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
+
+  const resendSignupPhoneCode = async () => {
+    setVerifyCode("");
+    setPhoneAuthVerified(false);
+    setSignupPhoneVerificationToken(null);
+    setAuthResultToast(null);
+    setCodeTimer(300);
+    setShowCodeSentNotice(true);
+    const ok = await sendSignupPhoneOtpRequest();
+    if (!ok) {
+      setAuthError("인증 문자를 다시 보내지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  };
+
+  const verifySignupPhoneCode = async () => {
+    if (!isCodeValid) return;
+    if (!getMeditationApiBaseUrl()) {
+      setAuthError("지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    setAuthError(null);
+    try {
+      const res = await apiFetch("/auth/phone/signup/verify-otp", {
+        method: "POST",
+        body: JSON.stringify({
+          phone: normalizedPhoneDigits,
+          code: verifyCode.trim(),
+        }),
+      });
+      if (!res.ok) {
+        setAuthResultToast("error");
+        return;
+      }
+      const j = (await res.json()) as { phoneVerificationToken?: string };
+      const tok = j.phoneVerificationToken;
+      if (!tok) {
+        setAuthResultToast("error");
+        return;
+      }
+      setSignupPhoneVerificationToken(tok);
+      setPhoneAuthVerified(true);
+      setAuthResultToast("success");
+    } catch {
+      setAuthResultToast("error");
+    }
+  };
 
   const passwordPolicyError = useMemo(() => {
     const p = password;
@@ -1035,15 +1729,111 @@ const ProfilePage = () => {
     return `${minutes}:${String(seconds).padStart(2, "0")}`;
   }, [codeTimer]);
 
-  const allTermsChecked = useMemo(
-    () => agreeService && agreePrivacy && agreeMarketing,
-    [agreeService, agreePrivacy, agreeMarketing]
-  );
-
   const requiredTermsOk = useMemo(
     () => agreeService && agreePrivacy,
     [agreeService, agreePrivacy]
   );
+
+  const signupProgressPct = useMemo((): number | null => {
+    switch (step) {
+      case "signup-terms":
+        return 20;
+      case "signup-account":
+        return 40;
+      case "signup-region":
+        return 60;
+      case "signup-interest":
+        return 80;
+      case "signup-complete":
+        return 100;
+      default:
+        return null;
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (oauthSignupBootstrapDone.current) return;
+    if (searchParams.get("signupOAuth") !== "1") return;
+    const ticket = searchParams.get("oauthSignupTicket")?.trim();
+    if (!ticket) return;
+    oauthSignupBootstrapDone.current = true;
+
+    const em = searchParams.get("email") ?? "";
+    const pic = searchParams.get("picture")?.trim() ?? "";
+    setStep("signup-account");
+    if (em) setEmail(em);
+    setEmailStepDone(true);
+    if (pic.startsWith("https://")) {
+      setSignupProfilePreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) {
+          URL.revokeObjectURL(prev);
+        }
+        return pic;
+      });
+    }
+    try {
+      sessionStorage.setItem(OAUTH_SIGNUP_TICKET_KEY, ticket);
+    } catch {
+      /* ignore */
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("signupOAuth");
+    next.delete("oauthSignupTicket");
+    next.delete("email");
+    next.delete("picture");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (step !== "signup-account" || emailStepDone) return;
+
+    if (!normalizedEmail.length || !EMAIL_AVAILABILITY_PROBE_REGEX.test(normalizedEmail)) {
+      setEmailAvailability({ status: "idle", email: null });
+      return;
+    }
+    const apiBase = getMeditationApiBaseUrl();
+    if (!apiBase) {
+      setEmailAvailability({ status: "idle", email: null });
+      return;
+    }
+
+    const probeEmail = normalizedEmail;
+    const ac = new AbortController();
+    const debounceMs = 320;
+
+    const tid = window.setTimeout(() => {
+      setEmailAvailability({ status: "loading", email: probeEmail });
+
+      void (async () => {
+        try {
+          const res = await apiFetch(
+            `/auth/email/availability?email=${encodeURIComponent(probeEmail)}`,
+            { signal: ac.signal }
+          );
+          if (!res.ok) {
+            setEmailAvailability({ status: "error", email: probeEmail });
+            return;
+          }
+          const json = (await res.json()) as { available?: boolean };
+          const available = !!json.available;
+          setEmailAvailability({
+            status: available ? "available" : "unavailable",
+            email: probeEmail,
+          });
+        } catch (e) {
+          if ((e as { name?: string }).name === "AbortError") return;
+          if (!getMeditationApiBaseUrl()) return;
+          setEmailAvailability({ status: "error", email: probeEmail });
+        }
+      })();
+    }, debounceMs);
+
+    return () => {
+      window.clearTimeout(tid);
+      ac.abort();
+    };
+  }, [normalizedEmail, step, emailStepDone]);
 
   useEffect(() => {
     if (step !== "signup-account" || !hasRequestedPhoneCode) return;
@@ -1160,7 +1950,38 @@ const ProfilePage = () => {
       return;
     }
     if (step === "signup-account") {
+      let oauthTicket: string | null = null;
+      try {
+        oauthTicket = sessionStorage.getItem(OAUTH_SIGNUP_TICKET_KEY);
+      } catch {
+        oauthTicket = null;
+      }
+      if (oauthTicket) {
+        try {
+          sessionStorage.removeItem(OAUTH_SIGNUP_TICKET_KEY);
+        } catch {
+          /* ignore */
+        }
+        setEmailStepDone(false);
+        setEmailAvailability({ status: "idle", email: null });
+        clearSignupProfilePhoto();
+        setSignupPhoneVerificationToken(null);
+        setHasRequestedPhoneCode(false);
+        setPhoneAuthVerified(false);
+        setAuthResultToast(null);
+        setPhone("");
+        setVerifyCode("");
+        setPassword("");
+        setPasswordConfirm("");
+        setShowPassword(false);
+        setShowPasswordConfirm(false);
+        setStep("login");
+        return;
+      }
       setEmailStepDone(false);
+      setEmailAvailability({ status: "idle", email: null });
+      clearSignupProfilePhoto();
+      setSignupPhoneVerificationToken(null);
       setHasRequestedPhoneCode(false);
       setPhoneAuthVerified(false);
       setAuthResultToast(null);
@@ -1180,8 +2001,383 @@ const ProfilePage = () => {
     if (step === "signup-interest") setStep("signup-region");
   };
 
+  const handleLoginSubmit = async () => {
+    setAuthError(null);
+    if (!getMeditationApiBaseUrl()) {
+      setAuthError("지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    const em = loginEmail.trim();
+    if (!em || !loginPassword) {
+      setAuthError("이메일과 비밀번호를 입력해 주세요.");
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      const res = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: em, password: loginPassword }),
+      });
+      if (!res.ok) {
+        let code = "";
+        try {
+          const j = (await res.json()) as { error?: string };
+          code = j.error ?? "";
+        } catch {
+          /* ignore */
+        }
+        setAuthError(
+          code === "INVALID_CREDENTIALS"
+            ? "이메일 또는 비밀번호를 확인해 주세요."
+            : "로그인에 실패했습니다."
+        );
+        return;
+      }
+      await useAuthStore.getState().setSession();
+      await useFavoritesStore.getState().pullFromServer();
+      setLoginPassword("");
+    } catch {
+      setAuthError("잠시 후 다시 시도해 주세요.");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleRegisterAndFinish = async () => {
+    setAuthError(null);
+    if (!getMeditationApiBaseUrl()) {
+      setAuthError("지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    if (!meetsPasswordPolicy(password) || password !== passwordConfirm) {
+      setAuthError("비밀번호를 다시 확인해 주세요.");
+      return;
+    }
+
+    let oauthSignupToken: string | null = null;
+    try {
+      oauthSignupToken = sessionStorage.getItem(OAUTH_SIGNUP_TICKET_KEY);
+    } catch {
+      oauthSignupToken = null;
+    }
+
+    if (
+      !oauthSignupToken &&
+      (!signupPhoneVerificationToken || signupPhoneVerificationToken.trim() === "")
+    ) {
+      setAuthError("휴대폰 인증을 완료해 주세요.");
+      return;
+    }
+
+    const base = getMeditationApiBaseUrl()!;
+    setAuthBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("email", normalizedEmail);
+      fd.append("password", password);
+      if (oauthSignupToken) {
+        fd.append("oauthSignupToken", oauthSignupToken);
+      } else {
+        fd.append("phoneVerificationToken", signupPhoneVerificationToken!.trim());
+      }
+      if (signupProfilePendingFile) {
+        fd.append("profileImage", signupProfilePendingFile);
+      }
+
+      const registerUrl = oauthSignupToken
+        ? `${base}/auth/register/oauth`
+        : `${base}/auth/register`;
+
+      const res = await fetch(registerUrl, { method: "POST", body: fd, credentials: "include" });
+
+      if (res.status === 409) {
+        setAuthError("이미 가입된 이메일입니다.");
+        return;
+      }
+      if (!res.ok) {
+        try {
+          const j = (await res.json()) as { code?: string; error?: string };
+          const errCode = j.code ?? j.error ?? "";
+          if (res.status === 400 && errCode === "INVALID_OAUTH_SIGNUP_TOKEN") {
+            setAuthError("소셜 가입 세션이 만료되었습니다. 소셜 로그인을 다시 진행해 주세요.");
+            try {
+              sessionStorage.removeItem(OAUTH_SIGNUP_TICKET_KEY);
+            } catch {
+              /* ignore */
+            }
+            return;
+          }
+          if (res.status === 400 && errCode === "INVALID_PROFILE_IMAGE_OBJECT_KEY") {
+            setAuthError("프로필 사진 정보가 올바르지 않아요. 사진을 다시 선택해 주세요.");
+            return;
+          }
+        } catch {
+          /* ignore */
+        }
+        setAuthError("회원가입에 실패했습니다.");
+        return;
+      }
+      try {
+        sessionStorage.removeItem(OAUTH_SIGNUP_TICKET_KEY);
+      } catch {
+        /* ignore */
+      }
+      await useAuthStore.getState().setSession();
+      await useFavoritesStore.getState().pullFromServer();
+      clearSignupProfilePhoto();
+      setStep("login");
+    } catch {
+      setAuthError("잠시 후 다시 시도해 주세요.");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!accessToken || step !== "login" || !getMeditationApiBaseUrl()) {
+      setMeProfile(null);
+      return;
+    }
+    let active = true;
+    setProfileLoading(true);
+    setProfileMessage(null);
+    void apiFetch("/me")
+      .then(async (res) => {
+        if (!res.ok) throw new Error("profile");
+        const data = (await res.json()) as MeProfile;
+        if (active) setMeProfile(data);
+      })
+      .catch(() => {
+        if (active) {
+          setProfileMessage({ text: "프로필 정보를 불러오지 못했어요.", error: true });
+        }
+      })
+      .finally(() => {
+        if (active) setProfileLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [accessToken, step]);
+
+  const handleProfileImageChange = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setProfileMessage({ text: "이미지 파일만 선택할 수 있어요.", error: true });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileMessage({ text: "사진은 5MB 이하로 선택해 주세요.", error: true });
+      return;
+    }
+    const form = new FormData();
+    form.append("file", file);
+    setProfileUploading(true);
+    setProfileMessage(null);
+    try {
+      const res = await apiFetch("/me/profile-image", { method: "POST", body: form });
+      if (!res.ok) {
+        let message = "사진을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.";
+        try {
+          const error = (await res.json()) as { message?: string };
+          if (error.message?.trim()) message = error.message;
+        } catch {
+          // JSON 오류 응답이 아니면 기본 안내를 사용합니다.
+        }
+        throw new Error(message);
+      }
+      const next = (await res.json()) as MeProfile;
+      setMeProfile(next);
+      setProfileMessage({ text: "프로필 사진을 바꿨어요." });
+    } catch (error) {
+      setProfileMessage({
+        text:
+          error instanceof Error
+            ? error.message
+            : "사진을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
+        error: true,
+      });
+    } finally {
+      setProfileUploading(false);
+      if (profileImageInputRef.current) profileImageInputRef.current.value = "";
+    }
+  };
+
+  const profileEmail = meProfile?.email ?? sessionEmail ?? "";
+  const profileNameSource = meProfile?.displayName || meProfile?.username || profileEmail || "명상가";
+  const profileName = profileNameSource.includes("@")
+    ? profileNameSource.split("@")[0]
+    : profileNameSource;
+  const profileInitial = (profileName.trim()[0] ?? "명").toUpperCase();
+  const memberSince = meProfile?.createdAt
+    ? new Date(meProfile.createdAt).getFullYear()
+    : new Date().getFullYear();
+
   return (
-    <Page>
+    <Page $dashboard={!!accessToken && step === "login"}>
+      {signupProgressPct !== null && (
+        <SignupProgressTrack
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={signupProgressPct}
+          aria-label={`회원가입 진행 ${signupProgressPct}%`}
+        >
+          <SignupProgressFill $pct={signupProgressPct} />
+        </SignupProgressTrack>
+      )}
+      {accessToken && step === "login" ? (
+        <ProfileDashboard>
+          <ProfilePageTitle>마이 페이지</ProfilePageTitle>
+
+          <ProfileHero>
+            <ProfileHeroTop>
+              <ProfileAvatarButton
+                type="button"
+                aria-label="프로필 사진 바꾸기"
+                disabled={profileUploading}
+                onClick={() => profileImageInputRef.current?.click()}
+              >
+                {meProfile?.profileImageUrl ? (
+                  <ProfileAvatar src={meProfile.profileImageUrl} alt={`${profileName} 프로필`} />
+                ) : (
+                  <ProfileAvatarFallback aria-hidden="true">{profileInitial}</ProfileAvatarFallback>
+                )}
+                <CameraBadge aria-hidden="true">{profileUploading ? "…" : "✦"}</CameraBadge>
+              </ProfileAvatarButton>
+              <HiddenProfileInput
+                ref={profileImageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => void handleProfileImageChange(e.target.files?.[0])}
+              />
+              <ProfileIdentity>
+                <ProfileNameRow>
+                  <ProfileName>{profileName}님</ProfileName>
+                  <MemberBadge>{meProfile?.role === "MEMBER" ? "MEMBER" : meProfile?.role ?? "MEMBER"}</MemberBadge>
+                </ProfileNameRow>
+                <ProfileEmail>{profileEmail}</ProfileEmail>
+                <ProfileEditHint>
+                  {profileLoading ? "프로필을 불러오는 중…" : "사진을 눌러 프로필을 꾸며보세요"}
+                </ProfileEditHint>
+                <ProfileEditButton type="button" onClick={() => setProfileEditOpen(true)}>
+                  프로필 수정
+                </ProfileEditButton>
+              </ProfileIdentity>
+            </ProfileHeroTop>
+
+            <ProfileStats>
+              <ProfileStat>
+                <ProfileStatValue>{favoriteCount}</ProfileStatValue>
+                <ProfileStatLabel>저장한 장소</ProfileStatLabel>
+              </ProfileStat>
+              <ProfileStat>
+                <ProfileStatValue>{memberSince}</ProfileStatValue>
+                <ProfileStatLabel>함께한 해</ProfileStatLabel>
+              </ProfileStat>
+              <ProfileStat>
+                <ProfileStatValue>맑음</ProfileStatValue>
+                <ProfileStatLabel>오늘의 마음</ProfileStatLabel>
+              </ProfileStat>
+            </ProfileStats>
+          </ProfileHero>
+
+          {profileMessage && (
+            <ProfileMessage $error={profileMessage.error}>{profileMessage.text}</ProfileMessage>
+          )}
+
+          <JourneyBanner type="button" onClick={() => navigate("/meditation/map")}>
+            <JourneyIcon aria-hidden="true">◌</JourneyIcon>
+            <JourneyText>
+              <strong>오늘, 잠시 쉬어갈 곳을 찾아볼까요?</strong>
+              <small>내 주변 명상 공간을 지도에서 둘러보세요</small>
+            </JourneyText>
+            <SettingsArrow aria-hidden="true">›</SettingsArrow>
+          </JourneyBanner>
+
+          <DashboardSection>
+            <DashboardSectionTitle>나의 명상</DashboardSectionTitle>
+            <QuickGrid>
+              <QuickCard type="button" onClick={() => navigate("/favorites")}>
+                <QuickCardIcon aria-hidden="true">♡</QuickCardIcon>
+                <QuickCardTitle>저장한 장소</QuickCardTitle>
+                <QuickCardDesc>{favoriteCount}곳의 쉼터를 모았어요</QuickCardDesc>
+              </QuickCard>
+              <QuickCard type="button" onClick={() => navigate("/meditation")}>
+                <QuickCardIcon aria-hidden="true">⌁</QuickCardIcon>
+                <QuickCardTitle>명상 둘러보기</QuickCardTitle>
+                <QuickCardDesc>새로운 프로그램을 만나보세요</QuickCardDesc>
+              </QuickCard>
+            </QuickGrid>
+          </DashboardSection>
+
+          <DashboardSection>
+            <DashboardSectionTitle>전문가 활동</DashboardSectionTitle>
+            <SettingsCard>
+              <SettingsRow type="button" onClick={() => navigate("/profile/expert")}>
+                <SettingsIcon aria-hidden="true">✦</SettingsIcon>
+                <SettingsLabel>
+                  {meProfile?.expertProfileId ? "전문가 프로필 수정" : "명상 전문가로 전환"}
+                </SettingsLabel>
+                <SettingsArrow aria-hidden="true">›</SettingsArrow>
+              </SettingsRow>
+              {meProfile?.expertProfileId && (
+                <SettingsRow
+                  type="button"
+                  onClick={() => navigate(`/meditation/expert/${meProfile.expertProfileId}`)}
+                >
+                  <SettingsIcon aria-hidden="true">◎</SettingsIcon>
+                  <SettingsLabel>내 전문가 페이지 보기</SettingsLabel>
+                  <SettingsArrow aria-hidden="true">›</SettingsArrow>
+                </SettingsRow>
+              )}
+            </SettingsCard>
+          </DashboardSection>
+
+          <DashboardSection>
+            <DashboardSectionTitle>서비스</DashboardSectionTitle>
+            <SettingsCard>
+              <SettingsRow type="button" onClick={() => navigate("/notice")}>
+                <SettingsIcon aria-hidden="true">♢</SettingsIcon>
+                <SettingsLabel>공지사항</SettingsLabel>
+                <SettingsArrow aria-hidden="true">›</SettingsArrow>
+              </SettingsRow>
+              <SettingsRow type="button" onClick={() => navigate("/inquiry")}>
+                <SettingsIcon aria-hidden="true">?</SettingsIcon>
+                <SettingsLabel>문의하기</SettingsLabel>
+                <SettingsArrow aria-hidden="true">›</SettingsArrow>
+              </SettingsRow>
+              <SettingsRow type="button" onClick={() => navigate("/service-info")}>
+                <SettingsIcon aria-hidden="true">i</SettingsIcon>
+                <SettingsLabel>서비스 안내</SettingsLabel>
+                <SettingsArrow aria-hidden="true">›</SettingsArrow>
+              </SettingsRow>
+            </SettingsCard>
+          </DashboardSection>
+
+          <DashboardLogout
+            type="button"
+            onClick={() => {
+              void logout();
+              setMeProfile(null);
+              setLoginEmail("");
+              setLoginPassword("");
+            }}
+          >
+            로그아웃
+          </DashboardLogout>
+          {meProfile && (
+            <>
+              <ProfileEditModal
+                open={profileEditOpen}
+                profile={meProfile}
+                onClose={() => setProfileEditOpen(false)}
+                onSaved={setMeProfile}
+              />
+            </>
+          )}
+        </ProfileDashboard>
+      ) : (
       <Card>
         {step !== "signup-complete" && (
           <TopNavRow>
@@ -1207,13 +2403,22 @@ const ProfilePage = () => {
               </Brand>
 
               <Form>
-                <Input type="email" placeholder="이메일" aria-label="이메일" />
+                <Input
+                  type="email"
+                  placeholder="이메일"
+                  aria-label="이메일"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  autoComplete="email"
+                />
                 <PasswordInputWrap>
                   <PasswordInput
                     type={showLoginPassword ? "text" : "password"}
                     placeholder="비밀번호"
                     aria-label="비밀번호"
                     autoComplete="current-password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
                   />
                   <PasswordToggle
                     type="button"
@@ -1229,15 +2434,45 @@ const ProfilePage = () => {
               <Divider>또는</Divider>
 
               <SocialRow>
-                <SocialButton type="button" $bg="transparent" aria-label="카카오로 로그인">
-                  <SocialIcon src={kakaoImg} alt="카카오 로그인" />
-                </SocialButton>
-                <SocialButton type="button" $bg="transparent" $color="#fff" aria-label="네이버로 로그인">
-                  <SocialIcon src={naverImg} alt="네이버 로그인" />
-                </SocialButton>
-                <SocialButton type="button" $bg="transparent" aria-label="구글로 로그인">
-                  <SocialIcon src={googleImg} alt="구글 로그인" />
-                </SocialButton>
+                {oauthApiBase ? (
+                  <SocialOAuthAnchor
+                    href={`${oauthApiBase}/oauth2/authorization/kakao`}
+                    $bg="transparent"
+                    aria-label="카카오로 로그인"
+                  >
+                    <SocialIcon src={kakaoImg} alt="" />
+                  </SocialOAuthAnchor>
+                ) : (
+                  <SocialButton type="button" $bg="transparent" disabled aria-label="카카오로 로그인 (API 주소 필요)">
+                    <SocialIcon src={kakaoImg} alt="" />
+                  </SocialButton>
+                )}
+                {oauthApiBase ? (
+                  <SocialOAuthAnchor
+                    href={`${oauthApiBase}/oauth2/authorization/naver`}
+                    $bg="transparent"
+                    aria-label="네이버로 로그인"
+                  >
+                    <SocialIcon src={naverImg} alt="" />
+                  </SocialOAuthAnchor>
+                ) : (
+                  <SocialButton type="button" $bg="transparent" disabled aria-label="네이버로 로그인 (API 주소 필요)">
+                    <SocialIcon src={naverImg} alt="" />
+                  </SocialButton>
+                )}
+                {oauthApiBase ? (
+                  <SocialOAuthAnchor
+                    href={`${oauthApiBase}/oauth2/authorization/google`}
+                    $bg="transparent"
+                    aria-label="구글로 로그인"
+                  >
+                    <SocialIcon src={googleImg} alt="" />
+                  </SocialOAuthAnchor>
+                ) : (
+                  <SocialButton type="button" $bg="transparent" disabled aria-label="구글로 로그인 (API 주소 필요)">
+                    <SocialIcon src={googleImg} alt="" />
+                  </SocialButton>
+                )}
               </SocialRow>
 
               <SignUpText>
@@ -1247,6 +2482,9 @@ const ProfilePage = () => {
                   onClick={() => {
                     setEmail("");
                     setEmailStepDone(false);
+                    setEmailAvailability({ status: "idle", email: null });
+                    clearSignupProfilePhoto();
+                    setSignupPhoneVerificationToken(null);
                     setPhone("");
                     setVerifyCode("");
                     setPassword("");
@@ -1262,15 +2500,23 @@ const ProfilePage = () => {
                     setAgreePrivacy(false);
                     setAgreeMarketing(false);
                     setTermsDetailOpen(null);
+                    setAuthError(null);
                     setStep("signup-terms");
                   }}
                 >
                   회원가입
                 </SignUpLink>
               </SignUpText>
+              {authError && step === "login" && <FieldError style={{ marginTop: 12 }}>{authError}</FieldError>}
             </StepMain>
             <StepFooter>
-              <LoginButton type="button">로그인하기</LoginButton>
+              <LoginButton
+                type="button"
+                disabled={authBusy}
+                onClick={() => void handleLoginSubmit()}
+              >
+                {authBusy ? "처리 중…" : "로그인하기"}
+              </LoginButton>
             </StepFooter>
           </StepContent>
         )}
@@ -1353,35 +2599,35 @@ const ProfilePage = () => {
                     자세히 ›
                   </TermsDetailBtn>
                 </TermsRow>
-                <TermsRow>
-                  <TermsRowMain htmlFor="signup-terms-all">
-                    <TermsCheckbox
-                      id="signup-terms-all"
-                      type="checkbox"
-                      checked={allTermsChecked}
-                      onChange={(e) => {
-                        const on = e.target.checked;
-                        setAgreeService(on);
-                        setAgreePrivacy(on);
-                        setAgreeMarketing(on);
-                      }}
-                    />
-                    <TermsRowText>전체 동의</TermsRowText>
-                  </TermsRowMain>
-                  <TermsRowAlignSpacer aria-hidden />
-                </TermsRow>
               </TermsList>
               </TermsBottomBlock>
             </TermsMain>
             <StepFooter>
-              <BottomPrimaryButton
-                type="button"
-                $disabled={!requiredTermsOk}
-                disabled={!requiredTermsOk}
-                onClick={() => setStep("signup-account")}
-              >
-                다음
-              </BottomPrimaryButton>
+              <TermsFooterButtonRow>
+                <TermsRequiredConsentButton
+                  type="button"
+                  $disabled={!requiredTermsOk}
+                  disabled={!requiredTermsOk}
+                  aria-label="필수 약관에 동의하고 다음 단계로"
+                  onClick={() => {
+                    if (!requiredTermsOk) return;
+                    setStep("signup-account");
+                  }}
+                >
+                  동의
+                </TermsRequiredConsentButton>
+                <TermsAgreeAllButton
+                  type="button"
+                  onClick={() => {
+                    setAgreeService(true);
+                    setAgreePrivacy(true);
+                    setAgreeMarketing(true);
+                    setStep("signup-account");
+                  }}
+                >
+                  전체 동의
+                </TermsAgreeAllButton>
+              </TermsFooterButtonRow>
             </StepFooter>
           </StepContent>
         )}
@@ -1401,7 +2647,27 @@ const ProfilePage = () => {
                   disabled={emailStepDone}
                 />
                 {isEmailFormatInvalid && <FieldError>이메일 형식이 아닙니다</FieldError>}
-                {!hasEmailError && isEmailValid && !emailStepDone && (
+                {!isEmailFormatInvalid && emailUnavailable && (
+                  <FieldError>이미 가입된 이메일이에요</FieldError>
+                )}
+                {!isEmailFormatInvalid &&
+                  emailAvailabilityApplicable &&
+                  !emailUnavailable &&
+                  emailAvailabilityForCurrent?.status === "error" && (
+                  <FieldError>
+                    가능 여부를 확인하지 못했어요. 잠시 후 다시 확인해 보세요.
+                  </FieldError>
+                )}
+                {!isEmailFormatInvalid &&
+                  !emailUnavailable &&
+                  emailAvailabilityApplicable &&
+                  emailAvailabilityForCurrent?.status === "loading" &&
+                  !emailStepDone && <FieldMutedHint>사용 가능 여부 확인 중이에요…</FieldMutedHint>}
+                {!isEmailFormatInvalid &&
+                  !emailUnavailable &&
+                  !emailStepDone &&
+                  ((!getMeditationApiBaseUrl() && isEmailValid) ||
+                    emailAvailabilityForCurrent?.status === "available") && (
                   <FieldSuccess>사용가능한 이메일입니다</FieldSuccess>
                 )}
 
@@ -1451,13 +2717,7 @@ const ProfilePage = () => {
                         type="button"
                         $highlight={isResendHighlight}
                         disabled={phoneAuthVerified}
-                        onClick={() => {
-                          setVerifyCode("");
-                          setPhoneAuthVerified(false);
-                          setAuthResultToast(null);
-                          setCodeTimer(300);
-                          setShowCodeSentNotice(true);
-                        }}
+                        onClick={() => void resendSignupPhoneCode()}
                       >
                         다시받기
                       </ResendButton>
@@ -1474,6 +2734,31 @@ const ProfilePage = () => {
               {hasRequestedPhoneCode && phoneAuthVerified && (
                 <SignupReveal id="signup-password-anchor">
                   <StepBody>
+                    <SignupAvatarBlock>
+                      <SignupAvatarCircleButton
+                        type="button"
+                        aria-label={
+                          signupProfilePreviewUrl ? "프로필 사진 바꾸기" : "프로필 사진 선택"
+                        }
+                        onClick={() => signupAvatarInputRef.current?.click()}
+                      >
+                        {signupProfilePreviewUrl ? (
+                          <SignupAvatarPreviewImg src={signupProfilePreviewUrl} alt="" />
+                        ) : (
+                          <SignupAvatarEmptyMark aria-hidden>+</SignupAvatarEmptyMark>
+                        )}
+                      </SignupAvatarCircleButton>
+                      <SignupAvatarHiddenInput
+                        ref={signupAvatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(ev) => {
+                          const f = ev.target.files?.[0];
+                          ev.target.value = "";
+                          if (f) assignLocalSignupProfileImage(f);
+                        }}
+                      />
+                    </SignupAvatarBlock>
                     <PasswordFieldRow $index={0}>
                       <PasswordInputWrap>
                         <PasswordInput
@@ -1531,8 +2816,8 @@ const ProfilePage = () => {
               {!emailStepDone && (
                 <BottomPrimaryButton
                   type="button"
-                  $disabled={!isEmailValid}
-                  disabled={!isEmailValid}
+                  $disabled={!canProceedSignupEmailStep}
+                  disabled={!canProceedSignupEmailStep}
                   onClick={() => setEmailStepDone(true)}
                 >
                   다음
@@ -1543,19 +2828,7 @@ const ProfilePage = () => {
                   type="button"
                   $disabled={!isPhoneValid}
                   disabled={!isPhoneValid}
-                  onClick={() => {
-                    setHasRequestedPhoneCode(true);
-                    setPhoneAuthVerified(false);
-                    setAuthResultToast(null);
-                    setVerifyCode("");
-                    setCodeTimer(300);
-                    setShowCodeSentNotice(true);
-                    window.setTimeout(() => {
-                      document
-                        .getElementById("signup-code-anchor")
-                        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                    }, 120);
-                  }}
+                  onClick={() => void startSignupPhoneCodeFlow()}
                 >
                   인증번호 받기
                 </BottomPrimaryButton>
@@ -1565,15 +2838,7 @@ const ProfilePage = () => {
                   type="button"
                   $disabled={!isCodeValid}
                   disabled={!isCodeValid}
-                  onClick={() => {
-                    if (!isCodeValid) return;
-                    if (verifyCode.trim() === DEMO_SMS_AUTH_CODE_OK) {
-                      setPhoneAuthVerified(true);
-                      setAuthResultToast("success");
-                    } else {
-                      setAuthResultToast("error");
-                    }
-                  }}
+                  onClick={() => void verifySignupPhoneCode()}
                 >
                   인증
                 </BottomPrimaryButton>
@@ -1645,14 +2910,19 @@ const ProfilePage = () => {
             <TopRightCount>1/10</TopRightCount>
             <StepTitle>관심사를 선택해주세요</StepTitle>
             <StepDesc>좌우로 넘기며 관심있는 주제를 선택하세요</StepDesc>
+            {authError && <FieldError>{authError}</FieldError>}
             <InterestCard>숲</InterestCard>
             <CenterIconButton type="button" aria-label="관심사 좋아요">
               ♡
             </CenterIconButton>
             </StepMain>
             <StepFooter>
-            <InterestNextButton type="button" onClick={() => setStep("signup-complete")}>
-              다음
+            <InterestNextButton
+              type="button"
+              disabled={authBusy}
+              onClick={() => void handleRegisterAndFinish()}
+            >
+              {authBusy ? "가입 중…" : "다음"}
             </InterestNextButton>
             </StepFooter>
           </StepContent>
@@ -1719,6 +2989,7 @@ const ProfilePage = () => {
           </TermsDetailOverlay>
         )}
       </Card>
+      )}
     </Page>
   );
 };

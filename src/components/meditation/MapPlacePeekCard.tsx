@@ -1,8 +1,10 @@
 import { useCallback } from "react";
 import styled, { keyframes } from "styled-components";
 import FavoriteButton from "@/components/meditation/FavoriteButton";
+import { MarkdownText } from "@/components/common/MarkdownText";
 import { getRegionById } from "@/services/meditation/meditationService";
 import type { MeditationPlace } from "@/services/meditation/types";
+import { peekPlaceThumbnailUrl } from "@/services/meditation/listImageUrl";
 
 const slideUp = keyframes`
   from {
@@ -152,7 +154,7 @@ const Subline = styled.div`
   text-overflow: ellipsis;
 `;
 
-const Desc = styled.p`
+const Desc = styled.div`
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.45;
@@ -211,7 +213,14 @@ const MapPlacePeekCard = ({ place, onClose, onOpenDetail }: MapPlacePeekCardProp
           aria-label={`${place.name} 상세 페이지로 이동`}
         >
           <Thumb>
-            <img src={place.thumbnailUrl} alt="" draggable={false} />
+            <img
+              src={peekPlaceThumbnailUrl(place.thumbnailUrl)}
+              alt=""
+              draggable={false}
+              loading="lazy"
+              decoding="async"
+              sizes="min(100vw - 32px, 400px)"
+            />
           </Thumb>
           <Body>
             <TitleRow>
@@ -238,7 +247,9 @@ const MapPlacePeekCard = ({ place, onClose, onOpenDetail }: MapPlacePeekCardProp
               </RatingLine>
             )}
             <Subline>{subline}</Subline>
-            <Desc>{place.shortDescription}</Desc>
+            <Desc>
+              <MarkdownText markdown={place.shortDescription} />
+            </Desc>
             <DetailHint>탭하여 상세 보기 →</DetailHint>
           </Body>
         </Card>

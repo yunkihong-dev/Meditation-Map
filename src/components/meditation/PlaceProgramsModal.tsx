@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import ReviewsListSheet from "@/components/meditation/ReviewsListSheet";
 import { formatFiveStarRow } from "@/services/meditation/starRating";
 import type { MeditationPlace, PlaceProgram, PlaceProgramReview } from "@/services/meditation/types";
+import { formatProgramPeriod, normalizePlacePrograms } from "@/services/meditation/placeProgramStatus";
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -1014,7 +1015,7 @@ interface PlaceProgramsModalProps {
 }
 
 const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlaceProgramsModalProps) => {
-  const programs = place.programs ?? [];
+  const programs = normalizePlacePrograms(place).programs ?? [];
   const ongoing = useMemo(() => programs.filter((p) => p.status === "ongoing"), [programs]);
   const past = useMemo(() => programs.filter((p) => p.status === "past"), [programs]);
 
@@ -1134,7 +1135,7 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
       >
         <ModalHeader>
           <ModalTitle id="place-programs-modal-title">
-            프로그램 · 후기 <span style={{ opacity: 0.75 }}>({venueLabel})</span>
+            프로그램 · 행사 · 후기 <span style={{ opacity: 0.75 }}>({venueLabel})</span>
           </ModalTitle>
           <CloseBtn type="button" onClick={onClose} aria-label="닫기">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1252,7 +1253,10 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
             </ThumbRow>
 
             <ScrollBody>
-              <ProgTitle>{selected.title}</ProgTitle>
+              <ProgTitle>
+                {selected.kind === "event" ? "행사 · " : selected.kind === "program" ? "프로그램 · " : ""}
+                {selected.title}
+              </ProgTitle>
               <VenueBody>
                 <ReactMarkdown>{selected.bodyFromVenue}</ReactMarkdown>
               </VenueBody>

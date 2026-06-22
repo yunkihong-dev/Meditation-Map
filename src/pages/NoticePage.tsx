@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import noticesData from "@/data/notices.json";
+import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
 
 const Page = styled.div`
   max-width: 960px;
@@ -164,6 +164,12 @@ const LangToggle = styled.div`
   }
 `;
 
+const EmptyHint = styled.p`
+  margin: 24px 0;
+  color: ${({ theme }) => theme.colors.text700};
+  text-align: center;
+`;
+
 const Pagination = styled.div`
   margin-top: 20px;
   display: flex;
@@ -183,14 +189,67 @@ const PageButton = styled.button<{ $active?: boolean }>`
 
 type TtsLang = "ko-KR" | "en-US";
 
+export type NoticeDetails = {
+  paragraphs: string[];
+  bullets?: string[];
+  footer?: string;
+};
+
+export type NoticeItem = {
+  id: string;
+  category: string;
+  title: string;
+  date: string;
+  summary: string;
+  details: NoticeDetails;
+};
+
+/** 목록 API 응답 + 펼침 시 로드되는 본문 */
+export type NoticeListRow = {
+  id: string;
+  category: string;
+  title: string;
+  date: string;
+  summary: string;
+  details?: NoticeDetails;
+  detailLoading?: boolean;
+};
+
 const NoticePage = () => {
+  const [notices, setNotices] = useState<NoticeListRow[]>([]);
   const [query, setQuery] = useState("");
-  const [openId, setOpenId] = useState<string | null>(noticesData[0]?.id ?? null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [ttsLang, setTtsLang] = useState<TtsLang>("ko-KR");
-  const [preferRemote, setPreferRemote] = useState(false); // Google 등 온라인 음성 (네트워크 필요)
+  const [preferRemote, setPreferRemote] = useState(false);
+  const [loading, setLoading] = useState(true);
   const pageSize = 6;
+
+  useEffect(() => {
+    const base = getMeditationApiBaseUrl();
+    if (!base) {
+      setNotices([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    void fetch(`${base}/notices`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((list: unknown) => {
+        if (!Array.isArray(list)) {
+          setNotices([]);
+          return;
+        }
+        const items = list as NoticeListRow[];
+        setNotices(items);
+        setOpenId(null);
+      })
+      .catch(() => {
+        setNotices([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const speakText = useCallback(
     (text: string, noticeId: string) => {
@@ -207,7 +266,7 @@ const NoticePage = () => {
       const remote = matching.filter((v) => !v.localService);
       const preferred = preferRemote && remote.length
         ? remote[0]
-        : local[0] ?? matching[0]; // 기본: 로컬 우선. preferRemote 시 Google 등 온라인 음성
+        : local[0] ?? matching[0];
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = ttsLang;
@@ -225,7 +284,6 @@ const NoticePage = () => {
     [ttsLang, preferRemote]
   );
 
-  // Chrome: voices 비동기 로드 → 미리 트리거
   useEffect(() => {
     if (!("speechSynthesis" in window)) return;
     const load = () => window.speechSynthesis.getVoices();
@@ -238,23 +296,59 @@ const NoticePage = () => {
 
   const filtered = useMemo(() => {
     const lower = query.trim().toLowerCase();
-    if (!lower) return noticesData;
-    return noticesData.filter((notice) => {
-      const haystack = [
-        notice.title,
-        notice.summary,
-        ...notice.details.paragraphs,
-        ...(notice.details.bullets ?? []),
-      ]
-        .join(" ")
-        .toLowerCase();
+    if (!lower) return notices;
+    return notices.filter((notice) => {
+      const detailBits = notice.details
+        ? [...notice.details.paragraphs, ...(notice.details.bullets ?? [])]
+        : [];
+      const haystack = [notice.title, notice.summary, ...detailBits].join(" ").toLowerCase();
       return haystack.includes(lower);
     });
-  }, [query]);
+  }, [query, notices]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const ensureNoticeDetail = useCallback(
+    async (row: NoticeListRow) => {
+      if (row.details !== undefined || row.detailLoading) return;
+      const base = getMeditationApiBaseUrl();
+      if (!base) return;
+      setNotices((prev) =>
+        prev.map((n) => (n.id === row.id ? { ...n, detailLoading: true } : n))
+      );
+      try {
+        const res = await fetch(`${base}/notices/${encodeURIComponent(row.id)}`);
+        if (!res.ok) throw new Error("detail");
+        const full = (await res.json()) as NoticeItem;
+        setNotices((prev) =>
+          prev.map((n) =>
+            n.id === row.id
+              ? { ...n, details: full.details, detailLoading: false }
+              : n
+          )
+        );
+      } catch {
+        setNotices((prev) =>
+          prev.map((n) => (n.id === row.id ? { ...n, detailLoading: false } : n))
+        );
+      }
+    },
+    []
+  );
+
+  const handleToggleNotice = useCallback(
+    (notice: NoticeListRow) => {
+      if (openId === notice.id) {
+        setOpenId(null);
+        return;
+      }
+      setOpenId(notice.id);
+      void ensureNoticeDetail(notice);
+    },
+    [openId, ensureNoticeDetail]
+  );
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
@@ -266,6 +360,13 @@ const NoticePage = () => {
       <Title>공지사항</Title>
       <Subtitle>전국 힐링명상지도에서 전하는 소식을 확인하세요.</Subtitle>
 
+      {loading && <EmptyHint>불러오는 중…</EmptyHint>}
+      {!loading && notices.length === 0 && (
+        <EmptyHint>등록된 공지가 없습니다.</EmptyHint>
+      )}
+
+      {!loading && notices.length > 0 && (
+        <>
       <SearchBox onSubmit={handleSearch}>
         <SearchLabel htmlFor="notice-search">공지사항 검색</SearchLabel>
         <SearchRow>
@@ -288,7 +389,7 @@ const NoticePage = () => {
               key={notice.id}
               type="button"
               $active={isOpen}
-              onClick={() => setOpenId(isOpen ? null : notice.id)}
+              onClick={() => handleToggleNotice(notice)}
             >
               <RowTop>
                 <Category>{notice.category}</Category>
@@ -301,34 +402,35 @@ const NoticePage = () => {
                     <TtsButton
                       type="button"
                       onClick={(e) => {
-                      e.stopPropagation();
-                      if (speakingId === notice.id) {
-                        window.speechSynthesis.cancel();
-                        return;
-                      }
-                      const text = [
-                        notice.title,
-                        notice.summary,
-                        ...notice.details.paragraphs,
-                        ...(notice.details.bullets ?? []),
-                        notice.details.footer,
-                      ]
-                        .filter(Boolean)
-                        .join(". ");
-                      speakText(text, notice.id);
-                    }}
-                  >
-                    {speakingId === notice.id ? (
-                      <>멈추기</>
-                    ) : (
-                      <>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                        </svg>
-                        음성으로 들으기
-                      </>
-                    )}
+                        e.stopPropagation();
+                        if (speakingId === notice.id) {
+                          window.speechSynthesis.cancel();
+                          return;
+                        }
+                        const details = notice.details;
+                        const text = [
+                          notice.title,
+                          notice.summary,
+                          ...(details?.paragraphs ?? []),
+                          ...(details?.bullets ?? []),
+                          details?.footer,
+                        ]
+                          .filter(Boolean)
+                          .join(". ");
+                        speakText(text, notice.id);
+                      }}
+                    >
+                      {speakingId === notice.id ? (
+                        <>멈추기</>
+                      ) : (
+                        <>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                          </svg>
+                          음성으로 들으기
+                        </>
+                      )}
                     </TtsButton>
                     <LangToggle>
                       <button
@@ -365,17 +467,22 @@ const NoticePage = () => {
                     </LangToggle>
                   </TtsRow>
                   <p>{notice.summary}</p>
+                  {notice.detailLoading && <p>본문을 불러오는 중…</p>}
+                  {!notice.detailLoading && notice.details && (
+                    <>
                   {notice.details.paragraphs.map((text) => (
                     <p key={text}>{text}</p>
                   ))}
-                  {notice.details.bullets?.length > 0 && (
+                  {notice.details.bullets && notice.details.bullets.length > 0 && (
                     <BulletList>
                       {notice.details.bullets.map((item) => (
                         <li key={item}>{item}</li>
                       ))}
                     </BulletList>
                   )}
-                  <p>{notice.details.footer}</p>
+                  {notice.details.footer && <p>{notice.details.footer}</p>}
+                    </>
+                  )}
                 </Details>
               )}
             </Row>
@@ -395,6 +502,8 @@ const NoticePage = () => {
           </PageButton>
         ))}
       </Pagination>
+        </>
+      )}
     </Page>
   );
 };

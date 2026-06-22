@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import ReviewsListSheet from "@/components/meditation/ReviewsListSheet";
-import { getExpertById } from "@/services/meditation/expertService";
-import { getPlaceById } from "@/services/meditation/meditationService";
+import { MarkdownText } from "@/components/common/MarkdownText";
+import { fetchExpertById } from "@/services/meditation/expertService";
+import { fetchPlaceById } from "@/services/meditation/meditationService";
 import { formatFiveStarRow } from "@/services/meditation/starRating";
-import type { MeditationExpert } from "@/services/meditation/types";
+import { regionNameById } from "@/data/koreaRegions";
+import type { MeditationExpert, MeditationPlace } from "@/services/meditation/types";
 
 function findProgramForClassLabel(expert: MeditationExpert, label: string) {
   const t = label.trim();
@@ -311,9 +313,60 @@ const EmptyReviews = styled.p`
 const MeditationExpertDetailPage = () => {
   const navigate = useNavigate();
   const { expertId } = useParams();
-  const expert = expertId ? getExpertById(expertId) : undefined;
-  const linkedPlace = expert?.centerPlaceId ? getPlaceById(expert.centerPlaceId) : undefined;
+  const [expert, setExpert] = useState<MeditationExpert | undefined>();
+  const [linkedPlace, setLinkedPlace] = useState<MeditationPlace | undefined>();
+  const [loading, setLoading] = useState(true);
   const [allReviewsOpen, setAllReviewsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!expertId) {
+      setExpert(undefined);
+      setLinkedPlace(undefined);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    void (async () => {
+      const e = await fetchExpertById(expertId);
+      if (cancelled) return;
+      if (!e) {
+        setExpert(undefined);
+        setLinkedPlace(undefined);
+        setLoading(false);
+        return;
+      }
+      setExpert(e);
+      if (e.centerPlaceId) {
+        const p = await fetchPlaceById(e.centerPlaceId);
+        if (!cancelled) setLinkedPlace(p ?? undefined);
+      } else {
+        setLinkedPlace(undefined);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [expertId]);
+
+  if (loading) {
+    return (
+      <Page>
+        <Header>
+          <BackButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </BackButton>
+          <HeaderTitle>전문가</HeaderTitle>
+        </Header>
+        <Section>
+          <BodyText>불러오는 중…</BodyText>
+        </Section>
+      </Page>
+    );
+  }
 
   if (!expert) {
     return (
@@ -359,7 +412,9 @@ const MeditationExpertDetailPage = () => {
 
       <Section>
         <SectionTitle>자기소개</SectionTitle>
-        <BodyText>{expert.intro}</BodyText>
+        <BodyText as="div">
+          <MarkdownText markdown={expert.intro} />
+        </BodyText>
       </Section>
 
       <Section>
@@ -408,6 +463,9 @@ const MeditationExpertDetailPage = () => {
         {expert.hasCenter && expert.centerSummary && (
           <BodyText style={{ marginBottom: 8 }}>{expert.centerSummary}</BodyText>
         )}
+        {expert.hasCenter && expert.centerAddress && (
+          <BodyText style={{ marginBottom: 8 }}>{expert.centerAddress}</BodyText>
+        )}
         {expert.hasCenter && expert.centerPlaceId && linkedPlace && (
           <CenterLink
             type="button"
@@ -417,7 +475,9 @@ const MeditationExpertDetailPage = () => {
           </CenterLink>
         )}
         {!expert.hasCenter && expert.activityAreas && expert.activityAreas.length > 0 && (
-          <BodyText>주 활동 반경: {expert.activityAreas.join(", ")}</BodyText>
+          <BodyText>
+            주 활동 반경: {expert.activityAreas.map(regionNameById).join(", ")}
+          </BodyText>
         )}
       </Section>
 

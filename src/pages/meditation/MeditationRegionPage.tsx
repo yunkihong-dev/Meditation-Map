@@ -8,16 +8,17 @@ import PlaceListItem from "@/components/meditation/PlaceListItem";
 import PlacesClusterMap from "@/components/meditation/PlacesClusterMap";
 import {
   applyFilters,
-  getAvailableTags,
-  getPlaceById,
-  getPlacesByRegion,
+  collectAvailableTags,
   getRegionById,
   sortPlaces,
 } from "@/services/meditation/meditationService";
+import { useCatalogStore } from "@/stores/catalogStore";
 import { useMeditationStore } from "@/stores/meditationStore";
 
 const PEEK_STRIP_PX = 96;
 const NARROW_MAX = 960;
+/** 데스크톱 지도+목록 분할 시 오른쪽 목록 패널 기준 너비(px). PlacesClusterMap 버튼 inset과 맞춤. */
+const DESKTOP_MAP_LIST_WIDTH_PX = 400;
 
 function useNarrowScreen() {
   const [narrow, setNarrow] = useState(
@@ -430,6 +431,53 @@ const SheetListMeta = styled.p`
   color: ${({ theme }) => theme.colors.text700};
 `;
 
+const DesktopMapSplitRoot = styled.div`
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  background: ${({ theme }) => theme.colors.bg100};
+`;
+
+const DesktopMapStage = styled.div`
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+`;
+
+const DesktopListRail = styled.aside`
+  width: min(${DESKTOP_MAP_LIST_WIDTH_PX}px, 42vw);
+  max-width: ${DESKTOP_MAP_LIST_WIDTH_PX}px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: ${({ theme }) => theme.colors.white};
+  border-left: 1px solid ${({ theme }) => theme.colors.primary100};
+  box-shadow: -6px 0 20px rgba(0, 0, 0, 0.06);
+  z-index: 2;
+  min-height: 0;
+`;
+
+const DesktopListSearch = styled.div`
+  flex-shrink: 0;
+  padding: 12px 12px 8px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.primary100};
+`;
+
+const DesktopListScroll = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  -webkit-overflow-scrolling: touch;
+`;
+
 const ScrollSentinel = styled.div`
   height: 1px;
 `;
@@ -456,6 +504,7 @@ const MeditationRegionPage = () => {
   const [mapPeekPlaceId, setMapPeekPlaceId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const sheetScrollRef = useRef<HTMLDivElement | null>(null);
+  const desktopListScrollRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef({ active: false, startY: 0, startTy: 0 });
   const [sheetTy, setSheetTy] = useState(0);
@@ -506,11 +555,17 @@ const MeditationRegionPage = () => {
     }
   }, [regionId, setRegion, setPage]);
 
+  const placesAll = useCatalogStore((s) => s.places);
   const region = regionId ? getRegionById(regionId) : undefined;
-  const availableTags = useMemo(() => getAvailableTags(), []);
+  const availableTags = useMemo(() => collectAvailableTags(placesAll), [placesAll]);
   const places = useMemo(
-    () => (regionId ? getPlacesByRegion(regionId) : []),
-    [regionId]
+    () =>
+      regionId
+        ? regionId === "all"
+          ? [...placesAll]
+          : placesAll.filter((p) => p.regionId === regionId)
+        : [],
+    [regionId, placesAll]
   );
   const filteredPlaces = useMemo(
     () => applyFilters(places, filters),
@@ -528,7 +583,9 @@ const MeditationRegionPage = () => {
 
   const inMapContext = narrow || viewMode === "map";
   const peekPlace =
-    mapPeekPlaceId && inMapContext ? getPlaceById(mapPeekPlaceId) : undefined;
+    mapPeekPlaceId && inMapContext
+      ? placesAll.find((p) => p.id === mapPeekPlaceId)
+      : undefined;
 
   useEffect(() => {
     if (!inMapContext) setMapPeekPlaceId(null);
@@ -543,7 +600,10 @@ const MeditationRegionPage = () => {
   }, [filters.keyword, filters.sortBy, filters.tags, filters.category, setPage]);
 
   useEffect(() => {
-    const root = narrow ? sheetScrollRef.current : null;
+    const root =
+      narrow ? sheetScrollRef.current
+      : viewMode === "map" ? desktopListScrollRef.current
+      : null;
     const sentinel = sentinelRef.current;
     if (!sentinel || !hasMore) return;
 
@@ -558,7 +618,7 @@ const MeditationRegionPage = () => {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, narrow, page, setPage]);
+  }, [hasMore, narrow, viewMode, page, setPage]);
 
   const snapSheet = useCallback(
     (y: number) => {
@@ -738,7 +798,13 @@ const MeditationRegionPage = () => {
           <SheetScroll ref={sheetScrollRef}>
             <SheetListMeta>총 {sortedPlaces.length}곳</SheetListMeta>
             <List>
-              {visibleItems.length === 0 && <Empty>조건에 맞는 명상센터가 없어요.</Empty>}
+              {visibleItems.length === 0 && (
+                <Empty>
+                  {places.length === 0
+                    ? "등록된 공간이 없습니다."
+                    : "조건에 맞는 명상센터가 없어요."}
+                </Empty>
+              )}
               {visibleItems.map((place) => (
                 <PlaceListItem key={place.id} place={place} />
               ))}
@@ -757,30 +823,59 @@ const MeditationRegionPage = () => {
   if (viewMode === "map") {
     return (
       <>
-        <MapViewport>
-          <MapLayer>
-            <PlacesClusterMap
-              fillViewport
-              places={sortedPlaces}
-              onSelectPlace={setMapPeekPlaceId}
-            />
-          </MapLayer>
-          <MapTopBar>
-            <MapTopInner>
-              <MapIconButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 12H5M12 19l-7-7 7-7" />
-                </svg>
-              </MapIconButton>
-              <MapRegionTitle>{region.name}</MapRegionTitle>
-              <MapIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
-              </MapIconButton>
-            </MapTopInner>
-          </MapTopBar>
-        </MapViewport>
+        <DesktopMapSplitRoot>
+          <DesktopMapStage>
+            <MapLayer>
+              <PlacesClusterMap
+                fillViewport
+                sidePanelInsetPx={DESKTOP_MAP_LIST_WIDTH_PX}
+                places={sortedPlaces}
+                onSelectPlace={setMapPeekPlaceId}
+              />
+            </MapLayer>
+            <MapTopBar>
+              <MapTopInner>
+                <MapIconButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                </MapIconButton>
+                <MapRegionTitle>{region.name}</MapRegionTitle>
+                <MapIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                </MapIconButton>
+              </MapTopInner>
+            </MapTopBar>
+          </DesktopMapStage>
+          <DesktopListRail aria-label="명상지 목록">
+            <DesktopListSearch>
+              <KeywordSearchBar
+                layout="region"
+                value={filters.keyword}
+                onChange={setKeyword}
+                placeholder="장소, 이름, 주소, 기관명, 태그로 검색"
+              />
+            </DesktopListSearch>
+            <DesktopListScroll ref={desktopListScrollRef}>
+              <SheetListMeta>총 {sortedPlaces.length}곳</SheetListMeta>
+              <List>
+                {visibleItems.length === 0 && (
+                  <Empty>
+                    {places.length === 0
+                      ? "등록된 공간이 없습니다."
+                      : "조건에 맞는 명상센터가 없어요."}
+                  </Empty>
+                )}
+                {visibleItems.map((place) => (
+                  <PlaceListItem key={place.id} place={place} />
+                ))}
+              </List>
+              {hasMore && <ScrollSentinel ref={sentinelRef} />}
+            </DesktopListScroll>
+          </DesktopListRail>
+        </DesktopMapSplitRoot>
         {peekCard}
         {viewModeToggle}
         {filterDrawer}
@@ -828,7 +923,13 @@ const MeditationRegionPage = () => {
           </FilterAside>
           <Content>
             <List>
-              {visibleItems.length === 0 && <Empty>조건에 맞는 명상센터가 없어요.</Empty>}
+              {visibleItems.length === 0 && (
+                <Empty>
+                  {places.length === 0
+                    ? "등록된 공간이 없습니다."
+                    : "조건에 맞는 명상센터가 없어요."}
+                </Empty>
+              )}
               {visibleItems.map((place) => (
                 <PlaceListItem key={place.id} place={place} />
               ))}

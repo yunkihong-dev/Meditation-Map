@@ -34,10 +34,17 @@ export interface PlaceProgramReview {
 export interface PlaceProgram {
   id: string;
   title: string;
+  /** 행사 | 정기·상시 프로그램 (없으면 프로그램으로 간주) */
+  kind?: "event" | "program";
+  /** YYYY-MM-DD — 행사는 필수, 프로그램은 선택 */
+  startDate?: string;
+  /** YYYY-MM-DD — 행사는 필수, 프로그램은 선택 */
+  endDate?: string;
+  /** 진행 중 | 완료 — 기간(endDate) 기준 자동 계산 */
   status: "ongoing" | "past";
   /** 대표 사진 */
   imageUrl: string;
-  /** 추가 사진(가로 스와이프·점 표시) */
+  /** 추가 사진 — 배열 순서 = 표시 순서 (대표 imageUrl 다음) */
   imageUrls?: string[];
   /** 업체가 작성한 프로그램 소개(마크다운) */
   bodyFromVenue: string;
@@ -58,17 +65,22 @@ export interface MeditationPlace {
   id: string;
   regionId: string;
   name: string;
+  /** 누적 조회수(인기 섹션 등 정렬용). 없으면 0으로 간주 */
+  viewCount?: number;
   rating?: number;
   reviewCount?: number;
+  /** 한 줄 소개 (마크다운) */
   shortDescription: string;
   description: string;
   address: string;
   thumbnailUrl: string;
+  /** 장소 공통 사진 갤러리 — 배열 순서 = 표시 순서 (1번이 대표) */
+  photos?: string[];
   hashtags: string[];
   themes: string[];
   hasTempleStay: boolean;
   duration: string;
-  /** 이용 요금·입장료 (한 줄 요약) */
+  /** 이용 요금·입장료 (마크다운) */
   admissionFee?: string;
   /** 명상지 | 명상센터 (센터면 강사 블록·UI 라벨) */
   venueKind?: "명상지" | "명상센터";
@@ -126,6 +138,7 @@ export interface MeditationExpert {
   classTypes: string[];
   hasCenter: boolean;
   centerSummary?: string;
+  centerAddress?: string;
   /** 본인 소유·연계 명상지 place id */
   centerPlaceId?: string;
   /** 센터 없을 때 활동 반경(지명) */

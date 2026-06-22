@@ -8,12 +8,11 @@ import PlaceListItem from "@/components/meditation/PlaceListItem";
 import RegionMap from "@/components/meditation/RegionMap";
 import {
   applyFilters,
-  getAvailableTags,
-  getPlaces,
-  getPopularPlaces,
-  getRegions,
+  collectAvailableTags,
+  computePopularPlaces,
   sortPlaces,
 } from "@/services/meditation/meditationService";
+import { useCatalogStore } from "@/stores/catalogStore";
 import { useMeditationStore } from "@/stores/meditationStore";
 
 const fadeSlideIn = keyframes`
@@ -293,11 +292,11 @@ const MeditationMainPage = () => {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [placeholder, setPlaceholder] = useState("");
 
-  const regions = getRegions();
+  const places = useCatalogStore((s) => s.places);
+  const regions = useCatalogStore((s) => s.regions);
   const allRegions = [{ id: "all", name: "전체" }, ...regions];
-  const popularPlaces = getPopularPlaces(8);
-  const availableTags = useMemo(() => getAvailableTags(), []);
-  const places = useMemo(() => getPlaces(), []);
+  const popularPlaces = useMemo(() => computePopularPlaces(places, 8), [places]);
+  const availableTags = useMemo(() => collectAvailableTags(places), [places]);
 
   const filteredPlaces = useMemo(
     () => applyFilters(places, filters),
@@ -423,11 +422,17 @@ const MeditationMainPage = () => {
 
               <PopularSection>
                 <SectionTitle>인기 명상지</SectionTitle>
-                <PopularScroll>
-                  {popularPlaces.map((place) => (
-                    <PopularPlaceCard key={place.id} place={place} />
-                  ))}
-                </PopularScroll>
+                {places.length === 0 ? (
+                  <Empty style={{ marginTop: 12, textAlign: "center", padding: "24px 8px" }}>
+                    등록된 공간이 없습니다.
+                  </Empty>
+                ) : (
+                  <PopularScroll>
+                    {popularPlaces.map((place) => (
+                      <PopularPlaceCard key={place.id} place={place} />
+                    ))}
+                  </PopularScroll>
+                )}
               </PopularSection>
             </SideColumn>
           </MainGrid>
@@ -457,7 +462,11 @@ const MeditationMainPage = () => {
               </SearchResultHeader>
               <List>
                 {visibleItems.length === 0 && (
-                  <Empty>조건에 맞는 명상센터가 없어요.</Empty>
+                  <Empty>
+                    {places.length === 0
+                      ? "등록된 공간이 없습니다."
+                      : "조건에 맞는 명상센터가 없어요."}
+                  </Empty>
                 )}
                 {visibleItems.map((place) => (
                   <PlaceListItem key={place.id} place={place} />

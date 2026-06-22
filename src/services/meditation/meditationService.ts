@@ -10,41 +10,42 @@ import {
   fetchPlaces,
   fetchPlacesByRegionId,
   getPlacesRepository,
-  getPlacesTableSnapshot,
 } from "./repositories/placesRepository";
-import {
-  fetchRegions,
-  getRegionsRepository,
-  getRegionsTableSnapshot,
-} from "./repositories/regionsRepository";
-
-const regions = getRegionsTableSnapshot();
-const places = getPlacesTableSnapshot();
+import { fetchRegions, getRegionsRepository } from "./repositories/regionsRepository";
+import { useCatalogStore } from "@/stores/catalogStore";
 
 const ALL_REGION: Region = { id: "all", name: "전체", slug: "all" };
 
-/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchRegions() 사용 권장 */
-export const getRegions = (): Region[] => regions;
+/** 카탈로그 스토어는 부트스트랩 시 API로만 채워집니다. */
+export const getRegions = (): Region[] => useCatalogStore.getState().regions;
 
 export const getRegionById = (regionId: string): Region | undefined =>
   regionId === "all"
     ? ALL_REGION
-    : regions.find((region) => region.id === regionId);
+    : useCatalogStore.getState().regions.find((region) => region.id === regionId);
 
-/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchPlaces() 사용 권장 */
-export const getPlaces = (): MeditationPlace[] => places;
+export const getPlaces = (): MeditationPlace[] => useCatalogStore.getState().places;
 
-/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchPlacesByRegionId() 사용 권장 */
-export const getPlacesByRegion = (regionId: string): MeditationPlace[] =>
-  regionId === "all" ? [...places] : places.filter((place) => place.regionId === regionId);
+export const getPlacesByRegion = (regionId: string): MeditationPlace[] => {
+  const places = useCatalogStore.getState().places;
+  return regionId === "all" ? [...places] : places.filter((place) => place.regionId === regionId);
+};
 
-export const getPopularPlaces = (limit = 8): MeditationPlace[] => places.slice(0, limit);
+export const computePopularPlaces = (places: MeditationPlace[], limit = 8): MeditationPlace[] =>
+  [...places]
+    .sort((a, b) => {
+      const d = (b.viewCount ?? 0) - (a.viewCount ?? 0);
+      return d !== 0 ? d : String(a.id).localeCompare(String(b.id));
+    })
+    .slice(0, limit);
 
-/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchPlaceById() 사용 권장 */
+export const getPopularPlaces = (limit = 8): MeditationPlace[] =>
+  computePopularPlaces(useCatalogStore.getState().places, limit);
+
 export const getPlaceById = (placeId: string): MeditationPlace | undefined =>
-  places.find((place) => place.id === placeId);
+  useCatalogStore.getState().places.find((place) => place.id === placeId);
 
-export const getAvailableTags = (): string[] => {
+export const collectAvailableTags = (places: MeditationPlace[]): string[] => {
   const tags = new Set<string>();
   places.forEach((place) => {
     place.hashtags.forEach((tag) => tags.add(tag));
@@ -54,7 +55,10 @@ export const getAvailableTags = (): string[] => {
     .sort();
 };
 
-/** HTTP/로컬 레포와 동일 엔드포인트 의미의 비동기 API */
+export const getAvailableTags = (): string[] =>
+  collectAvailableTags(useCatalogStore.getState().places);
+
+/** HTTP 전용 레포 */
 export { fetchPlaces, fetchPlaceById, fetchPlacesByRegionId, getPlacesRepository };
 export { fetchRegions, getRegionsRepository };
 

@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import RegionMap from "@/components/meditation/RegionMap";
-import { getRegionById, getRegions } from "@/services/meditation/meditationService";
+import { getRegionById } from "@/services/meditation/meditationService";
+import { useCatalogStore } from "@/stores/catalogStore";
 import { useMeditationStore } from "@/stores/meditationStore";
 
 const Page = styled.div`
@@ -223,10 +224,11 @@ const REGION_ENTRY_TYPES: { label: string; kind: RegionEntryKind }[] = [
 const MeditationMapPage = () => {
   const navigate = useNavigate();
   const mapSectionRef = useRef<HTMLDivElement>(null);
-  const chipRegions = [
-    { id: "all", name: "전체" },
-    ...getRegions().map((r) => ({ id: r.id, name: r.name })),
-  ];
+  const regions = useCatalogStore((s) => s.regions);
+  const chipRegions = useMemo(
+    () => [{ id: "all", name: "전체" }, ...regions.map((r) => ({ id: r.id, name: r.name }))],
+    [regions]
+  );
   const popoverRef = useRef<HTMLDivElement>(null);
   const chipsRef = useRef<HTMLElement>(null);
   const { selectedRegionId, setRegion, setCategory } = useMeditationStore();

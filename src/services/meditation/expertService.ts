@@ -4,20 +4,16 @@ import {
   fetchExperts,
   fetchExpertsByRegionId,
   getExpertsRepository,
-  getExpertsTableSnapshot,
 } from "./repositories/expertsRepository";
+import { useCatalogStore } from "@/stores/catalogStore";
 
-const experts = getExpertsTableSnapshot();
+export const getExperts = (): MeditationExpert[] => useCatalogStore.getState().experts;
 
-/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchExperts() 사용 권장 */
-export const getExperts = (): MeditationExpert[] => experts;
-
-/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchExpertById() 사용 권장 */
 export const getExpertById = (id: string): MeditationExpert | undefined =>
-  experts.find((e) => e.id === id);
+  useCatalogStore.getState().experts.find((e) => e.id === id);
 
-/** @deprecated 레거시 동기 — 백엔드 연동 시 fetchExpertsByRegionId() 사용 권장 */
 export const getExpertsByRegion = (regionId: string): MeditationExpert[] => {
+  const experts = useCatalogStore.getState().experts;
   if (regionId === "all") {
     return [...experts];
   }

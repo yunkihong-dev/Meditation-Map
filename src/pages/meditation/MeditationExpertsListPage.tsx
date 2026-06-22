@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
-import { getExpertsByRegion } from "@/services/meditation/expertService";
+import { listExpertAvatarUrl } from "@/services/meditation/listImageUrl";
 import { getRegionById } from "@/services/meditation/meditationService";
+import { useCatalogStore } from "@/stores/catalogStore";
 
 const Page = styled.div`
   max-width: 720px;
@@ -111,7 +113,12 @@ const MeditationExpertsListPage = () => {
   const navigate = useNavigate();
   const { regionId } = useParams();
   const region = regionId ? getRegionById(regionId) : undefined;
-  const experts = regionId ? getExpertsByRegion(regionId) : [];
+  const expertsAll = useCatalogStore((s) => s.experts);
+  const experts = useMemo(() => {
+    if (!regionId) return [];
+    if (regionId === "all") return [...expertsAll];
+    return expertsAll.filter((e) => e.regionIds.includes(regionId));
+  }, [regionId, expertsAll]);
 
   if (!regionId || !region) {
     return (
@@ -141,7 +148,13 @@ const MeditationExpertsListPage = () => {
         )}
         {experts.map((e) => (
           <Card key={e.id} type="button" onClick={() => navigate(`/meditation/expert/${e.id}`)}>
-            <Avatar src={e.avatarUrl} alt="" />
+            <Avatar
+              src={listExpertAvatarUrl(e.avatarUrl)}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              sizes="64px"
+            />
             <CardBody>
               <Name>{e.name}</Name>
               <Specs>{e.specialties.join(" · ")}</Specs>

@@ -15,13 +15,13 @@ const Root = styled.div<{ $fillViewport?: boolean }>`
   background: ${({ theme }) => theme.colors.bg100};
 `;
 
-const MyLocationBtn = styled.button<{ $floating?: boolean }>`
-  ${({ $floating }) =>
+const MyLocationBtn = styled.button<{ $floating?: boolean; $rightInsetPx?: number }>`
+  ${({ $floating, $rightInsetPx = 0 }) =>
     $floating
       ? css`
           position: fixed;
           z-index: 108;
-          right: 14px;
+          right: calc(14px + ${$rightInsetPx}px);
           bottom: calc(64px + env(safe-area-inset-bottom, 0px));
         `
       : css`
@@ -184,13 +184,23 @@ interface PlacesClusterMapProps {
   onSelectPlace: (placeId: string) => void;
   /** true면 부모가 꽉 찬 높이(전체 화면 지도)일 때 비율에 맞춤 */
   fillViewport?: boolean;
+  /**
+   * fillViewport + 전체 화면 지도 옆에 목록 패널이 있을 때, 고정된 "내 위치" 버튼이 패널과 겹치지 않도록
+   * 오른쪽에서 덜어 낼 픽셀(패널 너비와 맞춤).
+   */
+  sidePanelInsetPx?: number;
 }
 
 /**
  * 필터된 명상지 목록을 네이버 지도에 표시합니다.
  * 좌표는 `placeApproxPosition` 근사값이며, 줌 레벨에 따라 마커를 묶어 숫자 배지로 보여 줍니다.
  */
-const PlacesClusterMap = ({ places, onSelectPlace, fillViewport = false }: PlacesClusterMapProps) => {
+const PlacesClusterMap = ({
+  places,
+  onSelectPlace,
+  fillViewport = false,
+  sidePanelInsetPx = 0,
+}: PlacesClusterMapProps) => {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
   const markersRef = useRef<Array<{ setMap: (v: unknown) => void }>>([]);
@@ -466,6 +476,7 @@ const PlacesClusterMap = ({ places, onSelectPlace, fillViewport = false }: Place
   const locationBtn = (
     <MyLocationBtn
       $floating={fillViewport}
+      $rightInsetPx={fillViewport ? sidePanelInsetPx : 0}
       type="button"
       aria-label="현재 위치로 이동"
       title="현재 위치로 이동"
