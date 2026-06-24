@@ -73,6 +73,10 @@ export interface MeditationPlace {
   shortDescription: string;
   description: string;
   address: string;
+  /** 지도 마커 위도 (관리자가 주소 검색 후 직접 보정). 없으면 주소 지오코딩으로 표시 */
+  lat?: number;
+  /** 지도 마커 경도 */
+  lng?: number;
   thumbnailUrl: string;
   /** 장소 공통 사진 갤러리 — 배열 순서 = 표시 순서 (1번이 대표) */
   photos?: string[];
@@ -139,6 +143,10 @@ export interface MeditationExpert {
   hasCenter: boolean;
   centerSummary?: string;
   centerAddress?: string;
+  /** 사업자등록번호 (센터 인증용, 비공개) */
+  businessRegistrationNumber?: string;
+  /** 개업일자 YYYY-MM-DD (센터 인증용, 비공개) */
+  businessOpeningDate?: string;
   /** 본인 소유·연계 명상지 place id */
   centerPlaceId?: string;
   /** 센터 없을 때 활동 반경(지명) */

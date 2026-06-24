@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { adminLogin } from "@/services/admin/adminApi";
 import { useAdminAuthStore } from "@/stores/adminAuthStore";
-import { AdminButton, AdminCard, AdminError, AdminField, AdminInput, AdminLabel } from "@/components/admin/adminStyles";
+import { toast } from "@/stores/toastStore";
+import { AdminButton, AdminCard, AdminField, AdminInput, AdminLabel } from "@/components/admin/adminStyles";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -24,23 +25,21 @@ export default function AdminLoginPage() {
   const bootstrap = useAdminAuthStore((s) => s.bootstrap);
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
     try {
       await adminLogin(loginId.trim(), password);
       await bootstrap();
       if (!useAdminAuthStore.getState().authenticated) {
-        setError("스태프(ADMIN/DEV/EMPLOYEE) 계정만 접근할 수 있습니다.");
+        toast.error("스태프(ADMIN/DEV/EMPLOYEE) 계정만 접근할 수 있습니다.");
         return;
       }
       navigate("/admin", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "로그인에 실패했습니다.");
+      toast.error(err instanceof Error ? err.message : "로그인에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +58,6 @@ export default function AdminLoginPage() {
             <AdminLabel>비밀번호</AdminLabel>
             <AdminInput value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" required />
           </AdminField>
-          {error && <AdminError>{error}</AdminError>}
           <AdminButton $variant="primary" type="submit" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
             {loading ? "로그인 중…" : "로그인"}
           </AdminButton>

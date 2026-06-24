@@ -194,7 +194,7 @@ export default function AdminPlacesPage() {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(260px, 1fr) minmax(340px, 1.15fr) minmax(300px, 380px)",
+        gridTemplateColumns: "minmax(260px, 1fr) minmax(340px, 1.15fr) max-content",
         gap: 16,
         alignItems: "start",
       }}
@@ -236,9 +236,31 @@ export default function AdminPlacesPage() {
                 <td>{r.data.venueKind ?? "명상지"}</td>
                 <td>{(r.data.programs ?? []).length}</td>
                 <td>
-                  <AdminButton $variant="danger" type="button" onClick={() => setDeleteTargetId(r.id)}>
-                    삭제
-                  </AdminButton>
+                  <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <AdminButton
+                      type="button"
+                      onClick={() => {
+                        setEditingId(r.id);
+                        setIsNew(false);
+                        setTab("basic");
+                      }}
+                    >
+                      수정
+                    </AdminButton>
+                    <AdminButton
+                      type="button"
+                      onClick={() => {
+                        setEditingId(r.id);
+                        setIsNew(false);
+                        setTab("programs");
+                      }}
+                    >
+                      행사·프로그램
+                    </AdminButton>
+                    <AdminButton $variant="danger" type="button" onClick={() => setDeleteTargetId(r.id)}>
+                      삭제
+                    </AdminButton>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -309,7 +331,10 @@ export default function AdminPlacesPage() {
                 <AdminAddressMapField
                   key={isNew ? "new" : editingId ?? "edit"}
                   value={draft.address}
+                  lat={draft.lat}
+                  lng={draft.lng}
                   onChange={(address) => setDraft({ ...draft, address })}
+                  onCoordsChange={(lat, lng) => setDraft((d) => (d ? { ...d, lat, lng } : d))}
                 />
                 <AdminMarkdownField
                   label="입장료·이용 요금 (마크다운)"

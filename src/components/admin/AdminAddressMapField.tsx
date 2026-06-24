@@ -152,7 +152,11 @@ const Hint = styled.p`
 
 interface AdminAddressMapFieldProps {
   value: string;
+  lat?: number;
+  lng?: number;
   onChange: (address: string) => void;
+  /** 마커 위치(주소 검색 결과 또는 드래그 보정)가 바뀔 때 좌표를 보고 */
+  onCoordsChange?: (lat: number, lng: number) => void;
 }
 
 async function waitForPaint(): Promise<void> {
@@ -161,10 +165,20 @@ async function waitForPaint(): Promise<void> {
   });
 }
 
-export default function AdminAddressMapField({ value, onChange }: AdminAddressMapFieldProps) {
+export default function AdminAddressMapField({
+  value,
+  lat,
+  lng,
+  onChange,
+  onCoordsChange,
+}: AdminAddressMapFieldProps) {
   const mapElRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
   const markerRef = useRef<unknown>(null);
+  const onCoordsChangeRef = useRef(onCoordsChange);
+  onCoordsChangeRef.current = onCoordsChange;
+  // 마커를 직접 드래그하면 true. 명시적 검색 전까지 타이핑 자동 미리보기가 마커를 덮어쓰지 않게 한다.
+  const manuallyPlacedRef = useRef(false);
   const [query, setQuery] = useState(value);
   const [candidates, setCandidates] = useState<GeocodeCandidate[]>([]);
   const [selected, setSelected] = useState<GeocodeCandidate | null>(null);
@@ -183,49 +197,70 @@ export default function AdminAddressMapField({ value, onChange }: AdminAddressMa
     }
   }, [value]);
 
-  const showOnMap = useCallback(
-    (candidate: GeocodeCandidate, options?: { syncAddress?: boolean }) => {
-      const naver = window.naver as {
-        maps?: {
-          Map?: new (
-            el: HTMLElement,
-            opts: object
-          ) => { setCenter: (p: unknown) => void; setZoom: (z: number) => void };
-          LatLng?: new (lat: number, lng: number) => unknown;
-          Marker?: new (opts: object) => unknown;
-          Event?: { trigger: (target: unknown, event: string) => void };
+  // 지정 좌표에 지도 + 드래그 가능한 마커를 그린다. 마커를 드래그하면 좌표를 보고한다.
+  const placeMarkerAt = useCallback((latVal: number, lngVal: number, zoom: number) => {
+    const naver = window.naver as {
+      maps?: {
+        Map?: new (
+          el: HTMLElement,
+          opts: object
+        ) => { setCenter: (p: unknown) => void; setZoom: (z: number) => void };
+        LatLng?: new (lat: number, lng: number) => unknown;
+        Marker?: new (opts: object) => unknown;
+        Event?: {
+          trigger: (target: unknown, event: string) => void;
+          addListener?: (target: unknown, event: string, handler: () => void) => void;
         };
       };
-      const maps = naver.maps;
-      const el = mapElRef.current;
-      if (!maps?.Map || !maps.LatLng || !maps.Marker || !el) return;
+    };
+    const maps = naver.maps;
+    const el = mapElRef.current;
+    if (!maps?.Map || !maps.LatLng || !maps.Marker || !el) return;
 
-      const position = new maps.LatLng!(candidate.lat, candidate.lng);
-      const zoom = zoomForGeocodeCandidate(candidate);
-      if (!mapRef.current) {
-        mapRef.current = new maps.Map(el, {
-          center: position,
-          zoom,
-          scrollWheel: true,
-          mapTypeControl: false,
-        });
-      } else {
-        const map = mapRef.current as { setCenter: (p: unknown) => void; setZoom: (z: number) => void };
-        map.setCenter(position);
-        map.setZoom(zoom);
-      }
-      if (markerRef.current) {
-        (markerRef.current as { setMap: (m: null) => void }).setMap(null);
-      }
-      markerRef.current = new maps.Marker!({ position, map: mapRef.current });
-      maps.Event?.trigger(mapRef.current, "resize");
+    const position = new maps.LatLng!(latVal, lngVal);
+    if (!mapRef.current) {
+      mapRef.current = new maps.Map(el, {
+        center: position,
+        zoom,
+        scrollWheel: true,
+        pinchZoom: true,
+        zoomControl: true,
+        mapTypeControl: false,
+        draggable: true,
+      });
+    } else {
+      // 기존 지도는 위치만 옮기고 줌은 사용자가 맞춘 값을 보존(매번 리셋 방지)
+      const map = mapRef.current as { setCenter: (p: unknown) => void };
+      map.setCenter(position);
+    }
+    if (markerRef.current) {
+      (markerRef.current as { setMap: (m: null) => void }).setMap(null);
+    }
+    const marker = new maps.Marker!({ position, map: mapRef.current, draggable: true });
+    markerRef.current = marker;
+    maps.Event?.addListener?.(marker, "dragend", () => {
+      const pos = (marker as { getPosition: () => { lat: () => number; lng: () => number } }).getPosition();
+      const nLat = pos.lat();
+      const nLng = pos.lng();
+      manuallyPlacedRef.current = true; // 드래그 후엔 자동 미리보기가 덮어쓰지 않음
+      setVerified(true);
+      onCoordsChangeRef.current?.(nLat, nLng);
+    });
+    maps.Event?.trigger(mapRef.current, "resize");
+  }, []);
+
+  const showOnMap = useCallback(
+    (candidate: GeocodeCandidate, options?: { syncAddress?: boolean }) => {
+      manuallyPlacedRef.current = false; // 검색/후보 선택 등 명시적 배치는 드래그 고정을 해제
+      placeMarkerAt(candidate.lat, candidate.lng, zoomForGeocodeCandidate(candidate));
       setSelected(candidate);
       setVerified(!candidate.approximate);
+      onCoordsChangeRef.current?.(candidate.lat, candidate.lng);
       if (options?.syncAddress !== false && !candidate.approximate) {
         onChange(candidate.address);
       }
     },
-    [onChange]
+    [onChange, placeMarkerAt]
   );
 
   const runSearch = useCallback(async (searchText?: string) => {
@@ -260,56 +295,41 @@ export default function AdminAddressMapField({ value, onChange }: AdminAddressMa
     }
   }, [ncpKeyId, onChange, query, showOnMap]);
 
+  // 편집 대상 전환 시(상위에서 key 로 리마운트) 1회 로드:
+  // 저장된 좌표가 있으면 그 위치에 마커, 없으면 주소를 지오코딩해 대략 위치 표시.
   useEffect(() => {
-    if (!value.trim() || !ncpKeyId) return;
     let cancelled = false;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
     void (async () => {
+      if (!ncpKeyId) return;
       try {
         await ensureNaverMapsGeocoder(ncpKeyId);
         if (cancelled) return;
         await waitForPaint();
+        if (hasCoords) {
+          placeMarkerAt(lat as number, lng as number, 16);
+          setVerified(true);
+          return;
+        }
+        if (!value.trim()) return;
         const list = await searchAddressCandidates(value);
         if (cancelled || list.length === 0) return;
         const match = list.find((c) => c.address === value) ?? list[0];
         await waitForPaint();
         if (!cancelled) showOnMap(match!, { syncAddress: false });
       } catch {
-        /* 기존 주소 자동 표시 실패는 무시 */
+        /* 초기 표시 실패는 무시 */
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [ncpKeyId, showOnMap, value]);
+    // 마운트 1회 (place 전환 시 key 로 리마운트). 검색/타이핑/드래그는 별도 핸들러가 갱신.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  useEffect(() => {
-    const q = query.trim();
-    if (!q || !ncpKeyId || q === value.trim()) return;
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        try {
-          await ensureNaverMapsGeocoder(ncpKeyId);
-          if (cancelled) return;
-          await waitForPaint();
-          const list = await searchAddressCandidates(q);
-          if (cancelled || list.length === 0) return;
-          await waitForPaint();
-          if (!cancelled) {
-            setCandidates(list);
-            setError(null);
-            showOnMap(list[0]!, { syncAddress: false });
-          }
-        } catch {
-          /* 입력 중 자동 미리보기 실패는 무시 */
-        }
-      })();
-    }, 600);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [ncpKeyId, query, showOnMap, value]);
+  // 타이핑 중 자동 미리보기는 제거: 검색은 버튼/엔터로만. 검색 후 지도 이동·확대/축소·핀
+  // 드래그가 600ms 자동 재중심정렬로 되돌려지던(락처럼 느껴지던) 문제를 없앤다.
 
   return (
     <AdminField>
@@ -343,7 +363,7 @@ export default function AdminAddressMapField({ value, onChange }: AdminAddressMa
       </SearchRow>
       <Hint>
         정확한 도로명·지번이 없어도 「강릉」, 「제주」, 「종로구」처럼 지역명만으로 대략적인 위치를 표시합니다.
-        검색 후 핀 위치를 확인해 주세요.
+        검색 후 <strong>핀을 드래그</strong>해 정확한 위치로 옮길 수 있습니다.
       </Hint>
       {error && <AdminError>{error}</AdminError>}
       {candidates.length > 1 && (

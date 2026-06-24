@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import styled from "styled-components";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import styled, { keyframes } from "styled-components";
 import { theme } from "@/styles/theme";
 import { AdminCard, AdminError } from "./adminStyles";
 import type { MetricSeries } from "./adminMetricsTypes";
@@ -33,17 +33,20 @@ const SummaryRow = styled.div<{ $compact?: boolean }>`
 `;
 
 const SummaryPill = styled.div<{ $compact?: boolean }>`
-  padding: ${({ $compact }) => ($compact ? "4px 8px" : "6px 10px")};
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: ${({ $compact }) => ($compact ? "4px 9px" : "5px 11px")};
   border-radius: ${theme.radii.pill};
-  background: rgba(75, 0, 130, 0.18);
-  border: 1px solid rgba(75, 0, 130, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: ${({ $compact }) => ($compact ? "11px" : "12px")};
-  color: #d4d4d8;
+  color: #a1a1aa;
 
   strong {
-    color: #fff;
-    margin-left: 4px;
+    color: #fafafa;
     font-size: ${({ $compact }) => ($compact ? "12px" : "13px")};
+    font-variant-numeric: tabular-nums;
   }
 `;
 
@@ -56,20 +59,56 @@ const SvgRoot = styled.svg`
   display: block;
   width: 100%;
   overflow: visible;
+  touch-action: none;
+`;
+
+const drawIn = keyframes`
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+`;
+
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
+const LinePath = styled.path`
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: ${drawIn} 0.7s ease forwards;
+`;
+
+const AreaPath = styled.path`
+  animation: ${fadeIn} 0.7s ease forwards;
 `;
 
 const Tooltip = styled.div`
   position: absolute;
   pointer-events: none;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: rgba(9, 9, 11, 0.95);
+  padding: 7px 11px;
+  border-radius: 10px;
+  background: rgba(9, 9, 11, 0.92);
   border: 1px solid #3f3f46;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
   color: #fff;
-  font-size: 12px;
   white-space: nowrap;
-  transform: translate(-50%, -120%);
+  transform: translate(-50%, calc(-100% - 12px));
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: left 0.08s ease, top 0.08s ease;
+
+  .tip-label {
+    font-size: 11px;
+    color: #a1a1aa;
+  }
+  .tip-value {
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
 `;
 
 const EmptyState = styled.p<{ $compact?: boolean }>`
@@ -121,9 +160,9 @@ function shortXLabel(key: string, granularity: MetricSeries["granularity"]): str
 }
 
 function accentColor(accent: AdminMetricLineChartProps["accent"]) {
-  if (accent === "teal") return { stroke: "#2dd4bf", fill: "rgba(45, 212, 191, 0.18)", dot: "#5eead4" };
-  if (accent === "gold") return { stroke: "#fbbf24", fill: "rgba(251, 191, 36, 0.16)", dot: "#fde68a" };
-  return { stroke: theme.colors.primary300, fill: "rgba(168, 139, 202, 0.2)", dot: theme.colors.primary200 };
+  if (accent === "teal") return { stroke: "#2dd4bf", dot: "#5eead4" };
+  if (accent === "gold") return { stroke: "#fbbf24", dot: "#fde68a" };
+  return { stroke: theme.colors.primary300, dot: theme.colors.primary200 };
 }
 
 type PlottedPoint = {
@@ -189,7 +228,7 @@ export default function AdminMetricLineChart({
   const wrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(960);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const gradientId = useId().replace(/:/g, "");
 
   const height = compact ? 168 : 260;
   const pad = compact ? COMPACT_PAD : PAD;
@@ -279,12 +318,34 @@ export default function AdminMetricLineChart({
     };
   }, [height, pad, series, width]);
 
+  const active = hoveredKey
+    ? chart.plotted.find((p) => p.key === hoveredKey) ?? null
+    : null;
+
+  // 차트 위 어디서든 마우스를 움직이면 가장 가까운 데이터 점으로 스냅한다.
+  const handleMove = (e: React.MouseEvent) => {
+    const rect = wrapRef.current?.getBoundingClientRect();
+    if (!rect || chart.plotted.length === 0) return;
+    const x = e.clientX - rect.left;
+    let nearest = chart.plotted[0];
+    let best = Infinity;
+    for (const p of chart.plotted) {
+      const d = Math.abs(p.x - x);
+      if (d < best) {
+        best = d;
+        nearest = p;
+      }
+    }
+    if (nearest.key !== hoveredKey) setHoveredKey(nearest.key);
+  };
+
+  // 데이터(기간/단위)가 바뀔 때만 라인 드로우 애니메이션을 재생(리사이즈로는 재생 안 함).
+  const animKey = `${chart.granularity}-${chart.plotted.length}-${series?.total ?? 0}`;
+
   return (
     <ChartCard $compact={compact}>
       <ChartHeader $compact={compact}>
-        <ChartTitle $compact={compact}>
-          {title}
-        </ChartTitle>
+        <ChartTitle $compact={compact}>{title}</ChartTitle>
       </ChartHeader>
 
       {error && <AdminError>{error}</AdminError>}
@@ -309,7 +370,22 @@ export default function AdminMetricLineChart({
         <EmptyState $compact={compact}>{emptyMessage}</EmptyState>
       ) : (
         <ChartWrap ref={wrapRef} style={{ position: "relative", height }}>
-          <SvgRoot viewBox={`0 0 ${width} ${height}`} style={{ height }} role="img" aria-label={title}>
+          <SvgRoot
+            viewBox={`0 0 ${width} ${height}`}
+            style={{ height }}
+            role="img"
+            aria-label={title}
+            onMouseMove={handleMove}
+            onMouseLeave={() => setHoveredKey(null)}
+          >
+            <defs>
+              <linearGradient id={`area-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={colors.stroke} stopOpacity={0.38} />
+                <stop offset="70%" stopColor={colors.stroke} stopOpacity={0.06} />
+                <stop offset="100%" stopColor={colors.stroke} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+
             {chart.yTicks.map((tick) => (
               <g key={tick.value}>
                 <line
@@ -317,7 +393,7 @@ export default function AdminMetricLineChart({
                   x2={width - pad.right}
                   y1={tick.y}
                   y2={tick.y}
-                  stroke="rgba(255,255,255,0.08)"
+                  stroke="rgba(255,255,255,0.06)"
                   strokeDasharray="4 4"
                 />
                 <text
@@ -368,32 +444,39 @@ export default function AdminMetricLineChart({
             })}
 
             {chart.dividers.map((divider) => (
-              <g key={`${divider.yearBefore}-${divider.yearAfter}`}>
-                <line
-                  x1={divider.x}
-                  x2={divider.x}
-                  y1={pad.top - 8}
-                  y2={chart.baseY}
-                  stroke="rgba(255,255,255,0.14)"
-                  strokeWidth={1}
-                />
-                <text
-                  x={divider.x}
-                  y={pad.top - 16}
-                  textAnchor="middle"
-                  fill="#52525b"
-                  fontSize="11"
-                  fontWeight="600"
-                >
-                  |
-                </text>
-              </g>
+              <line
+                key={`${divider.yearBefore}-${divider.yearAfter}`}
+                x1={divider.x}
+                x2={divider.x}
+                y1={pad.top - 8}
+                y2={chart.baseY}
+                stroke="rgba(255,255,255,0.14)"
+                strokeWidth={1}
+              />
             ))}
 
-            {chart.areaPath && <path d={chart.areaPath} fill={colors.fill} stroke="none" />}
+            {/* 호버 크로스헤어 */}
+            {active && (
+              <line
+                x1={active.x}
+                x2={active.x}
+                y1={pad.top}
+                y2={chart.baseY}
+                stroke={colors.stroke}
+                strokeOpacity={0.35}
+                strokeWidth={1}
+                strokeDasharray="3 3"
+              />
+            )}
+
+            {chart.areaPath && (
+              <AreaPath key={`area-${animKey}`} d={chart.areaPath} fill={`url(#area-${gradientId})`} stroke="none" />
+            )}
             {chart.linePath && (
-              <path
+              <LinePath
+                key={`line-${animKey}`}
                 d={chart.linePath}
+                pathLength={1}
                 fill="none"
                 stroke={colors.stroke}
                 strokeWidth={compact ? 2 : 2.5}
@@ -402,53 +485,48 @@ export default function AdminMetricLineChart({
               />
             )}
 
+            {/* x축 라벨 */}
             {chart.plotted.map((point, index) => {
-              const active = hoveredKey === point.key;
               const showLabel = index % chart.labelEvery === 0 || index === chart.plotted.length - 1;
+              if (!showLabel) return null;
               return (
-                <g key={point.key}>
-                  <circle
-                    cx={point.x}
-                    cy={point.y}
-                    r={active ? (compact ? 5 : 6) : compact ? 3.5 : 4}
-                    fill={colors.dot}
-                    stroke={colors.stroke}
-                    strokeWidth={2}
-                    style={{ cursor: "default" }}
-                    onMouseEnter={(e) => {
-                      setHoveredKey(point.key);
-                      const rect = wrapRef.current?.getBoundingClientRect();
-                      if (rect) {
-                        setTooltip({
-                          x: e.clientX - rect.left,
-                          y: e.clientY - rect.top,
-                          text: `${point.label}: ${point.count.toLocaleString()}${unit}`,
-                        });
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredKey(null);
-                      setTooltip(null);
-                    }}
-                  />
-                  {showLabel && (
-                    <text
-                      x={point.x}
-                      y={chart.baseY + (compact ? 16 : 18)}
-                      textAnchor="middle"
-                      fill="#a1a1aa"
-                      fontSize={compact ? 9 : 10}
-                    >
-                      {shortXLabel(point.key, chart.granularity)}
-                    </text>
-                  )}
-                </g>
+                <text
+                  key={`lbl-${point.key}`}
+                  x={point.x}
+                  y={chart.baseY + (compact ? 16 : 18)}
+                  textAnchor="middle"
+                  fill="#a1a1aa"
+                  fontSize={compact ? 9 : 10}
+                >
+                  {shortXLabel(point.key, chart.granularity)}
+                </text>
               );
             })}
+
+            {/* 활성 점 강조(헤일로 + 점) */}
+            {active && (
+              <g style={{ pointerEvents: "none" }}>
+                <circle cx={active.x} cy={active.y} r={compact ? 8 : 10} fill={colors.stroke} opacity={0.18} />
+                <circle
+                  cx={active.x}
+                  cy={active.y}
+                  r={compact ? 4.5 : 5.5}
+                  fill={colors.dot}
+                  stroke="#0f0f12"
+                  strokeWidth={2}
+                />
+              </g>
+            )}
           </SvgRoot>
 
-          {tooltip && (
-            <Tooltip style={{ left: tooltip.x, top: tooltip.y }}>{tooltip.text}</Tooltip>
+          {active && (
+            <Tooltip style={{ left: active.x, top: active.y }}>
+              <span className="tip-label">{active.label}</span>
+              <span className="tip-value">
+                {active.count.toLocaleString()}
+                {unit}
+              </span>
+            </Tooltip>
           )}
         </ChartWrap>
       )}

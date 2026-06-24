@@ -47,6 +47,17 @@ export const ChartSelect = styled.select`
   color: #fff;
   font-size: 12px;
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: #52525b;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.primary500};
+    box-shadow: 0 0 0 3px rgba(75, 0, 130, 0.22);
+  }
 `;
 
 export const DashboardHeader = styled.div`
@@ -73,9 +84,20 @@ export const DashboardTitle = styled.h2`
 
 export const SectionTitle = styled.h3`
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
   font-weight: 600;
   color: #e4e4e7;
+
+  &::before {
+    content: "";
+    width: 3px;
+    height: 14px;
+    border-radius: 2px;
+    background: ${theme.colors.primary500};
+  }
 `;
 
 export const SectionHeader = styled.div`
@@ -112,20 +134,30 @@ export const DashboardStatGrid = styled.div`
 `;
 
 export const DashboardStat = styled.div`
-  background: #111114;
+  background: linear-gradient(180deg, #141417 0%, #111114 100%);
   border: 1px solid #27272a;
   border-radius: ${theme.radii.md};
-  padding: 10px 12px;
+  padding: 12px 14px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    border-color: #3f3f46;
+    transform: translateY(-1px);
+  }
 
   strong {
     display: block;
-    font-size: 18px;
-    margin-top: 2px;
-    line-height: 1.2;
+    font-size: 20px;
+    margin-top: 3px;
+    line-height: 1.15;
+    color: #fafafa;
+    font-variant-numeric: tabular-nums;
   }
 
   span {
     font-size: 11px;
-    color: #a1a1aa;
+    color: #8b8b93;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 `;

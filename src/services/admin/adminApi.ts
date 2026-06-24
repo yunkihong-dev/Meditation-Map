@@ -26,10 +26,24 @@ export interface AdminExpertRow {
   data: MeditationExpert;
 }
 
+/** 에러 응답 바디({ code, message })에서 사람이 읽을 메시지만 뽑는다. (토스트에 JSON 원문이 뜨지 않게) */
+function errorMessageFrom(text: string, status: number): string {
+  if (text) {
+    try {
+      const j = JSON.parse(text) as { message?: string; code?: string };
+      if (j?.message) return j.message;
+      if (j?.code) return j.code;
+    } catch {
+      // JSON 이 아니면 원문 사용
+    }
+    return text;
+  }
+  return `HTTP ${status}`;
+}
+
 async function parseJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
+    throw new Error(errorMessageFrom(await res.text(), res.status));
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
@@ -41,8 +55,7 @@ export async function adminLogin(loginId: string, password: string) {
     body: JSON.stringify({ loginId, password }),
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `HTTP ${res.status}`);
+    throw new Error(errorMessageFrom(await res.text(), res.status));
   }
 }
 
@@ -184,6 +197,36 @@ export async function saveAdminExpert(
 function expertBodyWithoutId(data: MeditationExpert): Record<string, unknown> {
   const { id: _id, ...rest } = data;
   return rest;
+}
+
+/** 전문가 아이디 사용 가능 여부 */
+export async function checkExpertLoginIdAvailability(loginId: string): Promise<boolean> {
+  const params = new URLSearchParams({ loginId });
+  const res = await parseJson<{ available: boolean }>(
+    await apiFetch(`/admin/experts/login-id-availability?${params.toString()}`)
+  );
+  return res.available;
+}
+
+/** 전문가 계정 생성 (아이디·이메일·비밀번호 + 프로필) */
+export async function createExpertAccount(input: {
+  loginId: string;
+  email: string;
+  password: string;
+  data: MeditationExpert;
+}): Promise<AdminExpertRow> {
+  const payload = {
+    loginId: input.loginId,
+    email: input.email,
+    password: input.password,
+    data: expertBodyWithoutId(input.data),
+  };
+  return parseJson(
+    await apiFetch("/admin/experts/accounts", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+  );
 }
 
 /** @deprecated saveAdminExpert 사용 */

@@ -52,9 +52,11 @@ async function waitForPaint(): Promise<void> {
 
 interface AdminPreviewMapProps {
   address: string;
+  lat?: number;
+  lng?: number;
 }
 
-export default function AdminPreviewMap({ address }: AdminPreviewMapProps) {
+export default function AdminPreviewMap({ address, lat, lng }: AdminPreviewMapProps) {
   const mapElRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
   const markerRef = useRef<unknown>(null);
@@ -63,9 +65,10 @@ export default function AdminPreviewMap({ address }: AdminPreviewMapProps) {
 
   const ncpKeyId = (import.meta.env.VITE_NAVER_MAP_CLIENT_ID as string | undefined)?.trim();
   const trimmed = address.trim();
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
 
   useEffect(() => {
-    if (!trimmed) {
+    if (!trimmed && !hasCoords) {
       setMapState("idle");
       setApproximate(false);
       mapRef.current = null;
@@ -86,14 +89,29 @@ export default function AdminPreviewMap({ address }: AdminPreviewMapProps) {
           if (cancelled) return;
           await waitForPaint();
 
-          const list = await searchAddressCandidates(trimmed);
-          if (cancelled) return;
-
-          const candidate = list.find((c) => c.address === trimmed) ?? list[0];
-          if (!candidate) {
-            setMapState("error");
-            setApproximate(false);
-            return;
+          // 저장 좌표가 있으면 지오코딩 없이 그 위치에, 없으면 주소를 지오코딩해 표시
+          let posLat: number;
+          let posLng: number;
+          let zoom: number;
+          let approx: boolean;
+          if (hasCoords) {
+            posLat = lat as number;
+            posLng = lng as number;
+            zoom = 16;
+            approx = false;
+          } else {
+            const list = await searchAddressCandidates(trimmed);
+            if (cancelled) return;
+            const candidate = list.find((c) => c.address === trimmed) ?? list[0];
+            if (!candidate) {
+              setMapState("error");
+              setApproximate(false);
+              return;
+            }
+            posLat = candidate.lat;
+            posLng = candidate.lng;
+            zoom = zoomForGeocodeCandidate(candidate);
+            approx = Boolean(candidate.approximate);
           }
 
           const el = mapElRef.current;
@@ -111,8 +129,7 @@ export default function AdminPreviewMap({ address }: AdminPreviewMapProps) {
             };
           };
 
-          const position = new naver.maps.LatLng(candidate.lat, candidate.lng);
-          const zoom = zoomForGeocodeCandidate(candidate);
+          const position = new naver.maps.LatLng(posLat, posLng);
           if (!mapRef.current) {
             mapRef.current = new naver.maps.Map(el, {
               center: position,
@@ -134,7 +151,7 @@ export default function AdminPreviewMap({ address }: AdminPreviewMapProps) {
           markerRef.current = new naver.maps.Marker({ position, map: mapRef.current });
           naver.maps.Event?.trigger(mapRef.current, "resize");
           if (!cancelled) {
-            setApproximate(Boolean(candidate.approximate));
+            setApproximate(approx);
             setMapState("ready");
           }
         } catch {
@@ -150,9 +167,9 @@ export default function AdminPreviewMap({ address }: AdminPreviewMapProps) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [ncpKeyId, trimmed]);
+  }, [ncpKeyId, trimmed, hasCoords, lat, lng]);
 
-  if (!trimmed) {
+  if (!trimmed && !hasCoords) {
     return (
       <MapFallback>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

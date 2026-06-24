@@ -13,6 +13,7 @@ import { getRegionById, getRegionIdFromCoordinates } from "@/services/meditation
 import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
 import { apiFetch, useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
+import { toast } from "@/stores/toastStore";
 import type { MeProfile } from "@/services/profile/profileApi";
 
 const stepFadeIn = keyframes`
@@ -2004,12 +2005,12 @@ const ProfilePage = () => {
   const handleLoginSubmit = async () => {
     setAuthError(null);
     if (!getMeditationApiBaseUrl()) {
-      setAuthError("지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요.");
+      toast.error("지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요.");
       return;
     }
     const em = loginEmail.trim();
     if (!em || !loginPassword) {
-      setAuthError("이메일과 비밀번호를 입력해 주세요.");
+      toast.error("이메일과 비밀번호를 입력해 주세요.");
       return;
     }
     setAuthBusy(true);
@@ -2026,7 +2027,7 @@ const ProfilePage = () => {
         } catch {
           /* ignore */
         }
-        setAuthError(
+        toast.error(
           code === "INVALID_CREDENTIALS"
             ? "이메일 또는 비밀번호를 확인해 주세요."
             : "로그인에 실패했습니다."
@@ -2037,7 +2038,7 @@ const ProfilePage = () => {
       await useFavoritesStore.getState().pullFromServer();
       setLoginPassword("");
     } catch {
-      setAuthError("잠시 후 다시 시도해 주세요.");
+      toast.error("잠시 후 다시 시도해 주세요.");
     } finally {
       setAuthBusy(false);
     }

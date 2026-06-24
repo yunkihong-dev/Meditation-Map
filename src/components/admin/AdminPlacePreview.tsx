@@ -9,18 +9,7 @@ import AdminPreviewMap from "@/components/admin/AdminPreviewMap";
 import { MarkdownContent } from "@/components/common/MarkdownContent";
 import { MarkdownText } from "@/components/common/MarkdownText";
 import { formatProgramPeriod, normalizePlacePrograms } from "@/services/meditation/placeProgramStatus";
-
-const PreviewShell = styled.div`
-  position: sticky;
-  top: 16px;
-`;
-
-const PreviewHeading = styled.h3`
-  margin: 0 0 12px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #f4f4f5;
-`;
+import AdminPreviewFrame from "@/components/admin/AdminPreviewFrame";
 
 const ModeTabs = styled.div`
   display: flex;
@@ -40,6 +29,7 @@ const ModeTab = styled.button<{ $active?: boolean }>`
 `;
 
 const PhoneFrame = styled.div`
+  width: 360px;
   border-radius: 24px;
   border: 6px solid #3f3f46;
   background: #fff;
@@ -51,6 +41,7 @@ const PhoneFrame = styled.div`
 `;
 
 const ListCardWrap = styled.div`
+  width: 360px;
   display: flex;
   justify-content: center;
   padding: 8px 0 4px;
@@ -365,10 +356,13 @@ export default function AdminPlacePreview({ place }: AdminPlacePreviewProps) {
 
   if (!normalized) {
     return (
-      <PreviewShell>
-        <PreviewHeading>미리보기</PreviewHeading>
-        <p style={{ margin: 0, color: "#71717a", fontSize: 13 }}>편집 중인 명상지가 없습니다.</p>
-      </PreviewShell>
+      <AdminPreviewFrame>
+        <PhoneFrame>
+          <div style={{ padding: "40px 16px", textAlign: "center", color: "#71717a", fontSize: 13 }}>
+            편집 중인 명상지가 없습니다.
+          </div>
+        </PhoneFrame>
+      </AdminPreviewFrame>
     );
   }
 
@@ -384,17 +378,18 @@ export default function AdminPlacePreview({ place }: AdminPlacePreviewProps) {
   const safeHeroIndex = heroUrls.length > 0 ? heroIndex % heroUrls.length : 0;
 
   return (
-    <PreviewShell>
-      <PreviewHeading>미리보기</PreviewHeading>
-      <ModeTabs>
-        <ModeTab type="button" $active={mode === "detail"} onClick={() => setMode("detail")}>
-          상세 페이지
-        </ModeTab>
-        <ModeTab type="button" $active={mode === "list"} onClick={() => setMode("list")}>
-          목록 카드
-        </ModeTab>
-      </ModeTabs>
-
+    <AdminPreviewFrame
+      controls={
+        <ModeTabs>
+          <ModeTab type="button" $active={mode === "detail"} onClick={() => setMode("detail")}>
+            상세 페이지
+          </ModeTab>
+          <ModeTab type="button" $active={mode === "list"} onClick={() => setMode("list")}>
+            목록 카드
+          </ModeTab>
+        </ModeTabs>
+      }
+    >
       {mode === "list" ? (
         <ListCardWrap>
           <ListCard>
@@ -537,12 +532,12 @@ export default function AdminPlacePreview({ place }: AdminPlacePreviewProps) {
               <MapBlock>
                 <h3>위치</h3>
                 {normalized.address ? <MapAddress>{normalized.address}</MapAddress> : null}
-                <AdminPreviewMap address={normalized.address} />
+                <AdminPreviewMap address={normalized.address} lat={normalized.lat} lng={normalized.lng} />
               </MapBlock>
             </DetailContent>
           </DetailPage>
         </PhoneFrame>
       )}
-    </PreviewShell>
+    </AdminPreviewFrame>
   );
 }

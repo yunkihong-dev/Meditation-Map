@@ -43,13 +43,15 @@ export const AdminNavLink = styled.button<{ $active?: boolean }>`
   display: block;
   width: 100%;
   text-align: left;
-  padding: 10px 16px;
+  padding: 10px 14px;
   border: none;
-  background: ${({ $active }) => ($active ? "rgba(75, 0, 130, 0.35)" : "transparent")};
+  background: ${({ $active }) => ($active ? "rgba(75, 0, 130, 0.32)" : "transparent")};
   color: ${({ $active }) => ($active ? "#fff" : "#a1a1aa")};
   font-size: 14px;
+  font-weight: ${({ $active }) => ($active ? 600 : 400)};
   cursor: pointer;
-  border-left: 3px solid ${({ $active }) => ($active ? theme.colors.primary600 : "transparent")};
+  border-left: 3px solid ${({ $active }) => ($active ? theme.colors.primary500 : "transparent")};
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.05);
@@ -58,10 +60,11 @@ export const AdminNavLink = styled.button<{ $active?: boolean }>`
 `;
 
 export const AdminCard = styled.div`
-  background: #18181b;
-  border: 1px solid #27272a;
+  background: linear-gradient(180deg, #1b1b1f 0%, #161619 100%);
+  border: 1px solid #2a2a30;
   border-radius: ${theme.radii.lg};
   padding: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02), 0 8px 24px rgba(0, 0, 0, 0.22);
 `;
 
 export const AdminGrid = styled.div`
@@ -75,11 +78,19 @@ export const AdminStat = styled.div`
   border: 1px solid #27272a;
   border-radius: ${theme.radii.md};
   padding: 14px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    border-color: #3f3f46;
+    transform: translateY(-1px);
+  }
 
   strong {
     display: block;
     font-size: 22px;
     margin-top: 4px;
+    color: #fafafa;
+    font-variant-numeric: tabular-nums;
   }
 
   span {
@@ -101,12 +112,20 @@ export const AdminTable = styled.table`
   }
 
   th {
-    color: #a1a1aa;
+    color: #8b8b93;
     font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  tbody tr {
+    cursor: pointer;
+    transition: background 0.12s ease;
   }
 
   tr:hover td {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.04);
   }
 `;
 
@@ -120,7 +139,18 @@ export const AdminButton = styled.button<{ $variant?: "primary" | "danger" | "gh
     $variant === "danger" ? "#991b1b" : $variant === "primary" ? theme.colors.primary600 : "transparent"};
   color: #fff;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: filter 0.15s ease, transform 0.06s ease, background 0.15s ease, border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.12);
+    background: ${({ $variant }) => ($variant === "ghost" ? "rgba(255, 255, 255, 0.05)" : undefined)};
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
 
   &:disabled {
     opacity: 0.5;
@@ -136,6 +166,17 @@ export const AdminInput = styled.input`
   background: #09090b;
   color: #fff;
   font-size: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: #52525b;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.primary500};
+    box-shadow: 0 0 0 3px rgba(75, 0, 130, 0.25);
+  }
 `;
 
 export const AdminTextarea = styled.textarea`
@@ -149,6 +190,13 @@ export const AdminTextarea = styled.textarea`
   font-family: ui-monospace, monospace;
   font-size: 12px;
   line-height: 1.5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.primary500};
+    box-shadow: 0 0 0 3px rgba(75, 0, 130, 0.25);
+  }
 `;
 
 export const AdminLabel = styled.label`

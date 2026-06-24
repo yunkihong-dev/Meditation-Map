@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import styled from "styled-components";
 import ServerErrorBanner from "@/components/layout/ServerErrorBanner";
+import Toaster from "@/components/common/Toaster";
 import Router from "./router/Router";
 import { useAuthStore } from "./stores/authStore";
 import { useCatalogStore } from "./stores/catalogStore";
@@ -24,6 +25,7 @@ const App = () => {
   return (
     <Shell>
       <ServerErrorBanner />
+      <Toaster />
       <Router />
     </Shell>
   );

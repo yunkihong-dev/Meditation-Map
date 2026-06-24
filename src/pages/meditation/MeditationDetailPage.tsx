@@ -741,6 +741,12 @@ const MeditationDetailPage = () => {
       const isValidCoord = (lat: number, lng: number) =>
         Number.isFinite(lat) && Number.isFinite(lng);
 
+      // 관리자가 보정한 저장 좌표가 있으면 지오코딩 없이 그 위치에 표시
+      if (isValidCoord(place.lat ?? NaN, place.lng ?? NaN)) {
+        showAt(place.lat as number, place.lng as number);
+        return true;
+      }
+
       naver.maps.Service!.geocode({ query: place.address }, (status: string | number, response: unknown) => {
         if (status === "ERROR") {
           console.warn(`[지도] 주소 변환 실패 - "${place.name}" (${place.address}): status=${status}`);

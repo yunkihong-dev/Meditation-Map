@@ -14,8 +14,11 @@ function hashUnit2(seed: string): [number, number] {
   return [u1, u2];
 }
 
-/** 주소 좌표 미보유 시 region bbox 안에서 결정적으로 흩어진 근사 좌표 */
+/** 저장 좌표(관리자 보정)가 있으면 그대로, 없으면 region bbox 안 결정적 근사 좌표 */
 export function approximateLatLngForPlace(place: MeditationPlace): { lat: number; lng: number } {
+  if (Number.isFinite(place.lat) && Number.isFinite(place.lng)) {
+    return { lat: place.lat as number, lng: place.lng as number };
+  }
   const bbox = REGION_BBOXES.find((b) => b.id === place.regionId) ?? FALLBACK;
   const [u1, u2] = hashUnit2(`${place.id}\0${place.address}`);
   const pad = 0.1;
