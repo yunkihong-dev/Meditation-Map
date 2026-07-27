@@ -308,6 +308,7 @@ export function emptyPlace(regionId: string): MeditationPlace {
     facilities: [],
     programs: [],
     instructors: [],
+    hidden: false,
   };
 }
 
@@ -334,5 +335,6 @@ export function emptyExpert(): MeditationExpert {
     hasCenter: false,
     programs: [],
     reviews: [],
+    hidden: false,
   };
 }

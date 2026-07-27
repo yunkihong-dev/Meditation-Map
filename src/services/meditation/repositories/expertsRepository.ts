@@ -3,6 +3,9 @@ import { requireMeditationApiBaseUrl } from "./apiConfig";
 
 export type ExpertDto = MeditationExpert;
 
+/** 숨김 처리된 전문가는 공개 목록에서 제외 */
+const visibleExperts = (list: ExpertDto[]): ExpertDto[] => list.filter((expert) => !expert.hidden);
+
 export interface ExpertsRepository {
   findAll(): Promise<ExpertDto[]>;
   findById(id: string): Promise<ExpertDto | null>;
@@ -29,21 +32,24 @@ class HttpExpertsRepository implements ExpertsRepository {
   async findAll(): Promise<ExpertDto[]> {
     const res = await fetch(this.url("/experts"));
     if (!res.ok) throw new HttpError(`GET /experts 실패`, res.status);
-    return res.json() as Promise<ExpertDto[]>;
+    return visibleExperts((await res.json()) as ExpertDto[]);
   }
 
   async findById(id: string): Promise<ExpertDto | null> {
     const res = await fetch(this.url(`/experts/${encodeURIComponent(id)}`));
     if (res.status === 404) return null;
     if (!res.ok) throw new HttpError(`GET /experts/:id 실패`, res.status);
-    return res.json() as Promise<ExpertDto>;
+    const dto = (await res.json()) as ExpertDto;
+    // 숨김 처리된 전문가는 상세 직접 접근도 비공개
+    if (dto.hidden) return null;
+    return dto;
   }
 
   async findByRegionId(regionId: string): Promise<ExpertDto[]> {
     const q = regionId === "all" ? "" : `?regionId=${encodeURIComponent(regionId)}`;
     const res = await fetch(this.url(`/experts${q}`));
     if (!res.ok) throw new HttpError(`GET /experts?regionId 실패`, res.status);
-    return res.json() as Promise<ExpertDto[]>;
+    return visibleExperts((await res.json()) as ExpertDto[]);
   }
 }
 

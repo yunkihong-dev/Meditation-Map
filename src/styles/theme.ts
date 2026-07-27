@@ -1,4 +1,4 @@
-/** 힐링뉴스 명상지도 브랜드 컬러 가이드 */
+/** 힐링뉴스 명상 웰니스 지도 브랜드 컬러 가이드 */
 export const theme = {
   colors: {
     // Primary - Deep Purple #4B0082 (로고, 버튼, 선택 상태)

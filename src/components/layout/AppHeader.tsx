@@ -67,10 +67,10 @@ const Spacer = styled.div`
 const AppHeader = () => (
   <Header>
     <LogoLink to="/">
-      <LogoImg src={logoImg} alt="명상 지도 로고" />
+      <LogoImg src={logoImg} alt="명상 웰니스 지도 로고" />
     </LogoLink>
     <TitleBlock>
-      <Title>명상 지도</Title>
+      <Title>명상 웰니스 지도</Title>
       <Subtitle>국내 명상지를 찾아보세요</Subtitle>
     </TitleBlock>
     <Spacer />

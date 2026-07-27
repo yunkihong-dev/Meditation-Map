@@ -1,5 +1,7 @@
 import type { RouteObject } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import GuestLandingGate from "@/components/layout/GuestLandingGate";
+import LandingPage from "@/pages/LandingPage";
 import MeditationMainPage from "@/pages/meditation/MeditationMainPage";
 import MeditationMapPage from "@/pages/meditation/MeditationMapPage";
 import MeditationRegionPage from "@/pages/meditation/MeditationRegionPage";
@@ -26,6 +28,10 @@ import ProtectedAdminRoute from "@/components/admin/ProtectedAdminRoute";
 
 export const routes: RouteObject[] = [
   {
+    path: "/welcome",
+    element: <LandingPage />,
+  },
+  {
     path: "/admin/login",
     element: <AdminLoginPage />,
   },
@@ -48,8 +54,8 @@ export const routes: RouteObject[] = [
     path: "/",
     element: <Layout />,
     children: [
-      { index: true, element: <MeditationMainPage /> },
-      { path: "meditation", element: <MeditationMainPage /> },
+      { index: true, element: <GuestLandingGate /> },
+      { path: "meditation", element: <GuestLandingGate /> },
       { path: "meditation/map", element: <MeditationMapPage /> },
       { path: "meditation/expert/:expertId/class/:programId", element: <MeditationExpertClassDetailPage /> },
       { path: "meditation/expert/:expertId", element: <MeditationExpertDetailPage /> },

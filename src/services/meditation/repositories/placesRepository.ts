@@ -8,11 +8,14 @@ import { requireMeditationApiBaseUrl } from "./apiConfig";
 export type PlaceDto = MeditationPlace;
 
 function mapPlace(dto: PlaceDto): PlaceDto {
-  return normalizePlacePrograms(dto);
+  // 숨김 처리된 행사·프로그램은 공개 화면에서 제외
+  const visiblePrograms = (dto.programs ?? []).filter((program) => !program.hidden);
+  return normalizePlacePrograms({ ...dto, programs: visiblePrograms });
 }
 
 function mapPlaces(list: PlaceDto[]): PlaceDto[] {
-  return list.map(mapPlace);
+  // 숨김 처리된 센터·명상지는 공개 목록에서 제외
+  return list.filter((dto) => !dto.hidden).map(mapPlace);
 }
 
 export interface PlacesRepository {
@@ -48,7 +51,10 @@ class HttpPlacesRepository implements PlacesRepository {
     const res = await fetch(this.url(`/places/${encodeURIComponent(id)}`));
     if (res.status === 404) return null;
     if (!res.ok) throw new HttpError(`GET /places/:id 실패`, res.status);
-    return mapPlace((await res.json()) as PlaceDto);
+    const dto = (await res.json()) as PlaceDto;
+    // 숨김 처리된 센터는 상세 직접 접근도 비공개
+    if (dto.hidden) return null;
+    return mapPlace(dto);
   }
 
   async findByRegionId(regionId: string): Promise<PlaceDto[]> {

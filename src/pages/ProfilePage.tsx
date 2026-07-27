@@ -1454,7 +1454,7 @@ type TermsDetailId = "service" | "privacy" | "marketing";
 const TERMS_DETAIL_TEXT: Record<TermsDetailId, { title: string; body: string }> = {
   service: {
     title: "서비스 이용약관",
-    body: `제1조 (목적)\n본 약관은 명상 지도 서비스의 이용 조건 및 절차, 회사와 회원 간 권리·의무를 규정합니다.\n\n제2조 (정의)\n“서비스”란 회사가 제공하는 명상 지도 및 관련 기능을 말합니다.\n\n제3조 (약관의 게시)\n회사는 앱 내 설정 화면에 본 약관을 게시합니다.\n\n※ 실제 서비스 오픈 전 법무 검토 후 최종 약관 전문을 연결해 주세요.`,
+    body: `제1조 (목적)\n본 약관은 명상 웰니스 지도 서비스의 이용 조건 및 절차, 회사와 회원 간 권리·의무를 규정합니다.\n\n제2조 (정의)\n“서비스”란 회사가 제공하는 명상 웰니스 지도 및 관련 기능을 말합니다.\n\n제3조 (약관의 게시)\n회사는 앱 내 설정 화면에 본 약관을 게시합니다.\n\n※ 실제 서비스 오픈 전 법무 검토 후 최종 약관 전문을 연결해 주세요.`,
   },
   privacy: {
     title: "개인정보 수집 및 이용",
@@ -1785,6 +1785,16 @@ const ProfilePage = () => {
     next.delete("picture");
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  // 랜딩 등 외부에서 `?start=signup`으로 들어오면 회원가입 약관 단계로 바로 진입
+  useEffect(() => {
+    if (searchParams.get("start") !== "signup") return;
+    if (accessToken) return; // 이미 로그인 상태면 무시
+    setStep("signup-terms");
+    const next = new URLSearchParams(searchParams);
+    next.delete("start");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, accessToken]);
 
   useEffect(() => {
     if (step !== "signup-account" || emailStepDone) return;
@@ -2398,9 +2408,9 @@ const ProfilePage = () => {
           <StepContent>
             <StepMain>
               <Brand>
-                <BrandLogo src={logoImg} alt="명상 지도 로고" />
-                <LogoWelcomeText>명상 지도에 오신 것을 환영합니다!</LogoWelcomeText>
-                <BrandTitle>명상 지도</BrandTitle>
+                <BrandLogo src={logoImg} alt="명상 웰니스 지도 로고" />
+                <LogoWelcomeText>명상 웰니스 지도에 오신 것을 환영합니다!</LogoWelcomeText>
+                <BrandTitle>명상 웰니스 지도</BrandTitle>
               </Brand>
 
               <Form>
@@ -2527,8 +2537,8 @@ const ProfilePage = () => {
             <TermsMain>
               <TermsLogoCenter>
                 <TermsLogoBlock>
-                  <TermsLogo src={logoImg} alt="명상 지도 로고" />
-                  <LogoWelcomeText>명상 지도에 오신 것을 환영합니다!</LogoWelcomeText>
+                  <TermsLogo src={logoImg} alt="명상 웰니스 지도 로고" />
+                  <LogoWelcomeText>명상 웰니스 지도에 오신 것을 환영합니다!</LogoWelcomeText>
                 </TermsLogoBlock>
               </TermsLogoCenter>
               <TermsBottomBlock>
@@ -2933,7 +2943,7 @@ const ProfilePage = () => {
           <StepContent>
             <StepMain>
             <CompleteArt>
-              <CompleteLogo src={logoImg} alt="명상 지도 로고" />
+              <CompleteLogo src={logoImg} alt="명상 웰니스 지도 로고" />
             </CompleteArt>
             <CompleteTitle>가입 완료!</CompleteTitle>
             <CompleteDesc>평온한 명상 여행을 시작하세요</CompleteDesc>

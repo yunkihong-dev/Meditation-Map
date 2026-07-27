@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "favicon.ico", "apple-touch-icon-180x180.png", "robots.txt"],
       manifest: {
-        name: "명상 지도",
-        short_name: "명상지도",
+        name: "명상 웰니스 지도",
+        short_name: "명상 웰니스 지도",
         description: "전국 명상 및 수행 장소를 찾아보세요",
         theme_color: "#4B0082",
         background_color: "#FFFAF8",

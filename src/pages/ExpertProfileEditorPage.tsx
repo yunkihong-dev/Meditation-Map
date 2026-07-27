@@ -237,6 +237,7 @@ const blank = (profile: MeProfile): ExpertProfileDraft => ({
   centerAddress: "",
   businessRegistrationNumber: "",
   businessOpeningDate: "",
+  hidden: false,
 });
 
 const lines = (value: string) =>
@@ -306,6 +307,30 @@ export default function ExpertProfileEditorPage() {
         <Title>{profile.expertProfileId ? "전문가 프로필 수정" : "명상 전문가로 전환"}</Title>
       </Header>
       <Lead>작성한 내용은 명상 전문가 목록과 상세 페이지에 공개됩니다.</Lead>
+
+      <Card>
+        <SectionTitle>공개 설정</SectionTitle>
+        <SectionDesc>
+          내 전문가 프로필을 명상 전문가 목록·상세에 공개할지 선택하세요. 숨김으로 두면
+          다른 사용자에게 표시되지 않습니다.
+        </SectionDesc>
+        <ChoiceGrid>
+          <Choice
+            type="button"
+            $selected={!draft.hidden}
+            onClick={() => setDraft({ ...draft, hidden: false })}
+          >
+            공개 (노출)
+          </Choice>
+          <Choice
+            type="button"
+            $selected={draft.hidden}
+            onClick={() => setDraft({ ...draft, hidden: true })}
+          >
+            숨김
+          </Choice>
+        </ChoiceGrid>
+      </Card>
 
       <Card>
         <SectionTitle>기본 정보</SectionTitle>

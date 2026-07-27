@@ -358,7 +358,7 @@ const NoticePage = () => {
   return (
     <Page>
       <Title>공지사항</Title>
-      <Subtitle>전국 힐링명상지도에서 전하는 소식을 확인하세요.</Subtitle>
+      <Subtitle>전국 힐링 명상 웰니스 지도에서 전하는 소식을 확인하세요.</Subtitle>
 
       {loading && <EmptyHint>불러오는 중…</EmptyHint>}
       {!loading && notices.length === 0 && (

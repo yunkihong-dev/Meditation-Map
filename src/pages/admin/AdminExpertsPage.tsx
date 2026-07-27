@@ -15,6 +15,9 @@ import AdminConfirmModal from "@/components/admin/AdminConfirmModal";
 import AdminMarkdownField from "@/components/admin/AdminMarkdownField";
 import AdminExpertPreview from "@/components/admin/AdminExpertPreview";
 import { AdminImageUpload } from "@/components/admin/AdminImageUpload";
+import { AdminAutosaveHint, AdminRestoreBanner } from "@/components/admin/AdminDraftBanner";
+import { useAdminDraft } from "@/hooks/useAdminDraft";
+import { removeDraft, type StoredAdminDraft } from "@/services/admin/adminLocalDraft";
 import {
   AdminButton,
   AdminCard,
@@ -75,6 +78,16 @@ export default function AdminExpertsPage() {
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
+  const recordKey = draft ? (isNew ? "new" : editingId) : null;
+  const { savedAt, restorable, markBaseline, clearCurrent, dismissRestorable } =
+    useAdminDraft<MeditationExpert>({
+      scope: "experts",
+      recordKey,
+      isNew,
+      draft,
+      label: draft?.name,
+    });
+
   const load = useCallback(async () => {
     try {
       setRows(await fetchAdminExperts());
@@ -90,7 +103,9 @@ export default function AdminExpertsPage() {
   const select = (row: AdminExpertRow) => {
     setEditingId(row.id);
     setIsNew(false);
-    setDraft({ ...emptyExpert(), ...structuredClone(row.data) });
+    const data = { ...emptyExpert(), ...structuredClone(row.data) };
+    setDraft(data);
+    markBaseline(data);
     setAccount(emptyAccount());
     setLoginIdStatus("idle");
   };
@@ -98,9 +113,27 @@ export default function AdminExpertsPage() {
   const beginNew = () => {
     setEditingId(null);
     setIsNew(true);
-    setDraft(emptyExpert());
+    const data = emptyExpert();
+    setDraft(data);
+    markBaseline(data);
     setAccount(emptyAccount());
     setLoginIdStatus("idle");
+  };
+
+  const handleRestore = (stored: StoredAdminDraft<MeditationExpert>) => {
+    const data = { ...emptyExpert(), ...stored.data };
+    dismissRestorable(false);
+    setAccount(emptyAccount());
+    setLoginIdStatus("idle");
+    if (stored.isNew) {
+      setEditingId(null);
+      setIsNew(true);
+    } else {
+      setEditingId(stored.recordKey);
+      setIsNew(false);
+    }
+    setDraft(data);
+    markBaseline(data);
   };
 
   const patch = (partial: Partial<MeditationExpert>) =>
@@ -165,18 +198,24 @@ export default function AdminExpertsPage() {
           password: account.password,
           data: draft,
         });
+        clearCurrent();
         await load();
         setEditingId(saved.id);
         setIsNew(false);
-        setDraft({ ...emptyExpert(), ...saved.data });
+        const savedData = { ...emptyExpert(), ...saved.data };
+        setDraft(savedData);
+        markBaseline(savedData);
         setAccount(emptyAccount());
         setLoginIdStatus("idle");
         toast.success("전문가 계정이 생성되었습니다.");
       } else {
         const saved = await saveAdminExpert(editingId, draft);
+        clearCurrent();
         await load();
         setEditingId(saved.id);
-        setDraft({ ...emptyExpert(), ...saved.data });
+        const savedData = { ...emptyExpert(), ...saved.data };
+        setDraft(savedData);
+        markBaseline(savedData);
         toast.success("저장되었습니다.");
       }
     } catch (e) {
@@ -190,10 +229,12 @@ export default function AdminExpertsPage() {
     setDeleteTargetId(null);
     try {
       await deleteAdminExpert(id);
+      removeDraft("experts", id);
       if (editingId === id) {
         setEditingId(null);
         setIsNew(false);
         setDraft(null);
+        markBaseline(null);
       }
       await load();
     } catch (e) {
@@ -233,11 +274,30 @@ export default function AdminExpertsPage() {
                 <td>
                   <button
                     type="button"
-                    style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: row.data.hidden ? "#a1a1aa" : "#fff",
+                      cursor: "pointer",
+                    }}
                     onClick={() => select(row)}
                   >
                     {row.name || `전문가 ${row.id}`}
                   </button>
+                  {row.data.hidden && (
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        fontSize: 11,
+                        padding: "1px 6px",
+                        borderRadius: 999,
+                        background: "#3f1d1d",
+                        color: "#fca5a5",
+                      }}
+                    >
+                      숨김
+                    </span>
+                  )}
                 </td>
                 <td>
                   <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -256,6 +316,11 @@ export default function AdminExpertsPage() {
       </AdminCard>
 
       <AdminCard>
+        <AdminRestoreBanner
+          restorable={restorable}
+          onRestore={handleRestore}
+          onDismiss={dismissRestorable}
+        />
         {!draft ? (
           <p style={{ color: "#a1a1aa" }}>항목을 선택하거나 새로 등록하세요.</p>
         ) : (
@@ -264,9 +329,12 @@ export default function AdminExpertsPage() {
               <p style={{ margin: 0, color: "#71717a", fontSize: 13 }}>
                 {!isNew && editingId ? `번호: ${editingId}` : "전문가 계정을 새로 만듭니다."}
               </p>
-              <AdminButton $variant="primary" type="button" onClick={requestSave}>
-                {isNew ? "계정 생성" : "저장"}
-              </AdminButton>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <AdminAutosaveHint savedAt={savedAt} />
+                <AdminButton $variant="primary" type="button" onClick={requestSave}>
+                  {isNew ? "계정 생성" : "저장"}
+                </AdminButton>
+              </div>
             </div>
 
             {isNew && (
@@ -336,6 +404,29 @@ export default function AdminExpertsPage() {
                 </AdminField>
               </div>
             )}
+
+            <AdminField>
+              <AdminLabel>공개 노출</AdminLabel>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <AdminButton
+                  type="button"
+                  $variant={!draft.hidden ? "primary" : "ghost"}
+                  onClick={() => patch({ hidden: false })}
+                >
+                  노출
+                </AdminButton>
+                <AdminButton
+                  type="button"
+                  $variant={draft.hidden ? "danger" : "ghost"}
+                  onClick={() => patch({ hidden: true })}
+                >
+                  숨김
+                </AdminButton>
+              </div>
+              <p style={{ margin: "6px 0 0", fontSize: 12, color: "#71717a" }}>
+                숨김으로 두면 명상전문가 목록·상세에 표시되지 않습니다. (관리자에게만 보임)
+              </p>
+            </AdminField>
 
             {/* 프로필 사진 */}
             <AdminImageUpload

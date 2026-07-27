@@ -7,6 +7,9 @@ import {
   type NoticeDraft,
 } from "@/services/admin/noticeAdminFields";
 import AdminConfirmModal from "@/components/admin/AdminConfirmModal";
+import { AdminAutosaveHint, AdminRestoreBanner } from "@/components/admin/AdminDraftBanner";
+import { useAdminDraft } from "@/hooks/useAdminDraft";
+import { removeDraft, type StoredAdminDraft } from "@/services/admin/adminLocalDraft";
 import {
   AdminButton,
   AdminCard,
@@ -27,6 +30,16 @@ export default function AdminNoticesPage() {
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
+  const recordKey = draft ? (isNew ? "new" : editingId) : null;
+  const { savedAt, restorable, markBaseline, clearCurrent, dismissRestorable } =
+    useAdminDraft<NoticeDraft>({
+      scope: "notices",
+      recordKey,
+      isNew,
+      draft,
+      label: draft?.title,
+    });
+
   const load = useCallback(async () => {
     try {
       setRows(await fetchAdminNotices());
@@ -42,13 +55,30 @@ export default function AdminNoticesPage() {
   const beginNew = () => {
     setEditingId(null);
     setIsNew(true);
-    setDraft(emptyNoticeDraft());
+    const data = emptyNoticeDraft();
+    setDraft(data);
+    markBaseline(data);
   };
 
   const selectRow = (row: { id: string; payload: Record<string, unknown> }) => {
     setEditingId(row.id);
     setIsNew(false);
-    setDraft(draftFromPayload(row.payload));
+    const data = draftFromPayload(row.payload);
+    setDraft(data);
+    markBaseline(data);
+  };
+
+  const handleRestore = (stored: StoredAdminDraft<NoticeDraft>) => {
+    dismissRestorable(false);
+    if (stored.isNew) {
+      setEditingId(null);
+      setIsNew(true);
+    } else {
+      setEditingId(stored.recordKey);
+      setIsNew(false);
+    }
+    setDraft(stored.data);
+    markBaseline(stored.data);
   };
 
   const performSave = async () => {
@@ -56,10 +86,13 @@ export default function AdminNoticesPage() {
     setError(null);
     try {
       const saved = await saveAdminNotice(isNew ? null : editingId, payloadFromDraft(draft));
+      clearCurrent();
       await load();
       setEditingId(saved.id);
       setIsNew(false);
-      setDraft(draftFromPayload(saved.payload));
+      const savedData = draftFromPayload(saved.payload);
+      setDraft(savedData);
+      markBaseline(savedData);
     } catch (e) {
       setError(e instanceof Error ? e.message : "저장 실패");
     }
@@ -71,10 +104,12 @@ export default function AdminNoticesPage() {
     setDeleteTargetId(null);
     try {
       await deleteAdminNotice(id);
+      removeDraft("notices", id);
       if (editingId === id) {
         setEditingId(null);
         setIsNew(false);
         setDraft(null);
+        markBaseline(null);
       }
       await load();
     } catch (e) {
@@ -127,6 +162,11 @@ export default function AdminNoticesPage() {
       </AdminCard>
 
       <AdminCard>
+        <AdminRestoreBanner
+          restorable={restorable}
+          onRestore={handleRestore}
+          onDismiss={dismissRestorable}
+        />
         {draft ? (
           <>
             {!isNew && editingId ? (
@@ -134,7 +174,8 @@ export default function AdminNoticesPage() {
             ) : (
               <p style={{ margin: "0 0 12px", color: "#71717a", fontSize: 13 }}>저장 시 번호가 자동 부여됩니다.</p>
             )}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <AdminAutosaveHint savedAt={savedAt} />
               <AdminButton $variant="primary" type="button" onClick={() => setSaveConfirmOpen(true)}>
                 저장
               </AdminButton>

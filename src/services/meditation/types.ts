@@ -49,6 +49,8 @@ export interface PlaceProgram {
   /** 업체가 작성한 프로그램 소개(마크다운) */
   bodyFromVenue: string;
   reviews: PlaceProgramReview[];
+  /** 공개 화면 노출 여부 — true 면 숨김(관리자에게만 보임). 없으면 노출 */
+  hidden?: boolean;
 }
 
 /** 명상센터 강사 */
@@ -96,6 +98,8 @@ export interface MeditationPlace {
   externalLink: string;
   detailSections: DetailSection[];
   facilities?: string[];
+  /** 공개 화면 노출 여부 — true 면 숨김(관리자에게만 보임). 없으면 노출 */
+  hidden?: boolean;
 }
 
 export interface MeditationFilters {
@@ -153,4 +157,6 @@ export interface MeditationExpert {
   activityAreas?: string[];
   programs: ExpertProgram[];
   reviews: ExpertReview[];
+  /** 공개 화면 노출 여부 — true 면 숨김(관리자에게만 보임). 없으면 노출 */
+  hidden?: boolean;
 }

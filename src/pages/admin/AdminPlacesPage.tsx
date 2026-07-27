@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MeditationPlace, PlaceProgram } from "@/services/meditation/types";
 import { regionNameById, resolveDefaultRegionId } from "@/data/koreaRegions";
 import {
@@ -17,6 +17,9 @@ import AdminMarkdownField from "@/components/admin/AdminMarkdownField";
 import AdminPlacePreview from "@/components/admin/AdminPlacePreview";
 import AdminConfirmModal from "@/components/admin/AdminConfirmModal";
 import AdminProgramPeriodCalendar from "@/components/admin/AdminProgramPeriodCalendar";
+import { AdminAutosaveHint, AdminRestoreBanner } from "@/components/admin/AdminDraftBanner";
+import { useAdminDraft } from "@/hooks/useAdminDraft";
+import { removeDraft, type StoredAdminDraft } from "@/services/admin/adminLocalDraft";
 import {
   computeProgramStatus,
   defaultEventPeriod,
@@ -59,6 +62,17 @@ export default function AdminPlacesPage() {
   const [discardDraftOpen, setDiscardDraftOpen] = useState(false);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const pendingRestoreRef = useRef<MeditationPlace | null>(null);
+
+  const recordKey = draft ? (isNew ? "new" : editingId) : null;
+  const { savedAt, restorable, markBaseline, clearCurrent, dismissRestorable } =
+    useAdminDraft<MeditationPlace>({
+      scope: "places",
+      recordKey,
+      isNew,
+      draft,
+      label: draft?.name,
+    });
 
   const load = useCallback(async () => {
     setError(null);
@@ -82,17 +96,47 @@ export default function AdminPlacesPage() {
 
   useEffect(() => {
     if (selected && !isNew) {
+      if (pendingRestoreRef.current) {
+        const restored = pendingRestoreRef.current;
+        pendingRestoreRef.current = null;
+        setDraft(restored);
+        markBaseline(restored);
+        return;
+      }
       const cloned = normalizePlace(structuredClone(selected.data));
       setDraft(cloned);
+      markBaseline(cloned);
     }
-  }, [selected, isNew]);
+  }, [selected, isNew, markBaseline]);
 
   const beginNew = () => {
     const p = emptyPlace(resolveDefaultRegionId());
     setEditingId(null);
     setIsNew(true);
     setDraft(p);
+    markBaseline(p);
     setTab("basic");
+  };
+
+  const handleRestore = (stored: StoredAdminDraft<MeditationPlace>) => {
+    const data = normalizePlace(stored.data);
+    dismissRestorable(false);
+    setTab("basic");
+    if (stored.isNew) {
+      setEditingId(null);
+      setIsNew(true);
+      setDraft(data);
+      markBaseline(data);
+      return;
+    }
+    setIsNew(false);
+    if (editingId === stored.recordKey) {
+      setDraft(data);
+      markBaseline(data);
+    } else {
+      pendingRestoreRef.current = data;
+      setEditingId(stored.recordKey);
+    }
   };
 
   const handleStartNew = () => {
@@ -110,10 +154,13 @@ export default function AdminPlacesPage() {
     try {
       const data = normalizePlace(draft);
       const saved = await saveAdminPlace(isNew ? null : editingId, data.regionId, data);
+      clearCurrent();
       await load();
       setEditingId(saved.id);
       setIsNew(false);
-      setDraft(normalizePlace(saved.data));
+      const savedPlace = normalizePlace(saved.data);
+      setDraft(savedPlace);
+      markBaseline(savedPlace);
       setTab("basic");
     } catch (e) {
       setError(e instanceof Error ? e.message : "저장 실패");
@@ -129,10 +176,12 @@ export default function AdminPlacesPage() {
     setError(null);
     try {
       await deleteAdminPlace(id);
+      removeDraft("places", id);
       if (editingId === id) {
         setEditingId(null);
         setDraft(null);
         setIsNew(false);
+        markBaseline(null);
       }
       await load();
     } catch (e) {
@@ -161,6 +210,7 @@ export default function AdminPlacesPage() {
       imageUrls: [],
       bodyFromVenue: "",
       reviews: [],
+      hidden: false,
       ...period,
     };
     programs.push({ ...base, status: computeProgramStatus(base) });
@@ -223,7 +273,13 @@ export default function AdminPlacesPage() {
                 <td>
                   <button
                     type="button"
-                    style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 0 }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: r.data.hidden ? "#a1a1aa" : "#fff",
+                      cursor: "pointer",
+                      padding: 0,
+                    }}
                     onClick={() => {
                       setEditingId(r.id);
                       setIsNew(false);
@@ -231,6 +287,20 @@ export default function AdminPlacesPage() {
                   >
                     {r.name || r.id}
                   </button>
+                  {r.data.hidden && (
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        fontSize: 11,
+                        padding: "1px 6px",
+                        borderRadius: 999,
+                        background: "#3f1d1d",
+                        color: "#fca5a5",
+                      }}
+                    >
+                      숨김
+                    </span>
+                  )}
                 </td>
                 <td>{regionNameById(r.regionId)}</td>
                 <td>{r.data.venueKind ?? "명상지"}</td>
@@ -269,6 +339,11 @@ export default function AdminPlacesPage() {
       </AdminCard>
 
       <AdminCard>
+        <AdminRestoreBanner
+          restorable={restorable}
+          onRestore={handleRestore}
+          onDismiss={dismissRestorable}
+        />
         {!draft ? (
           <p style={{ color: "#a1a1aa" }}>왼쪽에서 항목을 선택하거나 새로 등록하세요.</p>
         ) : (
@@ -284,19 +359,50 @@ export default function AdminPlacesPage() {
                   {tabLabel[t]}
                 </AdminButton>
               ))}
-              <AdminButton
-                $variant="primary"
-                type="button"
-                onClick={() => setSaveConfirmOpen(true)}
-                disabled={saving}
-                style={{ marginLeft: "auto" }}
+              <div
+                style={{
+                  marginLeft: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                }}
               >
-                {saving ? "저장 중…" : "저장"}
-              </AdminButton>
+                <AdminAutosaveHint savedAt={savedAt} />
+                <AdminButton
+                  $variant="primary"
+                  type="button"
+                  onClick={() => setSaveConfirmOpen(true)}
+                  disabled={saving}
+                >
+                  {saving ? "저장 중…" : "저장"}
+                </AdminButton>
+              </div>
             </div>
 
             {tab === "basic" && (
               <>
+                <AdminField>
+                  <AdminLabel>공개 노출</AdminLabel>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <AdminButton
+                      type="button"
+                      $variant={!draft.hidden ? "primary" : "ghost"}
+                      onClick={() => setDraft({ ...draft, hidden: false })}
+                    >
+                      노출
+                    </AdminButton>
+                    <AdminButton
+                      type="button"
+                      $variant={draft.hidden ? "danger" : "ghost"}
+                      onClick={() => setDraft({ ...draft, hidden: true })}
+                    >
+                      숨김
+                    </AdminButton>
+                  </div>
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "#71717a" }}>
+                    숨김으로 두면 공개 지도·목록에 표시되지 않습니다. (관리자에게만 보임)
+                  </p>
+                </AdminField>
                 <AdminPhotoGridUpload
                   photos={draft.photos ?? []}
                   onChange={setPhotos}
@@ -405,6 +511,14 @@ export default function AdminPlacesPage() {
                       >
                         {programStatusLabel(p)}
                       </span>
+                      <AdminButton
+                        type="button"
+                        $variant={p.hidden ? "danger" : "ghost"}
+                        onClick={() => updateProgram(i, { hidden: !p.hidden })}
+                        style={{ marginLeft: "auto" }}
+                      >
+                        {p.hidden ? "숨김" : "노출"}
+                      </AdminButton>
                       <AdminButton $variant="danger" type="button" onClick={() => removeProgram(i)}>
                         삭제
                       </AdminButton>

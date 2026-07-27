@@ -102,7 +102,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </CloseButton>
         <Menu>
           <Link to="/" onClick={onClose}>
-            전국 힐링명상지도 홈
+            전국 힐링 명상 웰니스 지도 홈
           </Link>
           <Link to="/meditation" onClick={onClose}>
             지역별 명상센터

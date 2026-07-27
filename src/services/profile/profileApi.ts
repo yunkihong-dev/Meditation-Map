@@ -25,6 +25,8 @@ export type ExpertProfileDraft = {
   centerAddress: string;
   businessRegistrationNumber: string;
   businessOpeningDate: string;
+  /** 공개 목록·상세 노출 여부 — true 면 숨김 */
+  hidden: boolean;
 };
 
 async function parseResponse<T>(res: Response): Promise<T> {
@@ -75,6 +77,7 @@ export async function fetchMyExpertProfile(): Promise<Partial<ExpertProfileDraft
     hasCenter: Boolean(data.hasCenter),
     centerName: String(data.centerSummary ?? ""),
     centerAddress: String(data.centerAddress ?? ""),
+    hidden: Boolean(data.hidden),
   };
 }
 

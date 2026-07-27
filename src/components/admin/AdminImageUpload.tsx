@@ -1,6 +1,11 @@
-import { useRef, useState } from "react";
+import { type DragEvent as ReactDragEvent, useRef, useState } from "react";
 import { uploadAdminImage } from "@/services/admin/adminApi";
 import { AdminButton, AdminField, AdminInput, AdminLabel } from "./adminStyles";
+
+/** OS에서 파일을 끌어온 드래그인지 판별 */
+function isFileDrag(e: ReactDragEvent): boolean {
+  return Array.from(e.dataTransfer.types).includes("Files");
+}
 
 interface AdminImageUploadProps {
   label?: string;
@@ -12,6 +17,7 @@ export function AdminImageUpload({ label, value, onChange }: AdminImageUploadPro
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fileDragOver, setFileDragOver] = useState(false);
 
   const handleFile = async (file: File) => {
     setUploading(true);
@@ -25,18 +31,61 @@ export function AdminImageUpload({ label, value, onChange }: AdminImageUploadPro
     }
   };
 
+  const handleDrop = (e: ReactDragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    setFileDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) void handleFile(f);
+  };
+
   return (
     <AdminField>
       {label ? <AdminLabel>{label}</AdminLabel> : null}
-      <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-        <AdminInput
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="이미지 URL 또는 업로드"
-        />
-        <AdminButton type="button" disabled={uploading} onClick={() => inputRef.current?.click()}>
-          {uploading ? "…" : "업로드"}
-        </AdminButton>
+      <div
+        onDragOver={(e) => {
+          if (!isFileDrag(e)) return;
+          e.preventDefault();
+          setFileDragOver(true);
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setFileDragOver(false);
+        }}
+        onDrop={handleDrop}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          padding: 8,
+          margin: -8,
+          borderRadius: 12,
+          transition: "background 0.12s, box-shadow 0.12s",
+          background: fileDragOver ? "rgba(124, 58, 237, 0.1)" : "transparent",
+          boxShadow: `inset 0 0 0 2px ${fileDragOver ? "#7c3aed" : "transparent"}`,
+        }}
+      >
+        <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+          <AdminInput
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="이미지 URL · 업로드 · 파일 끌어다 놓기"
+          />
+          <AdminButton type="button" disabled={uploading} onClick={() => inputRef.current?.click()}>
+            {uploading ? "…" : "업로드"}
+          </AdminButton>
+        </div>
+        {value ? (
+          <img
+            src={value}
+            alt=""
+            style={{ maxHeight: 96, maxWidth: "100%", borderRadius: 8, objectFit: "cover" }}
+          />
+        ) : (
+          <p style={{ margin: 0, color: fileDragOver ? "#c4b5fd" : "#71717a", fontSize: 12 }}>
+            {fileDragOver ? "여기에 놓으면 업로드됩니다" : "이미지 파일을 이 영역에 끌어다 놓을 수 있어요"}
+          </p>
+        )}
       </div>
       <input
         ref={inputRef}
@@ -49,13 +98,6 @@ export function AdminImageUpload({ label, value, onChange }: AdminImageUploadPro
           e.target.value = "";
         }}
       />
-      {value ? (
-        <img
-          src={value}
-          alt=""
-          style={{ marginTop: 8, maxHeight: 96, maxWidth: "100%", borderRadius: 8, objectFit: "cover" }}
-        />
-      ) : null}
       {error ? <p style={{ margin: "6px 0 0", color: "#f87171", fontSize: 12 }}>{error}</p> : null}
     </AdminField>
   );

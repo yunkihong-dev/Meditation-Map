@@ -172,7 +172,7 @@ const ServiceInfoPage = () => {
         <HeroCard>
           <Title>누구나 원하는 곳에서, 더 깊은 힐링 명상</Title>
           <Subtitle>
-            전국 힐링명상지도는 지역별 명상센터를 쉽고 빠르게 찾을 수 있는 플랫폼입니다.
+            전국 힐링 명상 웰니스 지도는 지역별 명상센터를 쉽고 빠르게 찾을 수 있는 플랫폼입니다.
           </Subtitle>
           <PrimaryButton to="/">명상센터 찾아보기</PrimaryButton>
         </HeroCard>
@@ -247,7 +247,7 @@ const ServiceInfoPage = () => {
         <BandInner>
           <div>
             <h2>명상센터 운영자라면 함께해요</h2>
-            <p>전국 힐링명상지도와 함께 더 많은 사람에게 명상 경험을 전달하세요.</p>
+            <p>전국 힐링 명상 웰니스 지도와 함께 더 많은 사람에게 명상 경험을 전달하세요.</p>
           </div>
           <BandButton type="button">등록 문의하기</BandButton>
         </BandInner>
