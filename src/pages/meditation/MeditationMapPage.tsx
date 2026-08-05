@@ -258,7 +258,7 @@ const MeditationMapPage = () => {
       const rect = section.getBoundingClientRect();
       return { x: rect.width / 2, y: rect.height / 2 - 40 };
     }
-    const path = section.querySelector(`path.land[id="${regionId}"]`) as SVGPathElement | null;
+    const path = section.querySelector(`.land[id="${regionId}"]`) as SVGGeometryElement | null;
     if (!path) return null;
     const svg = path.closest("svg") as SVGSVGElement | null;
     if (!svg) return null;
@@ -271,7 +271,8 @@ const MeditationMapPage = () => {
     const pt = svg.createSVGPoint();
     pt.x = cx;
     pt.y = cy;
-    const ctm = svg.getScreenCTM();
+    // 각 지역 요소는 자체 transform(translate)을 가지므로 요소의 CTM으로 변환
+    const ctm = path.getScreenCTM();
     if (!ctm) return null;
     const screenPt = pt.matrixTransform(ctm);
     const sectionRect = section.getBoundingClientRect();

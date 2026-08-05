@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import styled, { css } from "styled-components";
-import mapSvg from "@/assets/southKoreaLow.svg?raw";
+import mapSvg from "@/assets/southKoreaLow2.svg?raw";
 
 const MapWrapper = styled.div<{ $maxMapHeight?: string }>`
   cursor: pointer;
@@ -27,7 +27,7 @@ const MapWrapper = styled.div<{ $maxMapHeight?: string }>`
         : undefined}
   }
 
-  path.land {
+  .land {
     pointer-events: auto;
     fill: ${({ theme }) => theme.colors.buddingPeach};
     stroke: ${({ theme }) => theme.colors.dustyRose};
@@ -36,17 +36,17 @@ const MapWrapper = styled.div<{ $maxMapHeight?: string }>`
     transition: fill 0.25s ease;
   }
 
-  path.land.is-hovered {
+  .land.is-hovered {
     fill: ${({ theme }) => theme.colors.primary600} !important;
   }
 
-  path.land.is-active {
+  .land.is-active {
     fill: ${({ theme }) => theme.colors.primary600} !important;
   }
 
-  path.land[id="KR-11"]:not(.is-active):not(.is-hovered),
-  path.land[id="KR-41"]:not(.is-active):not(.is-hovered),
-  path.land[id="KR-42"]:not(.is-active):not(.is-hovered) {
+  .land[id="KR-11"]:not(.is-active):not(.is-hovered),
+  .land[id="KR-41"]:not(.is-active):not(.is-hovered),
+  .land[id="KR-42"]:not(.is-active):not(.is-hovered) {
     fill: #f8e0d8;
   }
 `;
@@ -73,11 +73,11 @@ const RegionMap = ({
     if (!container) return;
 
     const getPaths = () =>
-      Array.from(container.querySelectorAll<SVGPathElement>("svg path.land")).filter((p) =>
+      Array.from(container.querySelectorAll<SVGGeometryElement>("svg .land")).filter((p) =>
         p.getAttribute("id")
       );
 
-    const updateHover = (targetPath: SVGPathElement | null) => {
+    const updateHover = (targetPath: SVGGeometryElement | null) => {
       const newId = targetPath?.getAttribute("id") ?? null;
       if (newId === hoveredIdRef.current) return;
       hoveredIdRef.current = newId;
@@ -91,26 +91,25 @@ const RegionMap = ({
       });
     };
 
-    const getPathAtPoint = (clientX: number, clientY: number): SVGPathElement | null => {
+    const getPathAtPoint = (clientX: number, clientY: number): SVGGeometryElement | null => {
       const el = document.elementFromPoint(clientX, clientY);
-      if (el?.matches?.("path.land")) {
-        return el as SVGPathElement;
+      if (el?.matches?.(".land")) {
+        return el as SVGGeometryElement;
       }
 
-      const svgEl = container.querySelector("svg");
+      const svgEl = container.querySelector<SVGSVGElement>("svg");
       if (!svgEl) return null;
 
-      const ctm = svgEl.getScreenCTM();
-      if (!ctm) return null;
-
-      const pt = (svgEl as SVGSVGElement).createSVGPoint();
-      pt.x = clientX;
-      pt.y = clientY;
-      const svgP = pt.matrixTransform(ctm.inverse());
       const paths = getPaths();
-
+      // 각 지역(polyline/path)은 자신만의 transform을 가지므로 요소별 CTM으로 로컬 좌표 변환
       for (let i = paths.length - 1; i >= 0; i--) {
-        if (paths[i].isPointInFill(svgP)) {
+        const ctm = paths[i].getScreenCTM();
+        if (!ctm) continue;
+        const pt = svgEl.createSVGPoint();
+        pt.x = clientX;
+        pt.y = clientY;
+        const local = pt.matrixTransform(ctm.inverse());
+        if (paths[i].isPointInFill(local)) {
           return paths[i];
         }
       }
@@ -159,15 +158,13 @@ const RegionMap = ({
     };
   }, [onSelectRegion]);
 
-  const displayRegionIds = (activeRegionIds ?? (activeRegionId ? [activeRegionId] : [])).map(
-    (id) => (id === "KR-47" ? "KR-48" : id)
-  );
+  const displayRegionIds = activeRegionIds ?? (activeRegionId ? [activeRegionId] : []);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const paths = container.querySelectorAll<SVGPathElement>("svg path.land");
+    const paths = container.querySelectorAll<SVGGeometryElement>("svg .land");
     paths.forEach((path) => {
       const regionId = path.getAttribute("id");
       if (regionId && displayRegionIds.includes(regionId)) {
