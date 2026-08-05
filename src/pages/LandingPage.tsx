@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import logoImg from "@/assets/logo.png";
@@ -12,382 +12,562 @@ import { useFavoritesStore } from "@/stores/favoritesStore";
 import { dismissLanding } from "@/stores/landingPreference";
 import { toast } from "@/stores/toastStore";
 
+/* ─────────────────────────  대화 스크립트  ─────────────────────────
+ * 각 스텝: 봇이 순서대로 흘려보내는 말풍선 + 사용자가 고를 답변(choices).
+ * 답변을 고르면 사용자 말풍선이 찍히고 다음 스텝이 이어집니다.
+ * 마지막 스텝(final): 답변 대신 "튜토리얼 시작하기" CTA를 띄웁니다.
+ */
+/** 대화 턴: 봇이 설명하고 → 사용자가 좌(스킵/분기) · 우(계속) 중 답을 고르며 진행 */
+type ChoiceNext = number | "login" | "exit" | "tutorial";
+interface Choice {
+  label: string;
+  next: ChoiceNext;
+}
+interface Turn {
+  bot: string[];
+  left?: Choice; // 보조(외곽선): 스킵/로그인
+  right?: Choice; // 주(채움): 계속 진행
+  auto?: number; // 선택 없이 이 턴으로 자동으로 이어짐(설명 구간)
+}
+
+const TURNS: Turn[] = [
+  // 0. 인사 + 회원/처음 분기
+  {
+    bot: ["안녕하세요 🎉", "명상 웰니스 지도에 오신 걸 환영해요!", "이전에 명상 웰니스 지도를 이용해본 적 있나요?"],
+    left: { label: "네, 회원이에요 😊", next: 1 },
+    right: { label: "처음이에요 🚀", next: 2 },
+  },
+  // 1. 회원: 로그인 안내 + "그래도 소개받을래요?"
+  {
+    bot: ["반가워요! 로그인만 하면 바로 이용할 수 있어요 😊", "혹시 명상 웰니스 지도가 아직 낯설다면, 잠깐 소개해 드릴까요?"],
+    left: { label: "음, 괜찮아 😊", next: "login" },
+    right: { label: "좋아, 들어볼게 ✨", next: 2 },
+  },
+  // 2. 소개 ① (선택 없이 자동으로 이어짐)
+  {
+    bot: ["바쁜 하루 속, 마음 쉴 곳 찾기 어려우셨죠? 🤔", "내 주변 명상 공간을 지도에서 바로 찾게 도와드려요 🗺️"],
+    auto: 3,
+  },
+  // 3. 소개 ② (선택 없이 자동으로 이어짐)
+  {
+    bot: ["검증된 전문가의 클래스와 리트릿도 살펴보고 예약할 수 있어요 🧘", "마음에 든 공간은 찜하고, 나만의 명상 기록도 남길 수 있고요 📖"],
+    auto: 4,
+  },
+  // 4. 튜토리얼 CTA
+  {
+    bot: ["이제 어떻게 쓰는지 튜토리얼로 딱 보여드릴게요 🧚", "1분이면 충분해요!"],
+    left: { label: "나중에 할래요", next: "exit" },
+    right: { label: "튜토리얼 볼래요 🧚", next: "tutorial" },
+  },
+];
+
+/* ── 튜토리얼 미리보기(스크린샷 자리 — 임시 플레이스홀더) ── */
+type PreviewKey = "map" | "expert" | "record";
+
+const PREVIEWS: Record<PreviewKey, { emoji: string; title: string; bg: string }> = {
+  map: { emoji: "🗺️", title: "내 주변 명상 공간 지도", bg: "#efe9f6" },
+  expert: { emoji: "🧘", title: "전문가 클래스 · 리트릿", bg: "#f6ece8" },
+  record: { emoji: "📖", title: "찜 · 나의 명상 기록", bg: "#eaf0ec" },
+};
+
+const TUTORIAL: { key: PreviewKey; caption: string }[] = [
+  { key: "map", caption: "지도에서 내 주변 명상 공간을 골라요" },
+  { key: "expert", caption: "전문가 클래스와 리트릿을 예약해요" },
+  { key: "record", caption: "찜하고 나만의 명상 기록을 남겨요" },
+];
+
 /* ─────────────────────────  애니메이션  ───────────────────────── */
 
-const floatOrb = keyframes`
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(18px, -24px) scale(1.06); }
-  66% { transform: translate(-14px, 16px) scale(0.96); }
+const bubbleIn = keyframes`
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 `;
 
-const breathe = keyframes`
-  0%, 100% { transform: scale(1); box-shadow: 0 18px 48px rgba(75, 0, 130, 0.18); }
-  50% { transform: scale(1.06); box-shadow: 0 26px 64px rgba(75, 0, 130, 0.28); }
+const dotBounce = keyframes`
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-5px); opacity: 1; }
 `;
 
-const breatheRing = keyframes`
-  0%, 100% { transform: scale(0.9); opacity: 0.55; }
-  50% { transform: scale(1.25); opacity: 0; }
-`;
-
-const fadeUp = keyframes`
-  from { opacity: 0; transform: translateY(24px); }
+const footerIn = keyframes`
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const scrollCue = keyframes`
-  0% { transform: translateY(0); opacity: 0.9; }
-  50% { transform: translateY(8px); opacity: 0.4; }
-  100% { transform: translateY(0); opacity: 0.9; }
+const overlayIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
 `;
 
-const shimmer = keyframes`
-  to { background-position: 200% center; }
+const modalIn = keyframes`
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 `;
 
-/* ─────────────────────────  스크롤 리빌 훅  ───────────────────────── */
+const zoomIn = keyframes`
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+`;
 
-function useInView<T extends HTMLElement>(threshold = 0.2) {
-  const ref = useRef<T | null>(null);
-  const [inView, setInView] = useState(false);
+/* ─────────────────────────  공통 레이아웃  ───────────────────────── */
 
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    if (typeof IntersectionObserver === "undefined") {
-      setInView(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setInView(true);
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [threshold]);
+const Screen = styled.div`
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: ${({ theme }) => theme.colors.warmCream};
+`;
 
-  return { ref, inView };
-}
+const Header = styled.header`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 12px;
+`;
 
-/* ─────────────────────────  레이아웃  ───────────────────────── */
-
-const Page = styled.div`
-  position: relative;
-  min-height: 100dvh;
-  overflow-x: hidden;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(168, 139, 202, 0.22), transparent 42%),
-    radial-gradient(circle at 88% 4%, rgba(245, 216, 208, 0.55), transparent 40%),
-    ${({ theme }) => theme.colors.warmCream};
+const HeaderTitle = styled.h1`
+  margin: 0;
+  ${typography.title};
   color: ${({ theme }) => theme.colors.text900};
 `;
 
-const Orb = styled.span<{ $size: number; $top: string; $left: string; $delay: string; $color: string }>`
-  position: absolute;
-  z-index: 0;
-  width: ${({ $size }) => $size}px;
-  height: ${({ $size }) => $size}px;
-  top: ${({ $top }) => $top};
-  left: ${({ $left }) => $left};
-  border-radius: 50%;
-  background: ${({ $color }) => $color};
-  filter: blur(42px);
-  opacity: 0.5;
-  animation: ${floatOrb} 16s ease-in-out infinite;
-  animation-delay: ${({ $delay }) => $delay};
-  pointer-events: none;
+const TextButton = styled.button`
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text700};
+  ${typography.body2};
+  cursor: pointer;
+  padding: 6px 4px;
 
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary600};
   }
 `;
 
-const Container = styled.div`
-  position: relative;
-  z-index: 1;
-  width: min(100%, 480px);
-  margin: 0 auto;
-  padding: 0 22px calc(40px + env(safe-area-inset-bottom, 0px));
-  box-sizing: border-box;
+const ProgressTrack = styled.div`
+  flex-shrink: 0;
+  height: 3px;
+  margin: 0 20px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.primary100};
+  overflow: hidden;
 `;
 
-/* ── Hero ── */
+const ProgressFill = styled.div<{ $pct: number }>`
+  height: 100%;
+  width: ${({ $pct }) => `${$pct}%`};
+  border-radius: inherit;
+  background: ${({ theme }) => theme.colors.primary400};
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+`;
 
-const Hero = styled.section`
-  min-height: 100dvh;
+/* ── 채팅 ── */
+
+const Transcript = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 18px 18px 8px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: calc(48px + env(safe-area-inset-top, 0px)) 0 40px;
+  gap: 8px;
 `;
 
-const LogoWrap = styled.div`
-  position: relative;
-  width: 128px;
-  height: 128px;
+const Row = styled.div<{ $user?: boolean }>`
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  justify-content: ${({ $user }) => ($user ? "flex-end" : "flex-start")};
+`;
+
+const Avatar = styled.div<{ $ghost?: boolean }>`
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.primary50};
   display: grid;
   place-items: center;
-  animation: ${fadeUp} 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-`;
-
-const LogoRing = styled.span`
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 2px solid ${({ theme }) => theme.colors.primary200};
-  animation: ${breatheRing} 4.5s ease-in-out infinite;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-`;
-
-const LogoCircle = styled.div`
-  width: 108px;
-  height: 108px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: ${({ theme }) => theme.colors.white};
-  animation: ${breathe} 4.5s ease-in-out infinite;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
+  visibility: ${({ $ghost }) => ($ghost ? "hidden" : "visible")};
 
   img {
-    width: 74px;
-    height: 74px;
+    width: 22px;
+    height: 22px;
     object-fit: contain;
   }
 `;
 
-const Eyebrow = styled.p`
-  margin: 26px 0 0;
-  ${typography.caption};
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: ${({ theme }) => theme.colors.primary400};
-  animation: ${fadeUp} 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
-`;
+const Bubble = styled.div<{ $user?: boolean }>`
+  max-width: 76%;
+  padding: 12px 15px;
+  ${typography.body1};
+  line-height: 1.45;
+  word-break: keep-all;
+  animation: ${bubbleIn} 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
 
-const HeroTitle = styled.h1`
-  margin: 12px 0 0;
-  font-size: clamp(3.4rem, 11vw, 4.6rem);
-  font-weight: 700;
-  line-height: 1.18;
-  letter-spacing: -0.03em;
-  background: linear-gradient(
-    100deg,
-    ${({ theme }) => theme.colors.primary600} 0%,
-    ${({ theme }) => theme.colors.primary400} 45%,
-    ${({ theme }) => theme.colors.dustyRose} 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation:
-    ${fadeUp} 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both,
-    ${shimmer} 6s linear infinite;
+  ${({ $user, theme }) =>
+    $user
+      ? `
+    background: ${theme.colors.primary600};
+    color: ${theme.colors.white};
+    border-radius: 20px 20px 6px 20px;
+    box-shadow: 0 6px 16px rgba(75, 0, 130, 0.14);
+  `
+      : `
+    background: ${theme.colors.white};
+    color: ${theme.colors.text900};
+    border-radius: 20px 20px 20px 6px;
+    box-shadow: 0 6px 16px rgba(61, 61, 61, 0.06);
+  `}
 
   @media (prefers-reduced-motion: reduce) {
-    animation: ${fadeUp} 0.7s ease 0.18s both;
+    animation: none;
   }
 `;
 
-const HeroSub = styled.p`
-  margin: 18px 0 0;
-  max-width: 320px;
-  ${typography.body1};
-  color: ${({ theme }) => theme.colors.text700};
-  animation: ${fadeUp} 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+const TypingBubble = styled.div`
+  display: inline-flex;
+  gap: 5px;
+  padding: 15px 16px;
+  background: ${({ theme }) => theme.colors.white};
+  border-radius: 20px 20px 20px 6px;
+  box-shadow: 0 6px 16px rgba(61, 61, 61, 0.06);
+  animation: ${bubbleIn} 0.24s ease both;
+
+  span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: ${({ theme }) => theme.colors.primary200};
+    animation: ${dotBounce} 1.3s ease-in-out infinite;
+  }
+  span:nth-child(2) {
+    animation-delay: 0.18s;
+  }
+  span:nth-child(3) {
+    animation-delay: 0.36s;
+  }
 `;
 
-const ScrollCue = styled.div`
-  margin-top: 44px;
+/* ── Footer: 선택지 / 최종 CTA ── */
+
+const Footer = styled.div`
+  flex-shrink: 0;
+  background: ${({ theme }) => theme.colors.white};
+  border-top: 1px solid ${({ theme }) => theme.colors.primary100};
+  box-shadow: 0 -6px 20px rgba(61, 61, 61, 0.05);
+  padding: 16px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+`;
+
+const ChoiceRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  animation: ${footerIn} 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+`;
+
+const ChoiceButton = styled.button<{ $primary?: boolean }>`
+  width: 100%;
+  min-width: 0;
+  padding: 16px 12px;
+  ${typography.buttonMd};
+  border-radius: ${({ theme }) => theme.radii.md};
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+
+  ${({ $primary, theme }) =>
+    $primary
+      ? `
+    border: none;
+    background: ${theme.colors.primary500};
+    color: ${theme.colors.white};
+    &:hover { background: ${theme.colors.primary600}; }
+  `
+      : `
+    border: 1.5px solid ${theme.colors.primary300};
+    background: ${theme.colors.white};
+    color: ${theme.colors.primary600};
+    &:hover { background: ${theme.colors.primary50}; }
+  `}
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+const FinalActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: ${footerIn} 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+`;
+
+const PrimaryButton = styled.button`
+  width: 100%;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.primary500};
+  color: ${({ theme }) => theme.colors.white};
+  padding: 16px 20px;
+  ${typography.buttonMd};
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, opacity 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.primary600};
+    transform: translateY(-1px);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const GhostTextButton = styled.button`
+  display: block;
+  margin: 2px auto 0;
+  padding: 10px 4px;
+  border: none;
+  background: none;
+  color: ${({ theme }) => theme.colors.text700};
+  ${typography.body2};
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary600};
+  }
+`;
+
+/* ── 튜토리얼 캐러셀 ── */
+
+const Dots = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0 4px;
+`;
+
+const Dot = styled.span<{ $active: boolean }>`
+  width: ${({ $active }) => ($active ? "22px" : "8px")};
+  height: 8px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme, $active }) => ($active ? theme.colors.primary400 : theme.colors.primary100)};
+  transition: width 0.25s ease, background 0.25s ease;
+`;
+
+const Carousel = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+`;
+
+const Slide = styled.div`
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 8px 24px 12px;
+  box-sizing: border-box;
+`;
+
+const PreviewCard = styled.button<{ $bg: string }>`
+  border: none;
+  padding: 0;
+  cursor: zoom-in;
+  width: min(78%, 280px);
+  aspect-ratio: 9 / 15;
+  border-radius: 28px;
+  overflow: hidden;
+  background: ${({ theme }) => theme.colors.white};
+  box-shadow: 0 20px 44px rgba(61, 61, 61, 0.12);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.18s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+  }
+  &:active {
+    transform: scale(0.99);
+  }
+`;
+
+const PreviewArt = styled.div<{ $bg: string }>`
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  font-size: 5.4rem;
+  background: ${({ $bg }) => $bg};
+`;
+
+const PreviewBar = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
   gap: 6px;
-  ${typography.caption};
-  color: ${({ theme }) => theme.colors.primary400};
-  animation: ${fadeUp} 0.7s ease 0.4s both;
+  padding: 14px 16px;
+  ${typography.body2};
+  color: ${({ theme }) => theme.colors.text700};
+  border-top: 1px solid ${({ theme }) => theme.colors.primary100};
 
-  span:last-child {
-    font-size: 1.8rem;
-    line-height: 1;
-    animation: ${scrollCue} 1.8s ease-in-out infinite;
+  &::before {
+    content: "미리보기";
+    ${typography.caption};
+    font-weight: 700;
+    color: ${({ theme }) => theme.colors.primary600};
+    background: ${({ theme }) => theme.colors.primary50};
+    padding: 2px 7px;
+    border-radius: ${({ theme }) => theme.radii.pill};
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    span:last-child {
-      animation: none;
-    }
-  }
 `;
 
-/* ── Feature sections ── */
-
-const Section = styled.section`
-  padding: 56px 0;
-`;
-
-const SectionEyebrow = styled.p`
-  margin: 0 0 10px;
-  ${typography.caption};
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: ${({ theme }) => theme.colors.primary400};
-`;
-
-const SectionTitle = styled.h2`
+const SlideCaption = styled.p`
   margin: 0;
-  ${typography.h3};
+  text-align: center;
+  ${typography.title};
   color: ${({ theme }) => theme.colors.text900};
 `;
 
-const SectionLead = styled.p`
-  margin: 22px 0 30px;
-  ${typography.body1};
+const ZoomHint = styled.span`
+  ${typography.caption};
   color: ${({ theme }) => theme.colors.text700};
 `;
 
-const RevealCard = styled.div<{ $inView: boolean; $delay?: number }>`
-  opacity: ${({ $inView }) => ($inView ? 1 : 0)};
-  transform: ${({ $inView }) => ($inView ? "translateY(0)" : "translateY(28px)")};
-  transition:
-    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: ${({ $delay = 0 }) => $delay}s;
+/* ── 확대 라이트박스 ── */
 
-  @media (prefers-reduced-motion: reduce) {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-`;
-
-const FeatureRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(75, 0, 130, 0.07);
-  box-shadow: 0 10px 30px rgba(75, 0, 130, 0.06);
-  backdrop-filter: blur(6px);
-
-  & + & {
-    margin-top: 14px;
-  }
-`;
-
-const FeatureIcon = styled.div<{ $from: string; $to: string }>`
-  flex: 0 0 auto;
-  width: 62px;
-  height: 62px;
-  border-radius: 20px;
+const ZoomOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.72);
   display: grid;
   place-items: center;
-  font-size: 2.6rem;
-  background: linear-gradient(140deg, ${({ $from }) => $from}, ${({ $to }) => $to});
-  box-shadow: 0 8px 20px rgba(75, 0, 130, 0.14);
+  padding: 24px;
+  cursor: zoom-out;
+  animation: ${overlayIn} 0.2s ease both;
 `;
 
-const FeatureText = styled.div`
-  min-width: 0;
+const ZoomCard = styled.div<{ $bg: string }>`
+  width: min(100%, 420px);
+  aspect-ratio: 9 / 15;
+  max-height: 82vh;
+  border-radius: 30px;
+  overflow: hidden;
+  background: ${({ theme }) => theme.colors.white};
+  display: flex;
+  flex-direction: column;
+  cursor: grab;
+  touch-action: none; /* 세로 드래그를 스크롤이 아닌 제스처로 받기 */
+  animation: ${zoomIn} 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
 
-  strong {
-    display: block;
-    ${typography.body1};
-    font-weight: 700;
-    color: ${({ theme }) => theme.colors.text900};
-  }
-
-  span {
-    display: block;
-    margin-top: 5px;
-    ${typography.body2};
-    color: ${({ theme }) => theme.colors.text700};
+  &:active {
+    cursor: grabbing;
   }
 `;
 
-/* ── Stats band ── */
-
-const StatsBand = styled.div`
+const ZoomArt = styled.div<{ $bg: string }>`
+  flex: 1 1 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding: 24px 12px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary600}, ${({ theme }) => theme.colors.primary400});
-  color: ${({ theme }) => theme.colors.white};
-  box-shadow: 0 16px 36px rgba(75, 0, 130, 0.24);
+  place-items: center;
+  font-size: 8rem;
+  background: ${({ $bg }) => $bg};
 `;
 
-const Stat = styled.div`
-  text-align: center;
+/* ── 로그인 모달 (별도 창) ── */
 
-  & + & {
-    border-left: 1px solid rgba(255, 255, 255, 0.22);
-  }
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(0, 0, 0, 0.38);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: ${overlayIn} 0.2s ease both;
+`;
 
-  strong {
-    display: block;
-    font-size: 2.4rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
+const Modal = styled.div`
+  position: relative;
+  width: min(100%, 400px);
+  padding: 28px 22px 22px;
+  border-radius: 26px;
+  background: ${({ theme }) => theme.colors.white};
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  animation: ${modalIn} 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
 
-  span {
-    display: block;
-    margin-top: 6px;
-    ${typography.caption};
-    color: rgba(255, 255, 255, 0.82);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
-/* ── Auth CTA ── */
+const ModalClose = styled.button`
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.primary50};
+  color: ${({ theme }) => theme.colors.text700};
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
 
-const AuthSection = styled.section`
-  padding: 20px 0 8px;
-  text-align: center;
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary600};
+  }
 `;
 
-const AuthTitle = styled.h2`
+const ModalTitle = styled.h2`
   margin: 0;
+  text-align: center;
   ${typography.title};
+  color: ${({ theme }) => theme.colors.text900};
 `;
 
-const AuthDesc = styled.p`
-  margin: 10px 0 26px;
+const ModalDesc = styled.p`
+  margin: 8px 0 22px;
+  text-align: center;
   ${typography.body2};
   color: ${({ theme }) => theme.colors.text700};
-`;
-
-const AuthCard = styled.div`
-  padding: 26px 22px 22px;
-  border-radius: 28px;
-  background: ${({ theme }) => theme.colors.white};
-  border: 1px solid rgba(75, 0, 130, 0.08);
-  box-shadow: 0 20px 50px rgba(75, 0, 130, 0.1);
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 `;
 
 const Input = styled.input`
@@ -397,7 +577,7 @@ const Input = styled.input`
   background: ${({ theme }) => theme.colors.white};
   color: ${({ theme }) => theme.colors.text900};
   ${typography.body2};
-  padding: 15px 22px;
+  padding: 14px 20px;
   transition: border-color 0.2s ease, transform 0.2s ease;
 
   &::placeholder {
@@ -411,33 +591,11 @@ const Input = styled.input`
   }
 `;
 
-const PrimaryButton = styled.button`
-  width: 100%;
-  margin-top: 4px;
-  border: none;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: ${({ theme }) => theme.colors.primary300};
-  color: ${({ theme }) => theme.colors.white};
-  padding: 16px 20px;
-  ${typography.buttonMd};
-  cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.2s ease;
-
-  &:hover:not(:disabled) {
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
 const Divider = styled.div`
-  margin: 22px 0 18px;
+  margin: 18px 0 14px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   color: ${({ theme }) => theme.colors.text700};
   ${typography.caption};
 
@@ -453,12 +611,12 @@ const Divider = styled.div`
 const SocialRow = styled.div`
   display: flex;
   justify-content: center;
-  gap: 22px;
+  gap: 20px;
 `;
 
 const socialCircle = `
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -480,14 +638,14 @@ const SocialButton = styled.button`
 `;
 
 const SocialIcon = styled.img`
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   object-fit: cover;
 `;
 
 const SignUpRow = styled.div`
-  margin: 24px 0 0;
+  margin: 20px 0 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -512,68 +670,111 @@ const SignUpLink = styled.button`
   }
 `;
 
-const BrowseButton = styled.button`
-  display: block;
-  margin: 20px auto 0;
-  padding: 12px 24px;
-  border: 1px solid ${({ theme }) => theme.colors.primary200};
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: transparent;
-  color: ${({ theme }) => theme.colors.primary600};
-  ${typography.buttonMd};
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease;
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.primary50};
-    transform: translateY(-1px);
-  }
-`;
-
-/* ─────────────────────────  데이터  ───────────────────────── */
-
-const FEATURES = [
-  {
-    icon: "🗺️",
-    from: "#c9b8e0",
-    to: "#a88bca",
-    title: "지도로 찾는 명상 공간",
-    desc: "내 주변 명상 공간과 프로그램을 지도에서 한눈에 둘러보세요.",
-  },
-  {
-    icon: "🧘",
-    from: "#f5d8d0",
-    to: "#c9a090",
-    title: "검증된 전문가 클래스",
-    desc: "믿을 수 있는 전문가의 클래스와 리트릿을 직접 살펴보고 예약하세요.",
-  },
-  {
-    icon: "📖",
-    from: "#e6dcf0",
-    to: "#7a5aab",
-    title: "나만의 명상 기록",
-    desc: "마음에 드는 공간을 찜하고, 나의 명상 여정을 차곡차곡 기록하세요.",
-  },
-] as const;
-
 /* ─────────────────────────  컴포넌트  ───────────────────────── */
+
+interface LogItem {
+  from: "bot" | "user";
+  text: string;
+  /** 봇 발화 그룹의 첫 메시지 — 이때만 아바타를 표시(연속 메시지는 그룹핑) */
+  head?: boolean;
+}
+
+type Phase = "chat" | "tutorial";
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const authReady = useAuthStore((s) => s.authReady);
   const isAuthed = useAuthStore((s) => !!s.accessToken);
 
+  const [phase, setPhase] = useState<Phase>("chat");
+
+  const [log, setLog] = useState<LogItem[]>([]);
+  const [typing, setTyping] = useState(false);
+  const [turnIndex, setTurnIndex] = useState(0);
+  const [awaiting, setAwaiting] = useState(false); // 현재 턴 봇 발화 끝 → 답변 대기
+
+  const [tutorialIndex, setTutorialIndex] = useState(0);
+  const [zoomed, setZoomed] = useState<PreviewKey | null>(null);
+  const [dragY, setDragY] = useState(0); // 줌 사진 세로 드래그(스와이프-투-디스미스)
+  const dragStartRef = useRef<number | null>(null);
+
+  const [authOpen, setAuthOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
   const oauthApiBase = getMeditationApiBaseUrl() ?? "";
 
-  const features = useInView<HTMLDivElement>();
-  const stats = useInView<HTMLDivElement>();
-  const auth = useInView<HTMLDivElement>();
+  // 현재 턴의 봇 메시지를 순서대로 흘려보내고, 끝나면 답변(선택지)을 띄움
+  // (StrictMode의 이중 마운트는 cleanup에서 타이머를 취소하므로 중복 없이 동작)
+  useEffect(() => {
+    const turn = TURNS[turnIndex];
+    if (!turn) return;
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    setAwaiting(false);
+    let i = 0;
 
-  // 이미 로그인한 사용자는 랜딩을 건너뛰고 홈으로
+    const showNext = () => {
+      if (cancelled) return;
+      if (i >= turn.bot.length) {
+        setTyping(false);
+        if (typeof turn.auto === "number") {
+          // 설명 구간: 선택 없이 잠깐 뒤 다음 턴으로 자동 진행
+          const nextTurn = turn.auto;
+          timers.push(
+            setTimeout(() => {
+              if (!cancelled) setTurnIndex(nextTurn);
+            }, 500)
+          );
+        } else {
+          setAwaiting(true);
+        }
+        return;
+      }
+      setTyping(true);
+      const wait = i === 0 ? 450 : 720;
+      timers.push(
+        setTimeout(() => {
+          if (cancelled) return;
+          setTyping(false);
+          const text = turn.bot[i]; // i 증가 전에 값을 캡처 (업데이터 지연 실행 대비)
+          const head = i === 0;
+          setLog((prev) => [...prev, { from: "bot", text, head }]);
+          i += 1;
+          timers.push(setTimeout(showNext, 300));
+        }, wait)
+      );
+    };
+    showNext();
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
+  }, [turnIndex]);
+
+  // 새 메시지·타이핑·전환 시 하단으로 스크롤
+  useEffect(() => {
+    if (phase !== "chat") return;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [log, typing, awaiting, phase]);
+
+  // Esc로 오버레이 닫기
+  useEffect(() => {
+    if (!authOpen && !zoomed) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setAuthOpen(false);
+      setZoomed(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [authOpen, zoomed]);
+
+  // 이미 로그인한 사용자는 랜딩을 건너뜀
   if (authReady && isAuthed) {
     return <Navigate to="/" replace />;
   }
@@ -583,7 +784,51 @@ const LandingPage = () => {
     navigate("/");
   };
 
+  // 답변 선택: 사용자 말풍선을 찍고, next에 따라 진행/로그인/나가기/튜토리얼
+  const pick = (choice: Choice) => {
+    setAwaiting(false);
+    setLog((prev) => [...prev, { from: "user", text: choice.label }]);
+    const next = choice.next;
+    if (next === "login") setAuthOpen(true);
+    else if (next === "exit") browseAsGuest();
+    else if (next === "tutorial") setPhase("tutorial");
+    else setTurnIndex(next);
+  };
+
   const goSignup = () => navigate("/profile?start=signup");
+
+  // 줌 라이트박스: 열기/닫기 + 세로 드래그로 닫기
+  const openZoom = (key: PreviewKey) => {
+    dragStartRef.current = null;
+    setDragY(0);
+    setZoomed(key);
+  };
+  const closeZoom = () => {
+    dragStartRef.current = null;
+    setDragY(0);
+    setZoomed(null);
+  };
+  const onZoomPointerDown = (e: ReactPointerEvent) => {
+    dragStartRef.current = e.clientY;
+  };
+  const onZoomPointerMove = (e: ReactPointerEvent) => {
+    if (dragStartRef.current === null) return;
+    setDragY(e.clientY - dragStartRef.current);
+  };
+  const onZoomPointerEnd = (e: ReactPointerEvent) => {
+    if (dragStartRef.current === null) return;
+    const dy = e.clientY - dragStartRef.current;
+    dragStartRef.current = null;
+    if (Math.abs(dy) > 80) closeZoom();
+    else setDragY(0);
+  };
+
+  const onCarouselScroll = () => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    setTutorialIndex(Math.max(0, Math.min(TUTORIAL.length - 1, idx)));
+  };
 
   const handleLogin = async () => {
     if (!getMeditationApiBaseUrl()) {
@@ -627,163 +872,236 @@ const LandingPage = () => {
     }
   };
 
+  const turn = TURNS[turnIndex];
+  const chatPct = Math.round(((turnIndex + (awaiting ? 1 : 0)) / TURNS.length) * 100);
+  const tutorialPct = Math.round(((tutorialIndex + 1) / TUTORIAL.length) * 100);
+  const showChoices = phase === "chat" && awaiting && !!turn?.left && !!turn?.right;
+  const isLastSlide = tutorialIndex >= TUTORIAL.length - 1;
+
   return (
-    <Page>
-      <Orb $size={220} $top="-40px" $left="-60px" $delay="0s" $color="rgba(168,139,202,0.5)" />
-      <Orb $size={180} $top="30dvh" $left="70%" $delay="3s" $color="rgba(245,216,208,0.7)" />
-      <Orb $size={200} $top="120dvh" $left="-40px" $delay="6s" $color="rgba(201,160,144,0.4)" />
+    <Screen>
+      <Header>
+        <HeaderTitle>{phase === "chat" ? "시작하기" : "튜토리얼"}</HeaderTitle>
+        <TextButton type="button" onClick={browseAsGuest}>
+          나가기
+        </TextButton>
+      </Header>
+      <ProgressTrack>
+        <ProgressFill $pct={phase === "chat" ? chatPct : tutorialPct} />
+      </ProgressTrack>
 
-      <Container>
-        {/* Hero */}
-        <Hero>
-          <LogoWrap>
-            <LogoRing />
-            <LogoCircle>
-              <img src={logoImg} alt="명상 웰니스 지도 로고" />
-            </LogoCircle>
-          </LogoWrap>
-          <Eyebrow>MEDITATION WELLNESS MAP</Eyebrow>
-          <HeroTitle>명상 웰니스 지도</HeroTitle>
-          <HeroSub>내 마음이 쉬어갈 공간을 지도 위에서 찾아보세요. 가까운 명상, 지금 여기에서.</HeroSub>
-          <ScrollCue>
-            <span>아래로 밀어보세요</span>
-            <span>⌄</span>
-          </ScrollCue>
-        </Hero>
+      {phase === "chat" && (
+        <>
+          <Transcript>
+            {log.map((item, idx) =>
+              item.from === "user" ? (
+                <Row key={idx} $user>
+                  <Bubble $user>{item.text}</Bubble>
+                </Row>
+              ) : (
+                <Row key={idx}>
+                  <Avatar $ghost={!item.head}>
+                    <img src={logoImg} alt="" />
+                  </Avatar>
+                  <Bubble>{item.text}</Bubble>
+                </Row>
+              )
+            )}
 
-        {/* Features */}
-        <Section ref={features.ref}>
-          <RevealCard $inView={features.inView}>
-            <SectionEyebrow>WHY 명상 웰니스 지도</SectionEyebrow>
-            <SectionTitle>바쁜 하루 속, 쉼을 찾는 가장 쉬운 방법</SectionTitle>
-            <SectionLead>흩어져 있던 명상 공간과 전문가 프로그램을 한곳에 모았어요.</SectionLead>
-          </RevealCard>
-          {FEATURES.map((f, i) => (
-            <RevealCard key={f.title} $inView={features.inView} $delay={0.12 + i * 0.12}>
-              <FeatureRow>
-                <FeatureIcon $from={f.from} $to={f.to}>
-                  {f.icon}
-                </FeatureIcon>
-                <FeatureText>
-                  <strong>{f.title}</strong>
-                  <span>{f.desc}</span>
-                </FeatureText>
-              </FeatureRow>
-            </RevealCard>
-          ))}
-        </Section>
+            {typing && (
+              <Row>
+                <Avatar>
+                  <img src={logoImg} alt="" />
+                </Avatar>
+                <TypingBubble>
+                  <span />
+                  <span />
+                  <span />
+                </TypingBubble>
+              </Row>
+            )}
 
-        {/* Stats */}
-        <Section ref={stats.ref} style={{ paddingTop: 0 }}>
-          <RevealCard $inView={stats.inView}>
-            <StatsBand>
-              <Stat>
-                <strong>120+</strong>
-                <span>명상 공간</span>
-              </Stat>
-              <Stat>
-                <strong>40+</strong>
-                <span>전문가 클래스</span>
-              </Stat>
-              <Stat>
-                <strong>17</strong>
-                <span>지역 커버</span>
-              </Stat>
-            </StatsBand>
-          </RevealCard>
-        </Section>
+            <div ref={bottomRef} />
+          </Transcript>
 
-        {/* Auth CTA */}
-        <Section ref={auth.ref} style={{ paddingBottom: 12 }}>
-          <RevealCard $inView={auth.inView}>
-            <AuthSection>
-              <AuthTitle>지금 바로 시작해보세요</AuthTitle>
-              <AuthDesc>로그인하고 나에게 딱 맞는 명상 공간을 찾아보세요.</AuthDesc>
-              <AuthCard>
-                <Form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void handleLogin();
+          {showChoices && turn?.left && turn?.right && (
+            <Footer>
+              <ChoiceRow>
+                <ChoiceButton type="button" onClick={() => pick(turn.left!)}>
+                  {turn.left.label}
+                </ChoiceButton>
+                <ChoiceButton type="button" $primary onClick={() => pick(turn.right!)}>
+                  {turn.right.label}
+                </ChoiceButton>
+              </ChoiceRow>
+            </Footer>
+          )}
+        </>
+      )}
+
+      {phase === "tutorial" && (
+        <>
+          <Dots>
+            {TUTORIAL.map((t, i) => (
+              <Dot key={t.key} $active={i === tutorialIndex} />
+            ))}
+          </Dots>
+
+          <Carousel ref={carouselRef} onScroll={onCarouselScroll}>
+            {TUTORIAL.map((t) => {
+              const p = PREVIEWS[t.key];
+              return (
+                <Slide key={t.key}>
+                  <PreviewCard
+                    type="button"
+                    $bg={p.bg}
+                    onClick={() => openZoom(t.key)}
+                    aria-label={`${p.title} 크게 보기`}
+                  >
+                    <PreviewArt $bg={p.bg}>{p.emoji}</PreviewArt>
+                    <PreviewBar>{p.title}</PreviewBar>
+                  </PreviewCard>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                    <SlideCaption>{t.caption}</SlideCaption>
+                    <ZoomHint>탭하면 크게 볼 수 있어요</ZoomHint>
+                  </div>
+                </Slide>
+              );
+            })}
+          </Carousel>
+
+          <Footer>
+            <FinalActions>
+              {isLastSlide ? (
+                <PrimaryButton type="button" onClick={() => setAuthOpen(true)}>
+                  명상 웰니스 지도 시작하기 ✨
+                </PrimaryButton>
+              ) : (
+                <PrimaryButton
+                  type="button"
+                  onClick={() => {
+                    const el = carouselRef.current;
+                    if (el) el.scrollTo({ left: (tutorialIndex + 1) * el.clientWidth, behavior: "smooth" });
                   }}
                 >
-                  <Input
-                    type="email"
-                    placeholder="이메일"
-                    aria-label="이메일"
-                    autoComplete="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                  />
-                  <Input
-                    type="password"
-                    placeholder="비밀번호"
-                    aria-label="비밀번호"
-                    autoComplete="current-password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                  />
-                  <PrimaryButton type="submit" disabled={busy}>
-                    {busy ? "처리 중…" : "로그인하기"}
-                  </PrimaryButton>
-                </Form>
+                  다음 →
+                </PrimaryButton>
+              )}
+              <GhostTextButton type="button" onClick={browseAsGuest}>
+                나중에 할래요
+              </GhostTextButton>
+            </FinalActions>
+          </Footer>
+        </>
+      )}
 
-                <Divider>또는</Divider>
+      {zoomed && (
+        <ZoomOverlay onClick={closeZoom}>
+          <ZoomCard
+            $bg={PREVIEWS[zoomed].bg}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={onZoomPointerDown}
+            onPointerMove={onZoomPointerMove}
+            onPointerUp={onZoomPointerEnd}
+            onPointerCancel={onZoomPointerEnd}
+            style={
+              dragY !== 0
+                ? {
+                    transform: `translateY(${dragY}px)`,
+                    opacity: Math.max(0.4, 1 - Math.abs(dragY) / 500),
+                    animation: "none",
+                  }
+                : undefined
+            }
+          >
+            <ZoomArt $bg={PREVIEWS[zoomed].bg}>{PREVIEWS[zoomed].emoji}</ZoomArt>
+            <PreviewBar>{PREVIEWS[zoomed].title}</PreviewBar>
+          </ZoomCard>
+        </ZoomOverlay>
+      )}
 
-                <SocialRow>
-                  {oauthApiBase ? (
-                    <SocialAnchor
-                      href={`${oauthApiBase}/oauth2/authorization/kakao`}
-                      aria-label="카카오로 로그인"
-                    >
-                      <SocialIcon src={kakaoImg} alt="" />
-                    </SocialAnchor>
-                  ) : (
-                    <SocialButton type="button" disabled aria-label="카카오로 로그인 (API 주소 필요)">
-                      <SocialIcon src={kakaoImg} alt="" />
-                    </SocialButton>
-                  )}
-                  {oauthApiBase ? (
-                    <SocialAnchor
-                      href={`${oauthApiBase}/oauth2/authorization/naver`}
-                      aria-label="네이버로 로그인"
-                    >
-                      <SocialIcon src={naverImg} alt="" />
-                    </SocialAnchor>
-                  ) : (
-                    <SocialButton type="button" disabled aria-label="네이버로 로그인 (API 주소 필요)">
-                      <SocialIcon src={naverImg} alt="" />
-                    </SocialButton>
-                  )}
-                  {oauthApiBase ? (
-                    <SocialAnchor
-                      href={`${oauthApiBase}/oauth2/authorization/google`}
-                      aria-label="구글로 로그인"
-                    >
-                      <SocialIcon src={googleImg} alt="" />
-                    </SocialAnchor>
-                  ) : (
-                    <SocialButton type="button" disabled aria-label="구글로 로그인 (API 주소 필요)">
-                      <SocialIcon src={googleImg} alt="" />
-                    </SocialButton>
-                  )}
-                </SocialRow>
+      {authOpen && (
+        <Overlay
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAuthOpen(false);
+          }}
+        >
+          <Modal role="dialog" aria-modal="true" aria-label="로그인">
+            <ModalClose type="button" aria-label="닫기" onClick={() => setAuthOpen(false)}>
+              ×
+            </ModalClose>
+            <ModalTitle>로그인</ModalTitle>
+            <ModalDesc>로그인하고 나에게 딱 맞는 명상 공간을 찾아보세요.</ModalDesc>
 
-                <SignUpRow>
-                  <span>아직 회원이 아니신가요?</span>
-                  <SignUpLink type="button" onClick={goSignup}>
-                    회원가입
-                  </SignUpLink>
-                </SignUpRow>
-              </AuthCard>
+            <Form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleLogin();
+              }}
+            >
+              <Input
+                type="email"
+                placeholder="이메일"
+                aria-label="이메일"
+                autoComplete="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+              />
+              <Input
+                type="password"
+                placeholder="비밀번호"
+                aria-label="비밀번호"
+                autoComplete="current-password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+              />
+              <PrimaryButton type="submit" disabled={busy}>
+                {busy ? "처리 중…" : "로그인하기"}
+              </PrimaryButton>
+            </Form>
 
-              <BrowseButton type="button" onClick={browseAsGuest}>
-                먼저 둘러볼래요
-              </BrowseButton>
-            </AuthSection>
-          </RevealCard>
-        </Section>
-      </Container>
-    </Page>
+            <Divider>또는</Divider>
+
+            <SocialRow>
+              {oauthApiBase ? (
+                <SocialAnchor href={`${oauthApiBase}/oauth2/authorization/kakao`} aria-label="카카오로 로그인">
+                  <SocialIcon src={kakaoImg} alt="" />
+                </SocialAnchor>
+              ) : (
+                <SocialButton type="button" disabled aria-label="카카오로 로그인 (API 주소 필요)">
+                  <SocialIcon src={kakaoImg} alt="" />
+                </SocialButton>
+              )}
+              {oauthApiBase ? (
+                <SocialAnchor href={`${oauthApiBase}/oauth2/authorization/naver`} aria-label="네이버로 로그인">
+                  <SocialIcon src={naverImg} alt="" />
+                </SocialAnchor>
+              ) : (
+                <SocialButton type="button" disabled aria-label="네이버로 로그인 (API 주소 필요)">
+                  <SocialIcon src={naverImg} alt="" />
+                </SocialButton>
+              )}
+              {oauthApiBase ? (
+                <SocialAnchor href={`${oauthApiBase}/oauth2/authorization/google`} aria-label="구글로 로그인">
+                  <SocialIcon src={googleImg} alt="" />
+                </SocialAnchor>
+              ) : (
+                <SocialButton type="button" disabled aria-label="구글로 로그인 (API 주소 필요)">
+                  <SocialIcon src={googleImg} alt="" />
+                </SocialButton>
+              )}
+            </SocialRow>
+
+            <SignUpRow>
+              <span>아직 회원이 아니신가요?</span>
+              <SignUpLink type="button" onClick={goSignup}>
+                회원가입
+              </SignUpLink>
+            </SignUpRow>
+          </Modal>
+        </Overlay>
+      )}
+    </Screen>
   );
 };
 
