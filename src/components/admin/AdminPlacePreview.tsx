@@ -10,7 +10,7 @@ import { MarkdownContent } from "@/components/common/MarkdownContent";
 import { MarkdownText } from "@/components/common/MarkdownText";
 import { formatProgramPeriod, normalizePlacePrograms } from "@/services/meditation/placeProgramStatus";
 import AdminPreviewFrame from "@/components/admin/AdminPreviewFrame";
-import { facilityLabel } from "@/data/facilities";
+import FacilityList from "@/components/meditation/FacilityList";
 
 const ModeTabs = styled.div`
   display: flex;
@@ -519,7 +519,7 @@ export default function AdminPlacePreview({ place }: AdminPlacePreviewProps) {
                 <AccordionItem>
                   <AccordionTitle>시설 정보</AccordionTitle>
                   <AccordionPreview>
-                    {facilities.map(facilityLabel).join(" · ")}
+                    <FacilityList facilities={facilities} />
                   </AccordionPreview>
                 </AccordionItem>
               )}

@@ -9,7 +9,7 @@ import PlaceProgramsModal, {
   ProgramPhotoExpandOverlay,
   useProgramGalleryLoop,
 } from "@/components/meditation/PlaceProgramsModal";
-import { FacilityIcon, facilityLabel } from "@/data/facilities";
+import FacilityList from "@/components/meditation/FacilityList";
 import type { MeditationPlace } from "@/services/meditation/types";
 import { buildPlaceHeroGalleryUrls } from "@/services/meditation/placeGallery";
 
@@ -403,27 +403,6 @@ const FacilitiesSection = styled.section`
     font-size: 1.2rem;
     margin-bottom: 16px;
     font-weight: 600;
-  }
-`;
-
-const FacilityIcons = styled.div`
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-`;
-
-const FacilityItem = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.colors.text700};
-
-  svg {
-    width: 28px;
-    height: 28px;
-    color: ${({ theme }) => theme.colors.primary600};
   }
 `;
 
@@ -1091,14 +1070,7 @@ const MeditationDetailPage = () => {
         {facilities.length > 0 && (
           <FacilitiesSection>
             <h3>시설 정보</h3>
-            <FacilityIcons>
-              {facilities.map((item) => (
-                <FacilityItem key={item}>
-                  <FacilityIcon name={item} />
-                  <span>{facilityLabel(item)}</span>
-                </FacilityItem>
-              ))}
-            </FacilityIcons>
+            <FacilityList facilities={facilities} />
           </FacilitiesSection>
         )}
 
