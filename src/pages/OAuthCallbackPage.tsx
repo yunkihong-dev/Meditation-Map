@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { typography } from "@/styles/typography";
 import { useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
+import { dismissLanding } from "@/stores/landingPreference";
 
 const Wrap = styled.div`
   min-height: 40vh;
@@ -78,6 +79,8 @@ const OAuthCallbackPage = () => {
       return;
     }
 
+    // 소셜 로그인까지 마쳤으면 이 브라우저에서 랜딩을 다시 띄우지 않습니다.
+    dismissLanding();
     void useAuthStore
       .getState()
       .bootstrapAuth()
