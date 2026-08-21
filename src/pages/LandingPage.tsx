@@ -864,6 +864,8 @@ const LandingPage = () => {
       await useAuthStore.getState().setSession();
       await useFavoritesStore.getState().pullFromServer();
       setLoginPassword("");
+      // 로그인까지 마친 사용자에게는 이 브라우저에서 랜딩을 다시 띄우지 않습니다.
+      dismissLanding();
       navigate("/");
     } catch {
       toast.error("잠시 후 다시 시도해 주세요.");
