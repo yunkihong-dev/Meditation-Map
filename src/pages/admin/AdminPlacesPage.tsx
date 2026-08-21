@@ -14,6 +14,7 @@ import { AdminPhotoGridUpload } from "@/components/admin/AdminPhotoGridUpload";
 import { AdminRegionSelect } from "@/components/admin/AdminRegionSelect";
 import AdminAddressMapField from "@/components/admin/AdminAddressMapField";
 import AdminMarkdownField from "@/components/admin/AdminMarkdownField";
+import AdminFacilityPicker from "@/components/admin/AdminFacilityPicker";
 import AdminPlacePreview from "@/components/admin/AdminPlacePreview";
 import AdminConfirmModal from "@/components/admin/AdminConfirmModal";
 import AdminProgramPeriodCalendar from "@/components/admin/AdminProgramPeriodCalendar";
@@ -27,8 +28,6 @@ import {
   programStatusLabel,
 } from "@/services/meditation/placeProgramStatus";
 import {
-  formatFacilitiesInput,
-  parseFacilitiesInput,
   readNoticeBody,
   writeNoticeBody,
 } from "@/services/admin/placeAdminFields";
@@ -463,19 +462,13 @@ export default function AdminPlacesPage() {
                 />
                 <AdminField>
                   <AdminLabel>시설 정보</AdminLabel>
-                  <AdminInput
-                    value={formatFacilitiesInput(draft.facilities)}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        facilities: parseFacilitiesInput(e.target.value),
-                      })
-                    }
-                    placeholder="Wi-Fi, 주차, 다과·차 (쉼표로 구분)"
-                  />
-                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "#71717a" }}>
-                    원하는 시설명을 쉼표로 구분해 직접 입력하세요.
+                  <p style={{ margin: "0 0 10px", fontSize: 12, color: "#71717a" }}>
+                    해당하는 시설을 눌러 선택하세요. 상세 화면에 아이콘과 함께 표시됩니다.
                   </p>
+                  <AdminFacilityPicker
+                    value={draft.facilities}
+                    onChange={(facilities) => setDraft({ ...draft, facilities })}
+                  />
                 </AdminField>
               </>
             )}

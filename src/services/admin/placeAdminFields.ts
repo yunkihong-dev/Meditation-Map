@@ -14,16 +14,3 @@ export function writeNoticeBody(sections: DetailSection[] | undefined, body: str
   else next.push(section);
   return next;
 }
-
-/** 시설 목록 → 입력 필드 문자열 (쉼표 구분) */
-export function formatFacilitiesInput(facilities: string[] | undefined): string {
-  return (facilities ?? []).join(", ");
-}
-
-/** 입력 문자열 → 시설 목록 */
-export function parseFacilitiesInput(raw: string): string[] {
-  return raw
-    .split(/[,，]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
