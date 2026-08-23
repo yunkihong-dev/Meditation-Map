@@ -1,7 +1,18 @@
-import { type DragEvent as ReactDragEvent, useRef, useState } from "react";
+import {
+  type DragEvent as ReactDragEvent,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import styled from "styled-components";
 import { uploadAdminImage } from "@/services/admin/adminApi";
 import { AdminField, AdminLabel } from "./adminStyles";
+
+/** 밀려나는 타일이 제자리를 찾아가는 시간. 손에서 놓은 뒤 정착에도 같은 값을 씁니다. */
+const SLIDE_MS = 180;
+/** 이 거리를 넘겨야 드래그로 봅니다. 삭제 버튼 클릭이 드래그로 오인되지 않게 합니다. */
+const DRAG_THRESHOLD_PX = 4;
 
 const Grid = styled.div<{ $fileDragOver?: boolean }>`
   display: flex;
@@ -16,17 +27,25 @@ const Grid = styled.div<{ $fileDragOver?: boolean }>`
     $fileDragOver ? "inset 0 0 0 2px #7c3aed" : "inset 0 0 0 2px transparent"};
 `;
 
-const Tile = styled.div<{ $dragOver?: boolean; $dragging?: boolean }>`
+const Tile = styled.div<{ $dragging?: boolean; $sliding?: boolean }>`
   position: relative;
   width: 88px;
   height: 88px;
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 2px solid
-    ${({ $dragOver, $dragging }) => ($dragOver ? "#a78bfa" : $dragging ? "#52525b" : "transparent")};
-  opacity: ${({ $dragging }) => ($dragging ? 0.55 : 1)};
   cursor: grab;
+  touch-action: none;
+  user-select: none;
+  border: 2px solid ${({ $dragging }) => ($dragging ? "#a78bfa" : "transparent")};
+  z-index: ${({ $dragging }) => ($dragging ? 5 : 1)};
+  box-shadow: ${({ $dragging }) => ($dragging ? "0 10px 24px rgba(0, 0, 0, 0.55)" : "none")};
+  transition: ${({ $sliding }) =>
+    $sliding ? `transform ${SLIDE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)` : "none"};
+
+  &:active {
+    cursor: grabbing;
+  }
 
   img {
     width: 100%;
@@ -109,7 +128,7 @@ const ErrorText = styled.p`
   font-size: 12px;
 `;
 
-/** OS에서 파일을 끌어온 드래그인지 (내부 순서변경 드래그와 구분) */
+/** OS에서 파일을 끌어온 드래그인지 (내부 순서변경과 구분) */
 function isFileDrag(e: ReactDragEvent): boolean {
   return Array.from(e.dataTransfer.types).includes("Files");
 }
@@ -124,6 +143,54 @@ function movePhoto(photos: string[], from: number, to: number): string[] {
   return next;
 }
 
+interface Slot {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/** 포인터가 어느 칸 위에 있는지. 칸 사이 여백에 있으면 중심이 가장 가까운 칸으로 봅니다. */
+function slotAtPoint(slots: Slot[], x: number, y: number): number {
+  const hit = slots.findIndex((s) => x >= s.left && x <= s.right && y >= s.top && y <= s.bottom);
+  if (hit >= 0) return hit;
+
+  let best = 0;
+  let bestDist = Infinity;
+  slots.forEach((s, i) => {
+    const cx = (s.left + s.right) / 2;
+    const cy = (s.top + s.bottom) / 2;
+    const d = (cx - x) ** 2 + (cy - y) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  });
+  return best;
+}
+
+/**
+ * 드래그 중 각 타일이 앉을 칸. 집어 든 타일이 from 에서 to 로 가면 사이에 있는 타일들이
+ * 한 칸씩 밀립니다. 1번을 들고 2번 위로 가면 2번이 1번 자리로 내려오는 그 움직임입니다.
+ */
+function projectedSlot(index: number, from: number, to: number): number {
+  if (index === from) return to;
+  if (from < to && index > from && index <= to) return index - 1;
+  if (to < from && index >= to && index < from) return index + 1;
+  return index;
+}
+
+interface DragState {
+  from: number;
+  to: number;
+  dx: number;
+  dy: number;
+  /** 손을 뗀 뒤 목적지 칸으로 미끄러져 들어가는 중 */
+  settling: boolean;
+  /** 드래그를 시작할 때 잰 칸 좌표. 정착 애니메이션이 끝날 때까지 필요합니다. */
+  slots: Slot[];
+}
+
 interface AdminPhotoGridUploadProps {
   label?: string;
   photos: string[];
@@ -132,20 +199,41 @@ interface AdminPhotoGridUploadProps {
   hint?: string;
 }
 
-/** 당근마켓 스타일 — 그리드 썸네일 + 다중 업로드 */
+/** 당근마켓 스타일 — 그리드 썸네일 + 다중 업로드 + 끌어서 순서 변경 */
 export function AdminPhotoGridUpload({
   label = "사진",
   photos,
   onChange,
   maxPhotos = 10,
-  hint = "첫 번째 사진이 대표·목록 썸네일입니다. 파일을 끌어다 놓으면 업로드되고, 사진끼리 드래그하면 순서가 바뀝니다.",
+  hint = "첫 번째 사진이 대표·목록 썸네일입니다. 파일을 끌어다 놓으면 업로드되고, 사진을 집어 옮기면 순서가 바뀝니다.",
 }: AdminPhotoGridUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
+  const [drag, setDrag] = useState<DragState | null>(null);
+
+  // 드래그 시작 시점에 한 번 재고, 그 뒤로는 이 좌표를 기준으로만 판단합니다.
+  // 타일이 눈앞에서 밀려나도 "칸"은 제자리에 있어야 목적지가 흔들리지 않습니다.
+  const gesture = useRef<{
+    pointerId: number;
+    from: number;
+    startX: number;
+    startY: number;
+    slots: Slot[];
+    active: boolean;
+  } | null>(null);
+  const settleTimer = useRef<number | null>(null);
+  // 목적지 칸. onChange 를 state 갱신 함수 안에서 부르지 않으려고 따로 들고 있습니다.
+  const toRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      if (settleTimer.current !== null) window.clearTimeout(settleTimer.current);
+    },
+    []
+  );
 
   const applyOrder = (next: string[]) => onChange(next.slice(0, maxPhotos));
 
@@ -172,11 +260,95 @@ export function AdminPhotoGridUpload({
     }
   };
 
-  const finishDrag = (toIndex: number) => {
-    if (dragIndex === null) return;
-    applyOrder(movePhoto(photos, dragIndex, toIndex));
-    setDragIndex(null);
-    setDragOverIndex(null);
+  const measureSlots = (): Slot[] => {
+    const grid = gridRef.current;
+    if (!grid) return [];
+    return Array.from(grid.querySelectorAll<HTMLElement>("[data-photo-tile]")).map((el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    });
+  };
+
+  const onTilePointerDown = (index: number) => (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    // 삭제 버튼을 누른 것이라면 드래그로 삼지 않습니다.
+    if ((e.target as HTMLElement).closest("button")) return;
+    if (photos.length < 2) return;
+
+    const slots = measureSlots();
+    if (slots.length !== photos.length) return;
+
+    gesture.current = {
+      pointerId: e.pointerId,
+      from: index,
+      startX: e.clientX,
+      startY: e.clientY,
+      slots,
+      active: false,
+    };
+    toRef.current = index;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onTilePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const g = gesture.current;
+    if (!g || g.pointerId !== e.pointerId) return;
+
+    const dx = e.clientX - g.startX;
+    const dy = e.clientY - g.startY;
+    if (!g.active) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+      g.active = true;
+    }
+
+    const to = slotAtPoint(g.slots, e.clientX, e.clientY);
+    toRef.current = to;
+    setDrag({ from: g.from, to, dx, dy, settling: false, slots: g.slots });
+  };
+
+  const endGesture = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const g = gesture.current;
+    if (!g || g.pointerId !== e.pointerId) return;
+    gesture.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    if (!g.active) {
+      setDrag(null);
+      return;
+    }
+
+    // 손을 뗀 자리에서 순간이동시키지 않고 목적지 칸까지 미끄러뜨립니다.
+    const to = toRef.current;
+    const target = g.slots[to];
+    const origin = g.slots[g.from];
+    setDrag({
+      from: g.from,
+      to,
+      dx: target.left - origin.left,
+      dy: target.top - origin.top,
+      settling: true,
+      slots: g.slots,
+    });
+
+    settleTimer.current = window.setTimeout(() => {
+      settleTimer.current = null;
+      applyOrder(movePhoto(photos, g.from, to));
+      setDrag(null);
+    }, SLIDE_MS);
+  };
+
+  const tileTransform = (index: number): string | undefined => {
+    if (!drag) return undefined;
+    if (index === drag.from) {
+      return `translate3d(${drag.dx}px, ${drag.dy}px, 0) scale(${drag.settling ? 1 : 1.06})`;
+    }
+    const { slots } = drag;
+    const target = projectedSlot(index, drag.from, drag.to);
+    if (target === index) return undefined;
+    return `translate3d(${slots[target].left - slots[index].left}px, ${
+      slots[target].top - slots[index].top
+    }px, 0)`;
   };
 
   const canAdd = photos.length < maxPhotos;
@@ -204,45 +376,40 @@ export function AdminPhotoGridUpload({
     <AdminField>
       <AdminLabel>{label}</AdminLabel>
       <Grid
+        ref={gridRef}
         $fileDragOver={fileDragOver}
         onDragOver={handleFileDragOver}
         onDragLeave={handleFileDragLeave}
         onDrop={handleFileDrop}
       >
-        {photos.map((url, i) => (
-          <Tile
-            key={`${url}-${i}`}
-            draggable
-            $dragging={dragIndex === i}
-            $dragOver={dragOverIndex === i}
-            onDragStart={() => setDragIndex(i)}
-            onDragEnd={() => {
-              setDragIndex(null);
-              setDragOverIndex(null);
-            }}
-            onDragOver={(e) => {
-              if (isFileDrag(e)) return; // 파일 드롭은 그리드가 처리
-              e.preventDefault();
-              setDragOverIndex(i);
-            }}
-            onDragLeave={() => setDragOverIndex((prev) => (prev === i ? null : prev))}
-            onDrop={(e) => {
-              if (isFileDrag(e)) return; // 파일 드롭은 그리드가 처리
-              e.preventDefault();
-              finishDrag(i);
-            }}
-          >
-            <img src={url} alt="" />
-            {i === 0 ? <CoverBadge>대표</CoverBadge> : null}
-            <RemoveBtn
-              type="button"
-              aria-label="사진 삭제"
-              onClick={() => applyOrder(photos.filter((_, j) => j !== i))}
+        {photos.map((url, i) => {
+          const dragging = drag?.from === i;
+          // 대표 배지는 지금 눈에 보이는 순서를 따라갑니다.
+          const shownIndex = drag ? projectedSlot(i, drag.from, drag.to) : i;
+          return (
+            <Tile
+              key={url}
+              data-photo-tile
+              $dragging={dragging}
+              $sliding={!dragging || drag?.settling}
+              style={{ transform: tileTransform(i) }}
+              onPointerDown={onTilePointerDown(i)}
+              onPointerMove={onTilePointerMove}
+              onPointerUp={endGesture}
+              onPointerCancel={endGesture}
             >
-              ×
-            </RemoveBtn>
-          </Tile>
-        ))}
+              <img src={url} alt="" draggable={false} />
+              {shownIndex === 0 ? <CoverBadge>대표</CoverBadge> : null}
+              <RemoveBtn
+                type="button"
+                aria-label="사진 삭제"
+                onClick={() => applyOrder(photos.filter((_, j) => j !== i))}
+              >
+                ×
+              </RemoveBtn>
+            </Tile>
+          );
+        })}
         {canAdd ? (
           <AddTile
             type="button"
