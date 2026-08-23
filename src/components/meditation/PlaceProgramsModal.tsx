@@ -5,6 +5,7 @@ import ReviewsListSheet from "@/components/meditation/ReviewsListSheet";
 import { formatFiveStarRow } from "@/services/meditation/starRating";
 import type { MeditationPlace, PlaceProgram, PlaceProgramReview } from "@/services/meditation/types";
 import { formatProgramPeriod, normalizePlacePrograms } from "@/services/meditation/placeProgramStatus";
+import CarouselArrows from "@/components/meditation/CarouselArrows";
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -624,6 +625,34 @@ export function useProgramGalleryLoop(urls: string[], measureActive: boolean) {
     endTouch();
   }, [urls.length, endTouch]);
 
+  /**
+   * 화살표·키보드로 한 장 넘깁니다. 감싸는 규칙은 스와이프와 같습니다 — 복제 슬라이드(0, n+1)에
+   * 서 있을 때는 애니메이션이 이어지도록 실제 인덱스를 건너뛴 값으로 옮깁니다.
+   */
+  const goNext = useCallback(() => {
+    if (urls.length <= 1) return;
+    const n = urls.length;
+    setTransOff(false);
+    setLoopIndex((prev) => {
+      if (prev === n + 1) return 2;
+      if (prev === n) return n + 1;
+      return prev + 1;
+    });
+    endTouch();
+  }, [urls.length, endTouch]);
+
+  const goPrev = useCallback(() => {
+    if (urls.length <= 1) return;
+    const n = urls.length;
+    setTransOff(false);
+    setLoopIndex((prev) => {
+      if (prev === 0) return n - 1;
+      if (prev === 1) return 0;
+      return prev - 1;
+    });
+    endTouch();
+  }, [urls.length, endTouch]);
+
   const onTransitionEnd = useCallback(
     (e: React.TransitionEvent<HTMLDivElement>) => {
       if (!e.propertyName.toLowerCase().includes("transform")) return;
@@ -697,6 +726,8 @@ export function useProgramGalleryLoop(urls: string[], measureActive: boolean) {
     onTransitionEnd,
     vpWidth,
     syncToLoopIndex,
+    goPrev,
+    goNext,
   };
 }
 
@@ -1190,6 +1221,7 @@ const PlaceProgramsModal = ({ place, open, onClose, initialProgramId }: PlacePro
                       )}
                     </HeroViewport>
                   </HeroClickable>
+                  <CarouselArrows onPrev={hero.goPrev} onNext={hero.goNext} />
                   <HeroNav>
                     {galleryUrls.map((_, i) => (
                       <DotBtn

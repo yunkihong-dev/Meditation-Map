@@ -10,6 +10,7 @@ import PlaceProgramsModal, {
   useProgramGalleryLoop,
 } from "@/components/meditation/PlaceProgramsModal";
 import FacilityList from "@/components/meditation/FacilityList";
+import CarouselArrows from "@/components/meditation/CarouselArrows";
 import type { MeditationPlace } from "@/services/meditation/types";
 import { buildPlaceHeroGalleryUrls } from "@/services/meditation/placeGallery";
 
@@ -946,6 +947,7 @@ const MeditationDetailPage = () => {
               )}
             </DetailHeroViewportRef>
           </DetailHeroZoomBtn>
+          <CarouselArrows onPrev={detailHero.goPrev} onNext={detailHero.goNext} />
           <DetailHeroNav>
             {heroGalleryUrls.map((_, i) => (
               <DetailHeroDot
