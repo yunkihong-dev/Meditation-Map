@@ -263,7 +263,7 @@ const MeditationMapPage = () => {
     const svg = path.closest("svg") as SVGSVGElement | null;
     if (!svg) return null;
     const bbox = path.getBBox();
-    let cx = bbox.x + bbox.width / 2;
+    const cx = bbox.x + bbox.width / 2;
     let cy = bbox.y + bbox.height / 2;
     if (regionId === "KR-42") {
       cy = bbox.y + bbox.height * 0.65;
