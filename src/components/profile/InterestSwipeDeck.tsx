@@ -57,20 +57,29 @@ const enterFromLeft = keyframes`
   to { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
 `;
 
+/** 남은 공간을 전부 차지합니다. 버튼과 글자는 전부 이 안에 얹힙니다. */
 const Deck = styled.div`
   position: relative;
-  width: min(90vw, 330px);
-  aspect-ratio: 4 / 5;
-  margin: 10px auto 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  margin-top: 10px;
   touch-action: pan-y;
   user-select: none;
+`;
+
+const Root = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 `;
 
 /** 뒤에 겹쳐 보이는 카드. 넘길 것이 남았다는 표시입니다. */
 const GhostCard = styled.div`
   position: absolute;
   inset: 0;
-  border-radius: 24px;
+  border-radius: 20px;
   background: ${({ theme }) => theme.colors.primary100};
   transform: translateY(12px) scale(0.94);
 `;
@@ -84,7 +93,7 @@ const Card = styled.div<{
 }>`
   position: absolute;
   inset: 0;
-  border-radius: 24px;
+  border-radius: 20px;
   overflow: hidden;
   cursor: grab;
   background: ${({ $bg }) => $bg};
@@ -143,7 +152,7 @@ const CardBody = styled.div`
   right: 0;
   bottom: 0;
   z-index: 1;
-  padding: 20px 20px 24px;
+  padding: 20px 22px 124px;
   color: #fff;
   text-align: center;
 `;
@@ -230,44 +239,53 @@ const EdgeButton = styled.button<{ $side: "left" | "right" }>`
 `;
 
 const HeartButton = styled.button<{ $liked: boolean }>`
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  z-index: 5;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin: 24px auto 0;
+  width: 66px;
+  height: 66px;
   border-radius: 50%;
   cursor: pointer;
-  background: ${({ theme, $liked }) => ($liked ? theme.colors.primary600 : theme.colors.white)};
+  background: ${({ theme, $liked }) => ($liked ? theme.colors.primary600 : "rgba(255, 255, 255, 0.9)")};
   border: 1px solid
-    ${({ theme, $liked }) => ($liked ? theme.colors.primary600 : theme.colors.primary200)};
+    ${({ theme, $liked }) => ($liked ? theme.colors.primary600 : "rgba(255, 255, 255, 0.7)")};
   color: ${({ theme, $liked }) => ($liked ? theme.colors.white : theme.colors.primary600)};
-  box-shadow: 0 8px 22px rgba(75, 0, 130, 0.16);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
   transition:
     transform 0.16s ease,
     background 0.2s ease,
     color 0.2s ease;
 
   svg {
-    width: 27px;
-    height: 27px;
+    width: 28px;
+    height: 28px;
   }
 
   &:active {
-    transform: scale(0.92);
+    transform: translateX(-50%) scale(0.92);
   }
 `;
 
-const Controls = styled.div`
-  display: flex;
-  justify-content: center;
-`;
-
-const Counter = styled.p`
-  margin: 14px 0 0;
-  text-align: center;
+/** 사진 위에 얹는 진행 표시 */
+const Counter = styled.span`
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.95);
   ${typography.caption};
-  color: ${({ theme }) => theme.colors.text700};
+  font-size: 0.76rem;
 `;
 
 const Empty = styled.p`
@@ -406,7 +424,7 @@ export default function InterestSwipeDeck({
   );
 
   return (
-    <div>
+    <Root>
       <Deck>
         {hasNext && <GhostCard aria-hidden="true" />}
 
@@ -422,7 +440,7 @@ export default function InterestSwipeDeck({
             style={
               {
                 "--from-x": `${leaving.fromX}px`,
-                "--from-r": `${leaving.fromX / 18}deg`,
+                "--from-r": `${leaving.fromX / 24}deg`,
               } as CSSProperties
             }
           >
@@ -441,7 +459,7 @@ export default function InterestSwipeDeck({
             leaving
               ? undefined
               : {
-                  transform: `translateX(${dragX}px) rotate(${dragX / 18}deg)`,
+                  transform: `translateX(${dragX}px) rotate(${dragX / 24}deg)`,
                   transition: dragging
                     ? "none"
                     : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
@@ -455,33 +473,28 @@ export default function InterestSwipeDeck({
           {renderFace(current, flipped)}
         </Card>
 
+        {/* 버튼과 진행 표시는 카드 밖에 두고 위에 얹습니다. 카드와 같이 날아가지 않고,
+            끌기 제스처와도 부딪히지 않습니다. */}
+        <Counter>
+          {index + 1}/{total}
+          {selected.length > 0 && ` · ${selected.length}개 선택`}
+        </Counter>
+
         {hasPrev && (
-          <EdgeButton
-            type="button"
-            $side="left"
-            aria-label="이전 관심사"
-            onClick={() => go("prev")}
-          >
+          <EdgeButton type="button" $side="left" aria-label="이전 관심사" onClick={() => go("prev")}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
             </svg>
           </EdgeButton>
         )}
         {hasNext && (
-          <EdgeButton
-            type="button"
-            $side="right"
-            aria-label="다음 관심사"
-            onClick={() => go("next")}
-          >
+          <EdgeButton type="button" $side="right" aria-label="다음 관심사" onClick={() => go("next")}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="m9 18 6-6-6-6" />
             </svg>
           </EdgeButton>
         )}
-      </Deck>
 
-      <Controls>
         <HeartButton
           type="button"
           $liked={liked}
@@ -493,12 +506,7 @@ export default function InterestSwipeDeck({
             <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z" />
           </svg>
         </HeartButton>
-      </Controls>
-
-      <Counter>
-        {index + 1}/{total}
-        {selected.length > 0 && ` · ${selected.length}개 선택`}
-      </Counter>
-    </div>
+      </Deck>
+    </Root>
   );
 }

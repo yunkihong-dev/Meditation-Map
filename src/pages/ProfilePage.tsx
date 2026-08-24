@@ -203,6 +203,19 @@ const StepFooter = styled.div`
   width: 100%;
 `;
 
+/** 관심사 단계 — 제목만 위에 두고 나머지 높이를 카드가 전부 차지합니다. */
+const InterestStepMain = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const InterestStepHead = styled.div`
+  flex-shrink: 0;
+`;
+
 const TopNavRow = styled.div`
   display: flex;
   align-items: center;
@@ -2899,16 +2912,18 @@ const ProfilePage = () => {
 
         {step === "signup-interest" && (
           <StepContent>
-            <StepMain>
-            <StepTitle>관심사를 선택해주세요</StepTitle>
-            <StepDesc>카드를 좌우로 넘기고, 마음에 들면 하트를 눌러 주세요</StepDesc>
-            {authError && <FieldError>{authError}</FieldError>}
+            <InterestStepMain>
+            <InterestStepHead>
+              <StepTitle>관심사를 선택해주세요</StepTitle>
+              <StepDesc>카드를 좌우로 넘기고, 마음에 들면 하트를 눌러 주세요</StepDesc>
+              {authError && <FieldError>{authError}</FieldError>}
+            </InterestStepHead>
             <InterestSwipeDeck
               interests={managedInterests}
               selected={signupInterests}
               onChange={setSignupInterests}
             />
-            </StepMain>
+            </InterestStepMain>
             <StepFooter>
             <InterestNextButton
               type="button"
