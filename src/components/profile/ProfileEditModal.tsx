@@ -1,20 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import RegionMap from "@/components/meditation/RegionMap";
 import { KOREA_REGIONS } from "@/data/koreaRegions";
 import { typography } from "@/styles/typography";
 import { updateMyProfile, type MeProfile } from "@/services/profile/profileApi";
-
-const INTEREST_OPTIONS = [
-  "힐링명상",
-  "템플스테이",
-  "행사",
-  "마음챙김",
-  "숲 명상",
-  "아트명상",
-  "호흡",
-  "숙박 프로그램",
-];
+import { useCatalogStore } from "@/stores/catalogStore";
 
 const Overlay = styled.div`
   position: fixed;
@@ -138,6 +128,13 @@ export default function ProfileEditModal({
   const [regionIds, setRegionIds] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const managedInterests = useCatalogStore((state) => state.interests);
+
+  // 관리자 목록에 더해, 이미 골라 둔 관심사도 칩으로 남깁니다. 관리자가 내려도 사라지지 않게.
+  const interestOptions = useMemo(() => {
+    const names = managedInterests.map((i) => i.name);
+    return [...names, ...interests.filter((t) => !names.includes(t))];
+  }, [managedInterests, interests]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -198,7 +195,7 @@ export default function ProfileEditModal({
         <Field>
           <Label>관심사</Label>
           <Chips>
-            {INTEREST_OPTIONS.map((interest) => (
+            {interestOptions.map((interest) => (
               <Chip
                 key={interest}
                 type="button"

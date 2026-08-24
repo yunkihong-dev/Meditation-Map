@@ -278,16 +278,17 @@ export default function ExpertProfileEditorPage() {
     [draft?.regionIds]
   );
 
-  const managedClassTypes = useCatalogStore((state) => state.classTypes);
+  const managedInterests = useCatalogStore((state) => state.interests);
   const [customClassType, setCustomClassType] = useState("");
   const [celebrating, setCelebrating] = useState(false);
 
-  // 관리자 목록에 더해, 이 전문가가 예전에 직접 넣어 둔 종류도 칩으로 보여줍니다.
+  // 관리자 목록에 더해, 이 전문가가 예전에 직접 넣어 둔 주제도 칩으로 보여줍니다.
   // 그러지 않으면 관리자가 목록에서 내린 순간 선택해 둔 값이 화면에서 사라집니다.
   const classTypeOptions = useMemo(() => {
+    const names = managedInterests.map((i) => i.name);
     const selected = draft?.classTypes ?? [];
-    return [...managedClassTypes, ...selected.filter((t) => !managedClassTypes.includes(t))];
-  }, [managedClassTypes, draft?.classTypes]);
+    return [...names, ...selected.filter((t) => !names.includes(t))];
+  }, [managedInterests, draft?.classTypes]);
 
   if (loading || !draft || !profile) {
     return <Page><Loading>{message?.text ?? "전문가 정보를 불러오는 중…"}</Loading></Page>;
@@ -412,8 +413,8 @@ export default function ExpertProfileEditorPage() {
           />
         </Field>
         <Field>
-          <Label>클래스 종류</Label>
-          <Hint>목록에 없는 종류는 아래에 직접 적어 추가할 수 있습니다.</Hint>
+          <Label>관심사</Label>
+          <Hint>가르치는 주제를 고르세요. 목록에 없으면 아래에 직접 적어 추가할 수 있습니다.</Hint>
           <Chips>
             {classTypeOptions.map((item) => (
               <Chip

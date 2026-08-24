@@ -8,13 +8,15 @@ import googleImg from "@/assets/google.png";
 import leftArrowImg from "@/assets/left-arrow.png";
 import RegionMap from "@/components/meditation/RegionMap";
 import ProfileEditModal from "@/components/profile/ProfileEditModal";
+import InterestSwipeDeck from "@/components/profile/InterestSwipeDeck";
 import { typography } from "@/styles/typography";
 import { getRegionById, getRegionIdFromCoordinates } from "@/services/meditation/meditationService";
 import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
 import { apiFetch, useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
+import { useCatalogStore } from "@/stores/catalogStore";
 import { toast } from "@/stores/toastStore";
-import type { MeProfile } from "@/services/profile/profileApi";
+import { updateMyProfile, type MeProfile } from "@/services/profile/profileApi";
 
 const stepFadeIn = keyframes`
   from {
@@ -637,36 +639,6 @@ const TermsDetailConfirm = styled(ModalButton).attrs({ type: "button", $primary:
   margin-top: 14px;
 `;
 
-const InterestCard = styled.div`
-  margin: 16px auto 0;
-  width: min(100%, 200px);
-  max-height: min(36dvh, 240px);
-  aspect-ratio: 3 / 4;
-  border-radius: 30px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 20px;
-  color: #fff;
-  ${typography.h2};
-  background:
-    linear-gradient(to top, rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.06)),
-    radial-gradient(circle at 20% 20%, #a8d97a, #5f8f49 38%, #304f2d);
-`;
-
-const CenterIconButton = styled.button`
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 1px solid ${({ theme }) => theme.colors.primary200};
-  background: ${({ theme }) => theme.colors.white};
-  color: ${({ theme }) => theme.colors.primary300};
-  margin: 16px auto 0;
-  font-size: 2rem;
-  display: grid;
-  place-items: center;
-`;
-
 /** 관심사 단계 하단 CTA — StepFooter에서 여백 통일 */
 const InterestNextButton = styled(BottomPrimaryButton)`
   flex-shrink: 0;
@@ -687,15 +659,6 @@ const SkipButton = styled.button`
     background: ${({ theme }) => theme.colors.primary50};
     border-color: ${({ theme }) => theme.colors.primary300};
   }
-`;
-
-const TopRightCount = styled.span`
-  display: block;
-  text-align: right;
-  width: 100%;
-  margin: 0 0 4px;
-  ${typography.caption};
-  color: ${({ theme }) => theme.colors.text700};
 `;
 
 const CompleteArt = styled.div`
@@ -2054,6 +2017,10 @@ const ProfilePage = () => {
     }
   };
 
+  // 가입 마지막 단계에서 고른 관심사. 회원 생성 직후 프로필에 저장합니다.
+  const [signupInterests, setSignupInterests] = useState<string[]>([]);
+  const managedInterests = useCatalogStore((state) => state.interests);
+
   const handleRegisterAndFinish = async () => {
     setAuthError(null);
     if (!getMeditationApiBaseUrl()) {
@@ -2135,6 +2102,21 @@ const ProfilePage = () => {
       }
       await useAuthStore.getState().setSession();
       await useFavoritesStore.getState().pullFromServer();
+
+      // 온보딩에서 고른 관심사와 지역을 프로필에 남깁니다. 여기서 실패해도 가입은 이미
+      // 끝났으므로 막지 않습니다. 나중에 프로필 수정에서 다시 고를 수 있습니다.
+      if (signupInterests.length > 0 || regionId) {
+        try {
+          await updateMyProfile({
+            displayName: "",
+            regionIds: regionId ? [regionId] : [],
+            interests: signupInterests,
+          });
+        } catch {
+          /* 가입 자체는 성공 — 조용히 넘어갑니다 */
+        }
+      }
+
       clearSignupProfilePhoto();
       setStep("login");
     } catch {
@@ -2918,14 +2900,14 @@ const ProfilePage = () => {
         {step === "signup-interest" && (
           <StepContent>
             <StepMain>
-            <TopRightCount>1/10</TopRightCount>
             <StepTitle>관심사를 선택해주세요</StepTitle>
-            <StepDesc>좌우로 넘기며 관심있는 주제를 선택하세요</StepDesc>
+            <StepDesc>카드를 좌우로 넘기고, 마음에 들면 하트를 눌러 주세요</StepDesc>
             {authError && <FieldError>{authError}</FieldError>}
-            <InterestCard>숲</InterestCard>
-            <CenterIconButton type="button" aria-label="관심사 좋아요">
-              ♡
-            </CenterIconButton>
+            <InterestSwipeDeck
+              interests={managedInterests}
+              selected={signupInterests}
+              onChange={setSignupInterests}
+            />
             </StepMain>
             <StepFooter>
             <InterestNextButton

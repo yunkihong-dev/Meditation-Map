@@ -339,41 +339,49 @@ export function emptyExpert(): MeditationExpert {
   };
 }
 
-/* ── 클래스 종류 ─────────────────────────────────────────────────────────── */
+/* ── 관심사 ─────────────────────────────────────────────────────────────── */
 
-export interface AdminClassType {
+export interface AdminInterest {
   id: string;
   name: string;
+  description: string | null;
+  imageUrl: string | null;
+  sortOrder: number;
   active: boolean;
 }
 
-export async function fetchAdminClassTypes(): Promise<AdminClassType[]> {
-  return parseJson(await apiFetch("/admin/class-types"));
+export interface AdminInterestInput {
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  active?: boolean;
+  sortOrder?: number;
 }
 
-export async function createAdminClassType(name: string): Promise<AdminClassType> {
+export async function fetchAdminInterests(): Promise<AdminInterest[]> {
+  return parseJson(await apiFetch("/admin/interests"));
+}
+
+export async function createAdminInterest(body: AdminInterestInput): Promise<AdminInterest> {
   return parseJson(
-    await apiFetch("/admin/class-types", {
-      method: "POST",
-      body: JSON.stringify({ name }),
-    })
+    await apiFetch("/admin/interests", { method: "POST", body: JSON.stringify(body) })
   );
 }
 
-export async function updateAdminClassType(
+export async function updateAdminInterest(
   id: string,
-  patch: { name?: string; active?: boolean; sortOrder?: number }
-): Promise<AdminClassType> {
+  body: AdminInterestInput
+): Promise<AdminInterest> {
   return parseJson(
-    await apiFetch(`/admin/class-types/${encodeURIComponent(id)}`, {
+    await apiFetch(`/admin/interests/${encodeURIComponent(id)}`, {
       method: "PUT",
-      body: JSON.stringify(patch),
+      body: JSON.stringify(body),
     })
   );
 }
 
-export async function deleteAdminClassType(id: string): Promise<void> {
+export async function deleteAdminInterest(id: string): Promise<void> {
   await parseJson(
-    await apiFetch(`/admin/class-types/${encodeURIComponent(id)}`, { method: "DELETE" })
+    await apiFetch(`/admin/interests/${encodeURIComponent(id)}`, { method: "DELETE" })
   );
 }

@@ -5,7 +5,7 @@ import {
   createExpertAccount,
   deleteAdminExpert,
   emptyExpert,
-  fetchAdminClassTypes,
+  fetchAdminInterests,
   fetchAdminExperts,
   saveAdminExpert,
   type AdminExpertRow,
@@ -96,9 +96,9 @@ export default function AdminExpertsPage() {
     }
   }, []);
 
-  // 클래스 종류는 "클래스 종류" 메뉴에서 관리합니다. 여기서는 노출 중인 것만 골라 씁니다.
+  // 관심사는 "관심사" 메뉴에서 관리합니다. 여기서는 노출 중인 것만 골라 씁니다.
   useEffect(() => {
-    fetchAdminClassTypes()
+    fetchAdminInterests()
       .then((list) => setClassTypeNames(list.filter((t) => t.active).map((t) => t.name)))
       .catch(() => setClassTypeNames([]));
   }, []);
@@ -494,7 +494,7 @@ export default function AdminExpertsPage() {
             </AdminField>
 
             <AdminField>
-              <AdminLabel>클래스 종류</AdminLabel>
+              <AdminLabel>관심사</AdminLabel>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {[
                   ...classTypeNames,
