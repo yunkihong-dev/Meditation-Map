@@ -1,98 +1,131 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import styled, { css, keyframes } from "styled-components";
 import { typography } from "@/styles/typography";
 import type { InterestDto } from "@/services/meditation/repositories/interestsRepository";
 
 /** 이 거리(px) 이상 끌면 카드가 넘어갑니다. */
-const SWIPE_THRESHOLD = 72;
-const EXIT_MS = 260;
+const SWIPE_THRESHOLD = 70;
+/** 나가는 카드와 들어오는 카드가 같이 도는 시간. 둘이 같아야 이어져 보입니다. */
+const SLIDE_MS = 340;
 
 type Direction = "prev" | "next";
 
-/* ── 카드가 빠져나가고 들어오는 움직임 ──────────────────────────────────── */
+/**
+ * 사진이 아직 없는 카드의 배경. 이름으로 결정되므로 카드마다 다른 색이 나오고,
+ * 다시 열어도 같은 색입니다.
+ */
+const GRADIENTS = [
+  "linear-gradient(155deg, #5c7f52 0%, #2c4527 100%)",
+  "linear-gradient(155deg, #6a5a94 0%, #34275c 100%)",
+  "linear-gradient(155deg, #a3776a 0%, #5b3a31 100%)",
+  "linear-gradient(155deg, #4f7a86 0%, #24424c 100%)",
+  "linear-gradient(155deg, #9c8452 0%, #574526 100%)",
+  "linear-gradient(155deg, #7d5f78 0%, #3f2b3d 100%)",
+];
 
-const exitToRight = keyframes`
-  to { opacity: 0; transform: translateX(56%) rotate(9deg) scale(0.94); }
+function gradientFor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return GRADIENTS[h % GRADIENTS.length];
+}
+
+/* ── 움직임 ──────────────────────────────────────────────────────────────
+ * 나가는 카드는 손을 뗀 자리(--from-x)에서 이어서 날아갑니다. 0 에서 다시 시작하면
+ * 끌던 위치에서 툭 튀어 보입니다.
+ */
+const exitLeft = keyframes`
+  from { transform: translateX(var(--from-x, 0px)) rotate(var(--from-r, 0deg)); opacity: 1; }
+  to { transform: translateX(-125%) rotate(-16deg); opacity: 0; }
 `;
-const exitToLeft = keyframes`
-  to { opacity: 0; transform: translateX(-56%) rotate(-9deg) scale(0.94); }
-`;
-const enterFromLeft = keyframes`
-  from { opacity: 0; transform: translateX(-34%) rotate(-6deg) scale(0.94); }
-  to { opacity: 1; transform: translateX(0) rotate(0) scale(1); }
+const exitRight = keyframes`
+  from { transform: translateX(var(--from-x, 0px)) rotate(var(--from-r, 0deg)); opacity: 1; }
+  to { transform: translateX(125%) rotate(16deg); opacity: 0; }
 `;
 const enterFromRight = keyframes`
-  from { opacity: 0; transform: translateX(34%) rotate(6deg) scale(0.94); }
-  to { opacity: 1; transform: translateX(0) rotate(0) scale(1); }
+  from { transform: translateX(72%) rotate(10deg) scale(0.96); opacity: 0.3; }
+  to { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
+`;
+const enterFromLeft = keyframes`
+  from { transform: translateX(-72%) rotate(-10deg) scale(0.96); opacity: 0.3; }
+  to { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
 `;
 
 const Deck = styled.div`
   position: relative;
-  width: min(78vw, 260px);
-  aspect-ratio: 5 / 6;
-  margin: 8px auto 0;
+  width: min(90vw, 330px);
+  aspect-ratio: 4 / 5;
+  margin: 10px auto 0;
   touch-action: pan-y;
   user-select: none;
 `;
 
-/** 뒤에 겹쳐 보이는 카드. 덱이라는 느낌을 주고, 넘길 곳이 남았음을 알려줍니다. */
+/** 뒤에 겹쳐 보이는 카드. 넘길 것이 남았다는 표시입니다. */
 const GhostCard = styled.div`
   position: absolute;
   inset: 0;
-  border-radius: 22px;
+  border-radius: 24px;
   background: ${({ theme }) => theme.colors.primary100};
-  transform: translateY(10px) scale(0.95);
-  opacity: 0.55;
+  transform: translateY(12px) scale(0.94);
 `;
 
 const Card = styled.div<{
+  $bg: string;
   $dragging: boolean;
-  $exit: Direction | null;
-  $enter: Direction | null;
+  $phase: "idle" | "exit" | "enter";
+  $direction: Direction;
   $flipped: boolean;
 }>`
   position: absolute;
   inset: 0;
-  border-radius: 22px;
+  border-radius: 24px;
   overflow: hidden;
   cursor: grab;
-  background: linear-gradient(160deg, #4f7a4a 0%, #2f4a2c 100%);
-  box-shadow: 0 16px 36px rgba(75, 0, 130, 0.18);
-  transition: ${({ $dragging }) => ($dragging ? "none" : "transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1)")};
+  background: ${({ $bg }) => $bg};
+  box-shadow: 0 18px 40px rgba(75, 0, 130, 0.22);
+  z-index: ${({ $phase }) => ($phase === "exit" ? 3 : 2)};
+  will-change: transform, opacity;
 
   &:active {
     cursor: grabbing;
   }
 
-  ${({ $exit }) =>
-    $exit &&
+  ${({ $phase, $direction }) =>
+    $phase === "exit" &&
     css`
-      animation: ${$exit === "next" ? exitToLeft : exitToRight} ${EXIT_MS}ms ease-in forwards;
+      animation: ${$direction === "next" ? exitLeft : exitRight} ${SLIDE_MS}ms
+        cubic-bezier(0.32, 0, 0.67, 0) forwards;
+      pointer-events: none;
     `}
 
-  ${({ $enter }) =>
-    $enter &&
+  ${({ $phase, $direction }) =>
+    $phase === "enter" &&
     css`
-      animation: ${$enter === "next" ? enterFromRight : enterFromLeft} 0.3s
-        cubic-bezier(0.2, 0.8, 0.3, 1);
+      animation: ${$direction === "next" ? enterFromRight : enterFromLeft} ${SLIDE_MS}ms
+        cubic-bezier(0.22, 1, 0.36, 1) both;
     `}
 
-  /* 설명을 편 상태에서는 사진을 조금 더 눌러 글이 읽히게 합니다. */
+  /* 설명을 편 상태에서는 아래쪽을 더 눌러 글이 읽히게 합니다. */
   &::after {
     content: "";
     position: absolute;
     inset: 0;
     background: linear-gradient(
       180deg,
-      rgba(0, 0, 0, 0) 30%,
-      rgba(0, 0, 0, ${({ $flipped }) => ($flipped ? 0.72 : 0.42)}) 100%
+      rgba(0, 0, 0, 0) 34%,
+      rgba(0, 0, 0, ${({ $flipped }) => ($flipped ? 0.76 : 0.46)}) 100%
     );
     transition: background 0.25s ease;
   }
 
   @media (prefers-reduced-motion: reduce) {
     animation-duration: 1ms;
-    transition-duration: 1ms;
   }
 `;
 
@@ -110,7 +143,7 @@ const CardBody = styled.div`
   right: 0;
   bottom: 0;
   z-index: 1;
-  padding: 18px 18px 22px;
+  padding: 20px 20px 24px;
   color: #fff;
   text-align: center;
 `;
@@ -118,86 +151,116 @@ const CardBody = styled.div`
 const CardTitle = styled.strong`
   display: block;
   ${typography.title};
-  font-size: 1.15rem;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  font-size: 1.3rem;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
 `;
 
 const CardDesc = styled.p<{ $open: boolean }>`
-  margin: ${({ $open }) => ($open ? "8px 0 0" : "0")};
+  margin: ${({ $open }) => ($open ? "10px 0 0" : "0")};
   ${typography.caption};
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.94);
   overflow: hidden;
-  max-height: ${({ $open }) => ($open ? "9rem" : "0")};
+  max-height: ${({ $open }) => ($open ? "10rem" : "0")};
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   transition:
-    max-height 0.28s ease,
-    opacity 0.22s ease,
-    margin 0.28s ease;
+    max-height 0.3s ease,
+    opacity 0.24s ease,
+    margin 0.3s ease;
 `;
 
 const TapHint = styled.span<{ $hidden: boolean }>`
   display: block;
-  margin-top: 6px;
+  margin-top: 8px;
   ${typography.caption};
   font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.72);
   opacity: ${({ $hidden }) => ($hidden ? 0 : 1)};
   transition: opacity 0.2s ease;
 `;
 
 const LikedBadge = styled.span`
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: 16px;
+  left: 16px;
   z-index: 2;
-  padding: 5px 11px;
+  padding: 6px 12px;
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.primary600};
   color: #fff;
   ${typography.caption};
   font-size: 0.72rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 `;
 
-const Controls = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  margin-top: 22px;
-`;
-
-const RoundButton = styled.button<{ $primary?: boolean; $liked?: boolean }>`
+/** 카드 위에 얹는 좌우 버튼. 사진을 가리지 않게 반투명 유리처럼 둡니다. */
+const EdgeButton = styled.button<{ $side: "left" | "right" }>`
+  position: absolute;
+  top: 50%;
+  ${({ $side }) => ($side === "left" ? "left: 10px;" : "right: 10px;")}
+  transform: translateY(-50%);
+  z-index: 4;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: ${({ $primary }) => ($primary ? "64px" : "46px")};
-  height: ${({ $primary }) => ($primary ? "64px" : "46px")};
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    transform 0.16s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.9);
+  }
+`;
+
+const HeartButton = styled.button<{ $liked: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 24px auto 0;
   border-radius: 50%;
   cursor: pointer;
   background: ${({ theme, $liked }) => ($liked ? theme.colors.primary600 : theme.colors.white)};
   border: 1px solid
     ${({ theme, $liked }) => ($liked ? theme.colors.primary600 : theme.colors.primary200)};
   color: ${({ theme, $liked }) => ($liked ? theme.colors.white : theme.colors.primary600)};
-  box-shadow: 0 6px 18px rgba(75, 0, 130, 0.14);
+  box-shadow: 0 8px 22px rgba(75, 0, 130, 0.16);
   transition:
     transform 0.16s ease,
     background 0.2s ease,
     color 0.2s ease;
 
   svg {
-    width: ${({ $primary }) => ($primary ? "26px" : "18px")};
-    height: ${({ $primary }) => ($primary ? "26px" : "18px")};
+    width: 27px;
+    height: 27px;
   }
 
   &:active {
     transform: scale(0.92);
   }
+`;
 
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+const Controls = styled.div`
+  display: flex;
+  justify-content: center;
 `;
 
 const Counter = styled.p`
@@ -223,9 +286,12 @@ interface InterestSwipeDeckProps {
 /**
  * 관심사 카드 덱.
  *
- * - 왼쪽으로 밀면 이전 카드, 오른쪽으로 밀면 다음 카드
- * - 아래 하트를 누르면 고른 뒤 다음 카드로 넘어갑니다
+ * - 왼쪽으로 밀면 이전, 오른쪽으로 밀면 다음
+ * - 아래 하트를 누르면 고른 뒤 다음 장으로 넘어갑니다
  * - 카드를 누르면 설명이 펼쳐집니다
+ *
+ * 넘길 때 나가는 카드와 들어오는 카드를 같이 띄웁니다. 하나가 다 빠진 뒤에 다음을 넣으면
+ * 중간에 빈 순간이 생겨 끊겨 보입니다.
  */
 export default function InterestSwipeDeck({
   interests,
@@ -235,8 +301,12 @@ export default function InterestSwipeDeck({
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [dragX, setDragX] = useState(0);
-  const [exit, setExit] = useState<Direction | null>(null);
-  const [enter, setEnter] = useState<Direction | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [leaving, setLeaving] = useState<{
+    item: InterestDto;
+    direction: Direction;
+    fromX: number;
+  } | null>(null);
 
   const dragStart = useRef<number | null>(null);
   const moved = useRef(false);
@@ -249,43 +319,39 @@ export default function InterestSwipeDeck({
 
   const total = interests.length;
   const current = interests[index];
+  const hasPrev = index > 0;
+  const hasNext = index < total - 1;
 
-  /** 카드를 빼내고 → 새 카드를 넣습니다. 두 애니메이션을 이어 붙여 넘어가는 느낌을 만듭니다. */
   const go = useCallback(
-    (direction: Direction) => {
-      if (total <= 1 || exit) return;
-      const nextIndex =
-        direction === "next" ? (index + 1) % total : (index - 1 + total) % total;
+    (direction: Direction, fromX = 0) => {
+      if (leaving || !current) return;
+      const nextIndex = direction === "next" ? index + 1 : index - 1;
+      if (nextIndex < 0 || nextIndex >= total) return;
 
-      setExit(direction);
+      // 나가는 카드를 따로 붙잡아 두고 색인은 바로 옮깁니다. 그래야 두 장이 같이 돕니다.
+      setLeaving({ item: current, direction, fromX });
+      setIndex(nextIndex);
       setFlipped(false);
-      const timer = window.setTimeout(() => {
-        setIndex(nextIndex);
-        setExit(null);
-        setDragX(0);
-        setEnter(direction);
-        const clear = window.setTimeout(() => setEnter(null), 320);
-        timers.current.push(clear);
-      }, EXIT_MS);
+      setDragX(0);
+      const timer = window.setTimeout(() => setLeaving(null), SLIDE_MS);
       timers.current.push(timer);
     },
-    [index, total, exit]
+    [current, index, leaving, total]
   );
 
   const toggleLike = () => {
     if (!current) return;
     const isLiked = selected.includes(current.name);
-    onChange(
-      isLiked ? selected.filter((n) => n !== current.name) : [...selected, current.name]
-    );
-    // 고르면 바로 다음 장으로 넘깁니다. 취소일 때는 그 자리에 머뭅니다.
-    if (!isLiked) go("next");
+    onChange(isLiked ? selected.filter((n) => n !== current.name) : [...selected, current.name]);
+    // 고르면 바로 다음 장으로. 취소일 때와 마지막 장에서는 그 자리에 머뭅니다.
+    if (!isLiked && hasNext) go("next");
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (exit) return;
+    if (leaving) return;
     dragStart.current = e.clientX;
     moved.current = false;
+    setDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
@@ -293,19 +359,27 @@ export default function InterestSwipeDeck({
     if (dragStart.current === null) return;
     const delta = e.clientX - dragStart.current;
     if (Math.abs(delta) > 4) moved.current = true;
-    setDragX(delta);
+    // 갈 수 없는 방향은 저항이 있는 것처럼 조금만 따라옵니다.
+    const blocked = (delta > 0 && !hasPrev) || (delta < 0 && !hasNext);
+    setDragX(blocked ? delta * 0.25 : delta);
   };
 
   const onPointerUp = () => {
     const delta = dragX;
     dragStart.current = null;
-    setDragX(0);
+    setDragging(false);
     if (Math.abs(delta) < SWIPE_THRESHOLD) {
+      setDragX(0);
       // 끌지 않고 눌렀다 뗀 것이면 설명을 펼칩니다.
       if (!moved.current) setFlipped((v) => !v);
       return;
     }
-    go(delta > 0 ? "prev" : "next");
+    const direction: Direction = delta > 0 ? "prev" : "next";
+    if ((direction === "prev" && !hasPrev) || (direction === "next" && !hasNext)) {
+      setDragX(0);
+      return;
+    }
+    go(direction, delta);
   };
 
   if (total === 0) {
@@ -314,77 +388,111 @@ export default function InterestSwipeDeck({
   if (!current) return null;
 
   const liked = selected.includes(current.name);
-  const rotation = dragX / 18;
+
+  const renderFace = (item: InterestDto, showDesc: boolean) => (
+    <>
+      {item.imageUrl && <CardImage src={item.imageUrl} alt="" draggable={false} />}
+      {selected.includes(item.name) && <LikedBadge>선택됨</LikedBadge>}
+      <CardBody>
+        <CardTitle>{item.name}</CardTitle>
+        {item.description && (
+          <>
+            <CardDesc $open={showDesc}>{item.description}</CardDesc>
+            <TapHint $hidden={showDesc}>눌러서 설명 보기</TapHint>
+          </>
+        )}
+      </CardBody>
+    </>
+  );
 
   return (
     <div>
       <Deck>
-        {total > 1 && <GhostCard aria-hidden="true" />}
+        {hasNext && <GhostCard aria-hidden="true" />}
+
+        {leaving && (
+          <Card
+            key={`leaving-${leaving.item.id}`}
+            aria-hidden="true"
+            $bg={gradientFor(leaving.item.name)}
+            $dragging={false}
+            $phase="exit"
+            $direction={leaving.direction}
+            $flipped={false}
+            style={
+              {
+                "--from-x": `${leaving.fromX}px`,
+                "--from-r": `${leaving.fromX / 18}deg`,
+              } as CSSProperties
+            }
+          >
+            {renderFace(leaving.item, false)}
+          </Card>
+        )}
+
         <Card
           key={current.id}
-          $dragging={dragStart.current !== null}
-          $exit={exit}
-          $enter={enter}
+          $bg={gradientFor(current.name)}
+          $dragging={dragging}
+          $phase={leaving ? "enter" : "idle"}
+          $direction={leaving?.direction ?? "next"}
           $flipped={flipped}
           style={
-            exit || enter
+            leaving
               ? undefined
-              : { transform: `translateX(${dragX}px) rotate(${rotation}deg)` }
+              : {
+                  transform: `translateX(${dragX}px) rotate(${dragX / 18}deg)`,
+                  transition: dragging
+                    ? "none"
+                    : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+                }
           }
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          {current.imageUrl && <CardImage src={current.imageUrl} alt="" draggable={false} />}
-          {liked && <LikedBadge>선택됨</LikedBadge>}
-          <CardBody>
-            <CardTitle>{current.name}</CardTitle>
-            {current.description && (
-              <>
-                <CardDesc $open={flipped}>{current.description}</CardDesc>
-                <TapHint $hidden={flipped}>눌러서 설명 보기</TapHint>
-              </>
-            )}
-          </CardBody>
+          {renderFace(current, flipped)}
         </Card>
+
+        {hasPrev && (
+          <EdgeButton
+            type="button"
+            $side="left"
+            aria-label="이전 관심사"
+            onClick={() => go("prev")}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </EdgeButton>
+        )}
+        {hasNext && (
+          <EdgeButton
+            type="button"
+            $side="right"
+            aria-label="다음 관심사"
+            onClick={() => go("next")}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </EdgeButton>
+        )}
       </Deck>
 
       <Controls>
-        <RoundButton
+        <HeartButton
           type="button"
-          aria-label="이전 관심사"
-          disabled={total <= 1}
-          onClick={() => go("prev")}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </RoundButton>
-
-        <RoundButton
-          type="button"
-          $primary
           $liked={liked}
-          aria-label={liked ? `${current.name} 선택 해제` : `${current.name} 선택하고 다음으로`}
+          aria-label={liked ? `${current.name} 선택 해제` : `${current.name} 선택`}
           aria-pressed={liked}
           onClick={toggleLike}
         >
           <svg viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 0 0 0-7.1z" />
           </svg>
-        </RoundButton>
-
-        <RoundButton
-          type="button"
-          aria-label="다음 관심사"
-          disabled={total <= 1}
-          onClick={() => go("next")}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </RoundButton>
+        </HeartButton>
       </Controls>
 
       <Counter>
