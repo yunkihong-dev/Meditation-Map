@@ -8,13 +8,65 @@ export const AdminShell = styled.div`
   color: #f4f4f5;
 `;
 
+/**
+ * 넓은 화면에서는 본문 옆에 붙는 기둥, 좁은 화면에서는 화면을 덮는 서랍입니다.
+ *
+ * 좁은 화면에서 폭만 줄이면 본문이 옆으로 밀려 글이 두세 글자씩 끊깁니다. 레이아웃에서
+ * 아예 빼내고 위에 덮는 편이 낫습니다.
+ */
 export const AdminSidebar = styled.aside<{ $open: boolean }>`
-  width: ${({ $open }) => ($open ? "240px" : "0")};
-  overflow: hidden;
-  transition: width 0.2s ease;
   background: #18181b;
   border-right: 1px solid #27272a;
   flex-shrink: 0;
+  overflow: hidden;
+
+  @media (min-width: 900px) {
+    width: ${({ $open }) => ($open ? "240px" : "0")};
+    transition: width 0.2s ease;
+  }
+
+  @media (max-width: 899px) {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    width: 100%;
+    border-right: 0;
+    overflow-y: auto;
+    transform: translateX(${({ $open }) => ($open ? "0" : "-100%")});
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 1ms;
+  }
+`;
+
+/** 서랍 안쪽 머리 — 좁은 화면에서는 바깥을 누를 곳이 없으므로 닫기 버튼이 필요합니다. */
+export const AdminSidebarHead = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  font-weight: 700;
+  font-size: 15px;
+
+  button {
+    display: none;
+    border: 0;
+    background: none;
+    color: #a1a1aa;
+    font-size: 20px;
+    line-height: 1;
+    padding: 4px 6px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 899px) {
+    button {
+      display: block;
+    }
+  }
 `;
 
 export const AdminMain = styled.div`
