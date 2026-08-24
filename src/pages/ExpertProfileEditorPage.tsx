@@ -12,9 +12,11 @@ import {
   type MeProfile,
 } from "@/services/profile/profileApi";
 import { useAuthStore } from "@/stores/authStore";
+import { useCatalogStore } from "@/stores/catalogStore";
+import { toast } from "@/stores/toastStore";
+import CelebrationParticles from "@/components/common/CelebrationParticles";
+import CredentialListField from "@/components/profile/CredentialListField";
 import { typography } from "@/styles/typography";
-
-const CLASS_OPTIONS = ["마음챙김", "아트명상", "숲 명상", "호흡명상", "걷기명상", "소리명상"];
 
 const Page = styled.div`
   max-width: 980px;
@@ -109,17 +111,20 @@ const Input = styled.input`
   ${typography.body2};
 `;
 
-const Textarea = styled.textarea`
-  width: 100%;
-  min-height: 118px;
-  box-sizing: border-box;
-  resize: vertical;
-  padding: 13px 14px;
-  border: 1px solid ${({ theme }) => theme.colors.primary200};
+const CustomClassRow = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+`;
+
+const AddClassButton = styled.button`
+  flex: none;
+  padding: 0 18px;
+  border: 1px solid ${({ theme }) => theme.colors.primary600};
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.white};
-  color: ${({ theme }) => theme.colors.text900};
-  font-family: inherit;
+  color: ${({ theme }) => theme.colors.primary600};
+  cursor: pointer;
   ${typography.body2};
 `;
 
@@ -240,12 +245,6 @@ const blank = (profile: MeProfile): ExpertProfileDraft => ({
   hidden: false,
 });
 
-const lines = (value: string) =>
-  value
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
 export default function ExpertProfileEditorPage() {
   const navigate = useNavigate();
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -283,6 +282,17 @@ export default function ExpertProfileEditorPage() {
     return <Page><Loading>{message?.text ?? "전문가 정보를 불러오는 중…"}</Loading></Page>;
   }
 
+  const managedClassTypes = useCatalogStore((state) => state.classTypes);
+  const [customClassType, setCustomClassType] = useState("");
+  const [celebrating, setCelebrating] = useState(false);
+
+  // 관리자 목록에 더해, 이 전문가가 예전에 직접 넣어 둔 종류도 칩으로 보여줍니다.
+  // 그러지 않으면 관리자가 목록에서 내린 순간 선택해 둔 값이 화면에서 사라집니다.
+  const classTypeOptions = useMemo(() => {
+    const selected = draft?.classTypes ?? [];
+    return [...managedClassTypes, ...selected.filter((t) => !managedClassTypes.includes(t))];
+  }, [managedClassTypes, draft?.classTypes]);
+
   const toggleArray = (key: "classTypes" | "regionIds", value: string) => {
     const current = draft[key];
     setDraft({
@@ -293,6 +303,14 @@ export default function ExpertProfileEditorPage() {
     });
   };
 
+  const addCustomClassType = () => {
+    const name = customClassType.trim();
+    if (!name) return;
+    setCustomClassType("");
+    if (draft?.classTypes.includes(name)) return;
+    toggleArray("classTypes", name);
+  };
+
   const valid =
     draft.name.trim().length > 0 &&
     draft.intro.trim().length > 0 &&
@@ -300,6 +318,7 @@ export default function ExpertProfileEditorPage() {
 
   return (
     <Page>
+      <CelebrationParticles active={celebrating} />
       <Header>
         <Back type="button" onClick={() => navigate("/profile")} aria-label="마이페이지로 돌아가기">
           ‹
@@ -359,36 +378,44 @@ export default function ExpertProfileEditorPage() {
 
       <Card>
         <SectionTitle>이력과 전문 분야</SectionTitle>
-        <SectionDesc>각 항목은 한 줄에 하나씩 입력해 주세요.</SectionDesc>
+        <SectionDesc>
+          항목마다 제목과 내용을 나눠 적고, 더 있으면 아래 버튼으로 줄을 추가해 주세요.
+        </SectionDesc>
         <Field>
-          <Label htmlFor="expert-degrees">학위</Label>
-          <Textarea
-            id="expert-degrees"
-            value={draft.degrees.join("\n")}
-            onChange={(e) => setDraft({ ...draft, degrees: lines(e.target.value) })}
-            placeholder={"○○대학교 상담심리학 석사\n△△대학교 명상학 전공"}
+          <Label>학위</Label>
+          <CredentialListField
+            value={draft.degrees}
+            onChange={(degrees) => setDraft({ ...draft, degrees })}
+            titlePlaceholder="○○대학교 상담심리학과"
+            detailPlaceholder="명상심리 전공 · 석사"
+            addLabel="학위 추가"
           />
         </Field>
         <Field>
-          <Label htmlFor="expert-certificates">자격증·이수 교육과정</Label>
-          <Textarea
-            id="expert-certificates"
-            value={draft.certificates.join("\n")}
-            onChange={(e) => setDraft({ ...draft, certificates: lines(e.target.value) })}
+          <Label>자격증·이수 교육과정</Label>
+          <CredentialListField
+            value={draft.certificates}
+            onChange={(certificates) => setDraft({ ...draft, certificates })}
+            titlePlaceholder="명상지도사 1급"
+            detailPlaceholder="한국명상학회 · 2024"
+            addLabel="자격증·과정 추가"
           />
         </Field>
         <Field>
-          <Label htmlFor="expert-careers">경력</Label>
-          <Textarea
-            id="expert-careers"
-            value={draft.careers.join("\n")}
-            onChange={(e) => setDraft({ ...draft, careers: lines(e.target.value) })}
+          <Label>경력</Label>
+          <CredentialListField
+            value={draft.careers}
+            onChange={(careers) => setDraft({ ...draft, careers })}
+            titlePlaceholder="○○명상센터"
+            detailPlaceholder="수석 지도자 · 2020~2024"
+            addLabel="경력 추가"
           />
         </Field>
         <Field>
           <Label>클래스 종류</Label>
+          <Hint>목록에 없는 종류는 아래에 직접 적어 추가할 수 있습니다.</Hint>
           <Chips>
-            {CLASS_OPTIONS.map((item) => (
+            {classTypeOptions.map((item) => (
               <Chip
                 key={item}
                 type="button"
@@ -399,6 +426,22 @@ export default function ExpertProfileEditorPage() {
               </Chip>
             ))}
           </Chips>
+          <CustomClassRow>
+            <Input
+              value={customClassType}
+              maxLength={30}
+              placeholder="예: 차명상"
+              onChange={(e) => setCustomClassType(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                addCustomClassType();
+              }}
+            />
+            <AddClassButton type="button" onClick={addCustomClassType}>
+              추가
+            </AddClassButton>
+          </CustomClassRow>
         </Field>
       </Card>
 
@@ -505,18 +548,30 @@ export default function ExpertProfileEditorPage() {
           onClick={() => {
             setBusy(true);
             setMessage(null);
+            // 저장하면 expertProfileId 가 생기므로, 전환인지 여부는 요청 전에 판단해 둡니다.
+            const isConversion = !profile.expertProfileId;
             void updateMyExpertProfile(draft)
               .then((next) => {
                 setProfile(next);
-                setMessage({ text: "전문가 프로필을 저장했어요." });
-                window.setTimeout(() => navigate("/profile"), 700);
-              })
-              .catch((error) =>
+                if (isConversion) {
+                  setCelebrating(true);
+                  toast.success("전문가로 전환이 성공했습니다!");
+                } else {
+                  toast.success("전문가 정보를 저장했습니다.");
+                }
                 setMessage({
-                  text: error instanceof Error ? error.message : "저장하지 못했어요.",
-                  error: true,
-                })
-              )
+                  text: isConversion
+                    ? "명상 전문가로 전환됐어요."
+                    : "전문가 프로필을 저장했어요.",
+                });
+                // 축하 효과를 볼 시간을 주고 넘어갑니다.
+                window.setTimeout(() => navigate("/profile"), isConversion ? 2000 : 700);
+              })
+              .catch((error) => {
+                const text = error instanceof Error ? error.message : "저장하지 못했어요.";
+                setMessage({ text, error: true });
+                toast.error(text);
+              })
               .finally(() => setBusy(false));
           }}
         >
