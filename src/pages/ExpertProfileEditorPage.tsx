@@ -278,10 +278,6 @@ export default function ExpertProfileEditorPage() {
     [draft?.regionIds]
   );
 
-  if (loading || !draft || !profile) {
-    return <Page><Loading>{message?.text ?? "전문가 정보를 불러오는 중…"}</Loading></Page>;
-  }
-
   const managedClassTypes = useCatalogStore((state) => state.classTypes);
   const [customClassType, setCustomClassType] = useState("");
   const [celebrating, setCelebrating] = useState(false);
@@ -292,6 +288,10 @@ export default function ExpertProfileEditorPage() {
     const selected = draft?.classTypes ?? [];
     return [...managedClassTypes, ...selected.filter((t) => !managedClassTypes.includes(t))];
   }, [managedClassTypes, draft?.classTypes]);
+
+  if (loading || !draft || !profile) {
+    return <Page><Loading>{message?.text ?? "전문가 정보를 불러오는 중…"}</Loading></Page>;
+  }
 
   const toggleArray = (key: "classTypes" | "regionIds", value: string) => {
     const current = draft[key];
