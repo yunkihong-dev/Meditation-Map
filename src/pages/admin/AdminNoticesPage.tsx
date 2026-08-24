@@ -7,6 +7,7 @@ import {
   type NoticeDraft,
 } from "@/services/admin/noticeAdminFields";
 import AdminConfirmModal from "@/components/admin/AdminConfirmModal";
+import { toast } from "@/stores/toastStore";
 import { AdminAutosaveHint, AdminRestoreBanner } from "@/components/admin/AdminDraftBanner";
 import { useAdminDraft } from "@/hooks/useAdminDraft";
 import { removeDraft, type StoredAdminDraft } from "@/services/admin/adminLocalDraft";
@@ -93,8 +94,11 @@ export default function AdminNoticesPage() {
       const savedData = draftFromPayload(saved.payload);
       setDraft(savedData);
       markBaseline(savedData);
+      toast.success(isNew ? "등록되었습니다." : "저장되었습니다.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 실패");
+      const message = e instanceof Error ? e.message : "저장 실패";
+      setError(message);
+      toast.error(message);
     }
   };
 
@@ -112,8 +116,11 @@ export default function AdminNoticesPage() {
         markBaseline(null);
       }
       await load();
+      toast.success("삭제되었습니다.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "삭제 실패");
+      const message = e instanceof Error ? e.message : "삭제 실패";
+      setError(message);
+      toast.error(message);
     }
   };
 

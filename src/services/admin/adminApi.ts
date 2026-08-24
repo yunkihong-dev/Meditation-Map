@@ -338,3 +338,42 @@ export function emptyExpert(): MeditationExpert {
     hidden: false,
   };
 }
+
+/* ── 클래스 종류 ─────────────────────────────────────────────────────────── */
+
+export interface AdminClassType {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+export async function fetchAdminClassTypes(): Promise<AdminClassType[]> {
+  return parseJson(await apiFetch("/admin/class-types"));
+}
+
+export async function createAdminClassType(name: string): Promise<AdminClassType> {
+  return parseJson(
+    await apiFetch("/admin/class-types", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    })
+  );
+}
+
+export async function updateAdminClassType(
+  id: string,
+  patch: { name?: string; active?: boolean; sortOrder?: number }
+): Promise<AdminClassType> {
+  return parseJson(
+    await apiFetch(`/admin/class-types/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(patch),
+    })
+  );
+}
+
+export async function deleteAdminClassType(id: string): Promise<void> {
+  await parseJson(
+    await apiFetch(`/admin/class-types/${encodeURIComponent(id)}`, { method: "DELETE" })
+  );
+}

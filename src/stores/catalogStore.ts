@@ -3,12 +3,15 @@ import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiC
 import { fetchExperts } from "@/services/meditation/repositories/expertsRepository";
 import { fetchPlaces } from "@/services/meditation/repositories/placesRepository";
 import { fetchRegions } from "@/services/meditation/repositories/regionsRepository";
+import { fetchClassTypes } from "@/services/meditation/repositories/classTypesRepository";
 import type { MeditationExpert, MeditationPlace, Region } from "@/services/meditation/types";
 
 interface CatalogState {
   places: MeditationPlace[];
   regions: Region[];
   experts: MeditationExpert[];
+  /** 관리자가 관리하는 클래스 종류 이름 목록 */
+  classTypes: string[];
   catalogReady: boolean;
   /** API 모드에서 카탈로그 요청 실패 시 안내 문구 */
   catalogError: string | null;
@@ -31,6 +34,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
   places: [],
   regions: [],
   experts: [],
+  classTypes: [],
   catalogReady: false,
   catalogError: null,
   clearCatalogError: () => set({ catalogError: null }),
@@ -40,22 +44,25 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         places: [],
         regions: [],
         experts: [],
+        classTypes: [],
         catalogReady: true,
         catalogError: null,
       });
       return;
     }
     set({ catalogReady: false, catalogError: null });
-    const [p, r, e] = await Promise.all([
+    const [p, r, e, c] = await Promise.all([
       fetchOrMark(() => fetchPlaces(), []),
       fetchOrMark(() => fetchRegions(), []),
       fetchOrMark(() => fetchExperts(), []),
+      fetchOrMark(() => fetchClassTypes(), []),
     ]);
-    const hadError = !p.ok || !r.ok || !e.ok;
+    const hadError = !p.ok || !r.ok || !e.ok || !c.ok;
     set({
       places: p.ok ? p.value : [],
       regions: r.ok ? r.value : [],
       experts: e.ok ? e.value : [],
+      classTypes: c.ok ? c.value.map((t) => t.name) : [],
       catalogReady: true,
       catalogError: hadError
         ? "서버에서 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."

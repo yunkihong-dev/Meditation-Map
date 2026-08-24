@@ -5,6 +5,7 @@ import {
   createExpertAccount,
   deleteAdminExpert,
   emptyExpert,
+  fetchAdminClassTypes,
   fetchAdminExperts,
   saveAdminExpert,
   type AdminExpertRow,
@@ -32,8 +33,6 @@ import {
 const LOGIN_ID_REGEX = /^[A-Za-z0-9._-]{4,64}$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CLASS_OPTIONS = ["마음챙김", "아트명상", "숲 명상", "호흡명상", "걷기명상", "소리명상"];
-
 const lines = (value: string) =>
   value
     .split("\n")
@@ -77,6 +76,7 @@ export default function AdminExpertsPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [classTypeNames, setClassTypeNames] = useState<string[]>([]);
 
   const recordKey = draft ? (isNew ? "new" : editingId) : null;
   const { savedAt, restorable, markBaseline, clearCurrent, dismissRestorable } =
@@ -94,6 +94,13 @@ export default function AdminExpertsPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "로드 실패");
     }
+  }, []);
+
+  // 클래스 종류는 "클래스 종류" 메뉴에서 관리합니다. 여기서는 노출 중인 것만 골라 씁니다.
+  useEffect(() => {
+    fetchAdminClassTypes()
+      .then((list) => setClassTypeNames(list.filter((t) => t.active).map((t) => t.name)))
+      .catch(() => setClassTypeNames([]));
   }, []);
 
   useEffect(() => {
@@ -489,7 +496,10 @@ export default function AdminExpertsPage() {
             <AdminField>
               <AdminLabel>클래스 종류</AdminLabel>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {CLASS_OPTIONS.map((item) => (
+                {[
+                  ...classTypeNames,
+                  ...draft.classTypes.filter((t) => !classTypeNames.includes(t)),
+                ].map((item) => (
                   <button
                     key={item}
                     type="button"

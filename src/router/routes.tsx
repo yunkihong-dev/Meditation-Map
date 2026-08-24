@@ -23,6 +23,7 @@ import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminPlacesPage from "@/pages/admin/AdminPlacesPage";
 import AdminExpertsPage from "@/pages/admin/AdminExpertsPage";
 import AdminNoticesPage from "@/pages/admin/AdminNoticesPage";
+import AdminClassTypesPage from "@/pages/admin/AdminClassTypesPage";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ProtectedAdminRoute from "@/components/admin/ProtectedAdminRoute";
 
@@ -46,6 +47,7 @@ export const routes: RouteObject[] = [
           { path: "places", element: <AdminPlacesPage /> },
           { path: "experts", element: <AdminExpertsPage /> },
           { path: "notices", element: <AdminNoticesPage /> },
+          { path: "class-types", element: <AdminClassTypesPage /> },
         ],
       },
     ],

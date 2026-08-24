@@ -17,6 +17,7 @@ import AdminMarkdownField from "@/components/admin/AdminMarkdownField";
 import AdminFacilityPicker from "@/components/admin/AdminFacilityPicker";
 import AdminPlacePreview from "@/components/admin/AdminPlacePreview";
 import AdminConfirmModal from "@/components/admin/AdminConfirmModal";
+import { toast } from "@/stores/toastStore";
 import AdminProgramPeriodCalendar from "@/components/admin/AdminProgramPeriodCalendar";
 import { AdminAutosaveHint, AdminRestoreBanner } from "@/components/admin/AdminDraftBanner";
 import { useAdminDraft } from "@/hooks/useAdminDraft";
@@ -161,8 +162,11 @@ export default function AdminPlacesPage() {
       setDraft(savedPlace);
       markBaseline(savedPlace);
       setTab("basic");
+      toast.success(isNew ? "등록되었습니다." : "저장되었습니다.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장 실패");
+      const message = e instanceof Error ? e.message : "저장 실패";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -183,8 +187,11 @@ export default function AdminPlacesPage() {
         markBaseline(null);
       }
       await load();
+      toast.success("삭제되었습니다.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "삭제 실패");
+      const message = e instanceof Error ? e.message : "삭제 실패";
+      setError(message);
+      toast.error(message);
     }
   };
 

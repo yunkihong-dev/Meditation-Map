@@ -16,6 +16,7 @@ const links = [
   { to: "/admin/places", label: "명상지·센터" },
   { to: "/admin/experts", label: "전문가" },
   { to: "/admin/notices", label: "공지" },
+  { to: "/admin/class-types", label: "클래스 종류" },
 ];
 
 export default function AdminLayout() {
