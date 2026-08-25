@@ -111,8 +111,8 @@ const CodeFieldHint = styled.p`
 `;
 
 const Page = styled.section<{ $dashboard?: boolean }>`
-  /* Layout Content 하단: 56px(바) + 24px + safe-area — 한 화면에 고정, body 스크롤 방지 */
-  --page-outset-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  /* Layout Content 하단: 떠 있는 탭바 자리 + 여유 — 한 화면에 고정, body 스크롤 방지 */
+  --page-outset-bottom: calc(var(--tabbar-space) + 12px);
   box-sizing: border-box;
   position: relative;
   height: ${({ $dashboard }) =>

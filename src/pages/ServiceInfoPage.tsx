@@ -19,7 +19,7 @@ const Container = styled.div`
 `;
 
 const Hero = styled.section`
-  padding: 64px 20px calc(56px + env(safe-area-inset-bottom, 0px));
+  padding: 64px 20px var(--tabbar-space);
   background: linear-gradient(180deg, #ffffff 0%, ${({ theme }) => theme.colors.primary50} 100%);
 
   @media (max-width: 960px) {

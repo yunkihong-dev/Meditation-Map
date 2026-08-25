@@ -190,7 +190,7 @@ const Choice = styled.button<{ $selected: boolean }>`
 
 const Footer = styled.div`
   position: sticky;
-  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  bottom: var(--tabbar-space);
   z-index: 5;
   margin-top: 20px;
   padding: 12px;

@@ -1,0 +1,263 @@
+/* ─────────────────────────────────────────────────────────────
+   Liquid Glass Tab Bar
+
+   인디케이터는 하나입니다. 움직이는 건 .lgtb-ind 하나뿐이고,
+   그 껍데기(.lgtb-skin)가 쉴 때는 까만 알약, 이동 중에는 유리로 바뀝니다.
+   ───────────────────────────────────────────────────────────── */
+
+/* 아이콘 채움 마스크에 쓰는 커스텀 속성 */
+@property --lgtb-fill {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+.lgtb {
+  --lgtb-h: 66px;          /* 바 높이 */
+  --lgtb-blur: 7px;       /* 배경 블러 */
+  --lgtb-sat: 171%;        /* 배경 채도 */
+  --lgtb-dark: 0.10;       /* 바 어둡기 */
+  --lgtb-rim: 0.4;         /* 테두리 반사 */
+  --lgtb-d: 71px;          /* 인디케이터 지름 (유리일 때 = 최대 크기) */
+  --lgtb-r: 1.30;          /* 가로 비율 */
+  --lgtb-slider: 0;     /* 쉴 때 진하기 (0 이면 완전 투명) */
+  --lgtb-rest-x: 0.66;     /* 쉴 때 가로 축소율 (JS 가 계산) */
+  --lgtb-rest-y: 0.73;     /* 쉴 때 세로 축소율 (바 안에 들어가도록) */
+  --lgtb-scatter: 0.20;    /* 빛의 산란 */
+  --lgtb-morph: 200ms;     /* 까만 ↔ 유리 전환 시간 */
+
+  position: relative;
+  box-sizing: border-box;
+  height: var(--lgtb-h);
+  border-radius: calc(var(--lgtb-h) / 2);
+  display: flex;
+  align-items: stretch;
+  touch-action: none;
+  background: rgba(9, 11, 15, var(--lgtb-dark));
+  -webkit-backdrop-filter: blur(var(--lgtb-blur)) saturate(var(--lgtb-sat));
+  backdrop-filter: blur(var(--lgtb-blur)) saturate(var(--lgtb-sat));
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.24),
+    0 14px 34px -10px rgba(0, 0, 0, 0.45),
+    inset 0 -8px 20px rgba(0, 0, 0, 0.08);
+  transform-origin: center center;
+  transition: transform 0.32s cubic-bezier(0.3, 1.2, 0.4, 1), box-shadow 0.32s ease;
+}
+.lgtb[data-pressed="true"] {
+  transform: scale(1.035);
+  box-shadow:
+    0 3px 9px rgba(0, 0, 0, 0.28),
+    0 20px 44px -10px rgba(0, 0, 0, 0.5),
+    inset 0 -8px 20px rgba(0, 0, 0, 0.08);
+}
+.lgtb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, calc(0.75 * var(--lgtb-rim))),
+    rgba(255, 255, 255, calc(0.08 * var(--lgtb-rim))) 46%,
+    rgba(255, 255, 255, calc(0.45 * var(--lgtb-rim)))
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* ── 탭 ─────────────────────────────────────────────────────── */
+.lgtb-tab {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.74);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font: 500 10.5px/1 inherit;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+  --lgtb-fill: 0%;   /* 인디케이터가 지나가면 즉시 채워집니다 */
+}
+/* 채움은 선택 여부가 아니라 인디케이터가 지금 어느 탭 위에 있는지로 결정됩니다 */
+.lgtb-tab[data-lit="true"] {
+  --lgtb-fill: 121%;
+  color: #fff;
+}
+.lgtb-tab:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -6px;
+  border-radius: 24px;
+}
+
+.lgtb-ico {
+  position: relative;
+  width: 23px;
+  height: 23px;
+  transition: transform 0.34s cubic-bezier(0.3, 1.25, 0.4, 1);
+}
+.lgtb-tab[data-lit="true"] .lgtb-ico { transform: scale(1.07); }
+.lgtb-ico svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.lgtb-ico .lgtb-line path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.lgtb-ico .lgtb-solid path { fill: currentColor; fill-rule: evenodd; stroke: none; }
+.lgtb-ico .lgtb-solid {
+  -webkit-mask-image: linear-gradient(to top, #000 calc(var(--lgtb-fill) - 17%), transparent calc(var(--lgtb-fill) + 4%));
+  mask-image: linear-gradient(to top, #000 calc(var(--lgtb-fill) - 17%), transparent calc(var(--lgtb-fill) + 4%));
+}
+
+/* ── 인디케이터 ─────────────────────────────────────────────
+   .lgtb-ind  : 위치와 젤리 변형만 담당 (JS 애니메이션)
+   .lgtb-skin : 겉모습만 담당 (CSS 트랜지션). 두 변형이 서로 다른 요소에
+                걸려 있어야 젤리 scale 과 까만↔유리 scale 이 충돌하지 않습니다. */
+.lgtb-ind {
+  position: absolute;
+  z-index: 0;                       /* 아이콘 뒤 */
+  pointer-events: none;
+  left: 0;
+  top: 50%;
+  width: calc(var(--lgtb-d) * var(--lgtb-r));
+  height: var(--lgtb-d);
+  margin-top: calc(var(--lgtb-d) / -2);
+  will-change: translate, scale;
+  transform-origin: center center;
+}
+.lgtb-skin {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--lgtb-d) / 2);   /* 알약 */
+  transform-origin: center center;
+  /* 쉴 때: 바 안에 들어가는 까만 알약 */
+  scale: var(--lgtb-rest-x) var(--lgtb-rest-y);
+  background-color: rgba(0, 0, 0, var(--lgtb-slider));
+  /* 완전히 까맣게 막지 않고 뒤가 비쳐 보이도록. 위쪽 하이라이트가 있어야
+     평평한 검정 패치가 아니라 살짝 떠 있는 반투명 칩으로 읽힙니다. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, calc(0.10 * var(--lgtb-rim))),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, calc(0.05 * var(--lgtb-rim)));
+  transition:
+    scale var(--lgtb-morph) cubic-bezier(0.32, 0.86, 0.35, 1),
+    background-color var(--lgtb-morph) ease,
+    box-shadow var(--lgtb-morph) ease;
+}
+
+/* 이동 중: 그대로 부풀며 유리가 된다. 아이콘 위로 올라가 굴절시킨다. */
+.lgtb[data-glass="true"] .lgtb-ind { z-index: 3; }
+.lgtb[data-glass="true"] .lgtb-skin {
+  scale: 1 1;
+  background-color: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.18),
+    inset 0 -6px 14px rgba(0, 0, 0, 0.1),
+    inset 0 6px 14px rgba(255, 255, 255, 0.14);
+}
+
+/* 유리일 때만 켜지는 것들 — 정반사 테두리 / 글레어 / 산란.
+   끌 때는 즉시 사라지고(꺼짐 90ms, 지연 없음), 켤 때는 껍데기가 유리로
+   다 바뀐 뒤에 들어옵니다. 그래야 까만 알약 위에 무지개가 겹쳐 보이지 않습니다. */
+.lgtb-skin::before,
+.lgtb-skin::after,
+.lgtb-prism,
+.lgtb-bloom {
+  opacity: 0;
+  transition: opacity 90ms ease;
+}
+.lgtb[data-glass="true"] .lgtb-skin::before,
+.lgtb[data-glass="true"] .lgtb-skin::after,
+.lgtb[data-glass="true"] .lgtb-prism,
+.lgtb[data-glass="true"] .lgtb-bloom {
+  transition: opacity 140ms ease var(--lgtb-morph);
+}
+.lgtb[data-glass="true"] .lgtb-skin::before,
+.lgtb[data-glass="true"] .lgtb-skin::after { opacity: 1; }
+.lgtb[data-glass="true"] .lgtb-prism { opacity: calc(0.5 * var(--lgtb-scatter)); }
+.lgtb[data-glass="true"] .lgtb-bloom { opacity: calc(0.34 * var(--lgtb-scatter)); }
+
+.lgtb-skin::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.2px;
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, calc(0.95 * var(--lgtb-rim))),
+    rgba(190, 230, 255, calc(0.2 * var(--lgtb-rim))) 40%,
+    rgba(255, 255, 255, calc(0.1 * var(--lgtb-rim))) 62%,
+    rgba(255, 255, 255, calc(0.85 * var(--lgtb-rim)))
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.lgtb-skin::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    64% 46% at 32% 18%,
+    rgba(255, 255, 255, calc(0.32 * var(--lgtb-rim))) 0%,
+    rgba(255, 255, 255, 0) 72%
+  );
+}
+
+.lgtb-prism,
+.lgtb-bloom {
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(
+    from 195deg,
+    #ff2d55, #ff9500 14%, #ffd60a 26%, #34c759 42%,
+    #00c7be 56%, #0a84ff 70%, #5e5ce6 82%, #bf5af2 91%, #ff2d55
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.lgtb-prism {
+  inset: 0;
+  padding: 4px;
+  filter: blur(1.6px) saturate(1.8);
+  mix-blend-mode: plus-lighter;
+}
+.lgtb-bloom {
+  inset: -6px;
+  padding: 7px;
+  filter: blur(8px) saturate(1.5);
+  mix-blend-mode: screen;
+  z-index: -1;
+}
+
+.lgtb-defs { position: absolute; width: 0; height: 0; }
+
+/* 동작 줄이기 — 모션을 없애지 않고 줄입니다. 탭 인디케이터의 이동은
+   "어디로 갔는지" 자체를 알려주는 필수 모션이라 남깁니다. */
+@media (prefers-reduced-motion: reduce) {
+  .lgtb { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+  .lgtb-ico { transition: transform 0.18s ease; }
+  .lgtb { --lgtb-morph: 120ms; }
+}

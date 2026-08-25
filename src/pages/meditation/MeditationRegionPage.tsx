@@ -228,7 +228,7 @@ const MapViewport = styled.div`
   top: 0;
   left: 0;
   right: 0;
-  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  bottom: var(--tabbar-space);
   background: ${({ theme }) => theme.colors.bg100};
 `;
 
@@ -368,8 +368,8 @@ const SheetShell = styled.div<{ $ty: number; $dragging: boolean }>`
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-  height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px));
+  bottom: var(--tabbar-space);
+  height: calc(100dvh - var(--tabbar-space));
   z-index: 95;
   transform: translateY(${({ $ty }) => $ty}px);
   ${({ $dragging }) =>
@@ -437,7 +437,7 @@ const DesktopMapSplitRoot = styled.div`
   top: 0;
   left: 0;
   right: 0;
-  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  bottom: var(--tabbar-space);
   display: flex;
   flex-direction: row;
   align-items: stretch;

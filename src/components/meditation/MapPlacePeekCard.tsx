@@ -52,7 +52,7 @@ const CardWrap = styled.div`
   z-index: 115;
   padding: 0 12px;
   /* 하단 탭(56px) 바로 위 */
-  padding-bottom: calc(8px + 56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(8px + var(--tabbar-space));
   pointer-events: none;
   display: flex;
   flex-direction: column;
