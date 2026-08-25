@@ -81,8 +81,15 @@ export const GlobalStyle = createGlobalStyle`
    */
   .app-tabbar {
     position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
+    /*
+     * transform 으로 가운데 맞추지 않습니다. 컴포넌트가 누르는 동안
+     * .lgtb[data-pressed="true"] { transform: scale(1.035) } 를 걸어 덮어쓰는데,
+     * 그러면 translateX(-50%) 가 사라져 바가 자기 폭의 절반만큼 오른쪽으로 튑니다.
+     * 좌우를 0 으로 열고 margin 으로 가운데를 잡으면 transform 을 비워 둘 수 있습니다.
+     */
+    left: 0;
+    right: 0;
+    margin-inline: auto;
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     width: min(calc(100% - 24px), 456px);
     z-index: 100;
