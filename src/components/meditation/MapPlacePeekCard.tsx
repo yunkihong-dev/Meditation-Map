@@ -58,10 +58,6 @@ const CardWrap = styled.div`
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-
-  @media (min-width: 961px) {
-    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  }
 `;
 
 const Card = styled.div`

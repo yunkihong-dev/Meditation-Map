@@ -25,6 +25,8 @@ export const GlobalStyle = createGlobalStyle`
   body {
     min-height: 100%;
     min-height: 100dvh;
+    /* 앱을 모바일 폭 기둥으로 세운 뒤로, 어딘가 하나만 삐져나와도 화면이 옆으로 밀립니다. */
+    overflow-x: hidden;
     background: ${({ theme }) => theme.colors.warmCream};
     color: ${({ theme }) => theme.colors.charcoal};
     overflow-x: hidden;

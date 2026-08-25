@@ -38,24 +38,12 @@ const MainContent = styled.div`
 
 const MainGrid = styled.div`
   display: block;
-
-  @media (min-width: 961px) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 28px;
-    align-items: start;
-  }
 `;
 
 const MapSection = styled.section`
   padding: 12px;
   border-radius: ${({ theme }) => theme.radii.lg};
   margin-bottom: 20px;
-
-  @media (min-width: 961px) {
-    max-width: 500px;
-    width: 100%;
-  }
 `;
 
 const RegionChips = styled.section`
@@ -100,10 +88,6 @@ const PopularScroll = styled.div`
 `;
 
 const SideColumn = styled.div`
-  @media (min-width: 961px) {
-    position: sticky;
-    top: 92px;
-  }
 `;
 
 const RegionChip = styled.button<{ $active?: boolean }>`

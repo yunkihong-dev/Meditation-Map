@@ -4,12 +4,13 @@ import styled from "styled-components";
  * 사진 캐러셀의 좌우 이동 버튼.
  *
  * 스와이프만으로 넘기게 돼 있어서 마우스뿐인 환경에서는 두 번째 사진을 볼 방법이 점 버튼밖에
- * 없었습니다. 화면이 넓을 때만 나타나고 좁은 화면에서는 사진을 가리지 않도록 숨깁니다.
+ * 없었습니다. 화면 폭이 아니라 포인터 종류로 판단합니다 — 앱을 모바일 폭으로 묶은 뒤로는
+ * PC 에서도 창이 좁아, 폭으로 재면 정작 마우스 쓰는 사람에게 화살표가 사라집니다.
  */
 const Arrow = styled.button<{ $side: "left" | "right" }>`
   display: none;
 
-  @media (min-width: 961px) {
+  @media (hover: hover) and (pointer: fine) {
     position: absolute;
     top: 50%;
     ${({ $side }) => ($side === "left" ? "left: 10px;" : "right: 10px;")}

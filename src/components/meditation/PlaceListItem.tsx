@@ -23,10 +23,6 @@ const CardLink = styled(Link)`
   display: block;
   text-decoration: none;
   color: inherit;
-
-  @media (min-width: 961px) {
-    display: flex;
-  }
 `;
 
 const Thumbnail = styled.div`
@@ -39,24 +35,10 @@ const Thumbnail = styled.div`
     height: 100%;
     object-fit: cover;
   }
-
-  @media (min-width: 961px) {
-    flex-shrink: 0;
-    width: 220px;
-    height: 160px;
-  }
 `;
 
 const Body = styled.div`
   padding: 16px 18px;
-
-  @media (min-width: 961px) {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
-  }
 `;
 
 const Title = styled.h3`
