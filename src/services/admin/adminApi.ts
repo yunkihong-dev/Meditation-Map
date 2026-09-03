@@ -277,6 +277,36 @@ export async function deleteAdminNotice(id: string): Promise<void> {
   await parseJson(await apiFetch(`/admin/notices/${encodeURIComponent(id)}`, { method: "DELETE" }));
 }
 
+export type AdminBannerRow = { id: string; payload: Record<string, unknown> };
+
+export async function fetchAdminBanners(): Promise<AdminBannerRow[]> {
+  return parseJson(await apiFetch("/admin/banners"));
+}
+
+export async function saveAdminBanner(
+  editingId: string | null,
+  payload: Record<string, unknown>
+): Promise<AdminBannerRow> {
+  // id·타임스탬프는 서버가 붙입니다. 되돌려 보내면 덮어써 버립니다.
+  const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = payload;
+  const body = { payload: rest };
+  if (editingId) {
+    return parseJson(
+      await apiFetch(`/admin/banners/${encodeURIComponent(editingId)}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      })
+    );
+  }
+  return parseJson(
+    await apiFetch("/admin/banners", { method: "POST", body: JSON.stringify(body) })
+  );
+}
+
+export async function deleteAdminBanner(id: string): Promise<void> {
+  await parseJson(await apiFetch(`/admin/banners/${encodeURIComponent(id)}`, { method: "DELETE" }));
+}
+
 /** MinIO 업로드 — JWT·쿠키 필요. 비활성 시 URL 직접 입력 fallback */
 export async function uploadAdminImage(file: File): Promise<string> {
   const fd = new FormData();

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled, { css, keyframes } from "styled-components";
+import Icon from "@/components/common/Icon";
 import FilterPanel from "@/components/meditation/FilterPanel";
 import KeywordSearchBar from "@/components/meditation/KeywordSearchBar";
 import MapPlacePeekCard from "@/components/meditation/MapPlacePeekCard";
@@ -20,6 +21,16 @@ const NARROW_MAX = 960;
 /** 데스크톱 지도+목록 분할 시 오른쪽 목록 패널 기준 너비(px). PlacesClusterMap 버튼 inset과 맞춤. */
 const DESKTOP_MAP_LIST_WIDTH_PX = 400;
 
+/**
+ * 지도 위 유형 칩. 지역 선택 팝오버와 같은 갈래입니다.
+ * 앞의 둘은 목록을 걸러 내고 — 켜진 칩을 다시 누르면 꺼져 전체가 됩니다 —
+ * "전문가" 는 사람을 찾는 화면이라 같은 자리에서 그쪽으로 넘겨 줍니다.
+ */
+const MAP_VENUE_CHIPS: { label: string; venueKind: "명상센터" | "명상지" }[] = [
+  { label: "명상센터", venueKind: "명상센터" },
+  { label: "명상지", venueKind: "명상지" },
+];
+
 function useNarrowScreen() {
   const [narrow, setNarrow] = useState(
     () => typeof window !== "undefined" && window.matchMedia(`(max-width: ${NARROW_MAX}px)`).matches
@@ -33,14 +44,54 @@ function useNarrowScreen() {
   return narrow;
 }
 
+/*
+ * 넓은 화면(>960px)에서 목록 ↔ 지도는 서로 다른 트리를 early return 으로
+ * 갈아 끼웁니다. 좁은 화면처럼 시트가 미끄러지는 전환이 없어 그냥 툭 바뀌므로,
+ * 새로 붙는 쪽이 스스로 떠오르며 나타나게 해 전환이 눈에 보이도록 합니다.
+ * fill-mode 를 두지 않아 애니메이션이 끝나면 transform 이 남지 않습니다.
+ */
+const listSwapIn = keyframes`
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const mapSwapIn = keyframes`
+  from { opacity: 0; transform: scale(1.02); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+const swapEase = "cubic-bezier(0.25, 0.85, 0.3, 1)";
+
+/** 누르는 순간 살짝 눌리는 느낌 — 탭이 먹었는지 바로 알 수 있게. */
+const pressable = css`
+  transition: transform 0.16s ease, filter 0.16s ease;
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:active {
+      transform: none;
+    }
+  }
+`;
+
 const Page = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px 20px calc(64px + env(safe-area-inset-bottom, 0px));
   color: ${({ theme }) => theme.colors.text900};
+  animation: ${listSwapIn} 0.34s ${swapEase};
 
   @media (max-width: 960px) {
     padding: 20px 14px calc(48px + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
@@ -246,16 +297,18 @@ const MapTopBar = styled.div`
   left: 0;
   right: 0;
   z-index: 2;
-  padding: calc(6px + env(safe-area-inset-top, 0px)) 12px 20px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 28px;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.97) 0%,
-    rgba(255, 255, 255, 0.72) 42%,
-    rgba(255, 255, 255, 0) 100%
+    rgba(247, 250, 252, 0.97) 0%,
+    rgba(247, 250, 252, 0.72) 52%,
+    rgba(247, 250, 252, 0) 100%
   );
   pointer-events: none;
 
-  & button {
+  & button,
+  & form,
+  & input {
     pointer-events: auto;
   }
 `;
@@ -270,23 +323,25 @@ const MapTopInner = styled.div`
 `;
 
 const MapIconButton = styled.button`
+  flex-shrink: 0;
   width: 44px;
   height: 44px;
   padding: 0;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px rgba(107, 70, 193, 0.08);
   display: grid;
   place-items: center;
   cursor: pointer;
-  color: ${({ theme }) => theme.colors.text900};
+  color: ${({ theme }) => theme.colors.primary600};
   -webkit-tap-highlight-color: transparent;
+  transition: transform 0.16s ease;
 
-  svg {
-    width: 22px;
-    height: 22px;
-    stroke: currentColor;
+  &:active {
+    transform: scale(0.94);
   }
 
   &:focus-visible {
@@ -328,7 +383,8 @@ const SwitchToListBtn = styled.button`
   -webkit-tap-highlight-color: transparent;
   background: ${({ theme }) => theme.colors.primary600};
   color: #fff;
-  box-shadow: 0 4px 22px rgba(75, 0, 130, 0.35);
+  box-shadow: 0 4px 22px rgba(107, 70, 193, 0.35);
+  ${pressable};
 
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.primary300};
@@ -340,7 +396,7 @@ const SwitchToListBtn = styled.button`
   }
 `;
 
-/** 리스트 보기 중 → 지도로 전환 (밝은 골드 톤) */
+/** 리스트 보기 중 → 지도로 전환 (시안의 떠 있는 유리 컨트롤 톤) */
 const SwitchToMapBtn = styled.button`
   padding: 12px 28px;
   border: none;
@@ -350,9 +406,13 @@ const SwitchToMapBtn = styled.button`
   font-weight: 600;
   font-size: 0.95rem;
   -webkit-tap-highlight-color: transparent;
-  background: ${({ theme }) => theme.colors.dustyGold};
-  color: ${({ theme }) => theme.colors.primary900};
-  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: ${({ theme }) => theme.colors.primary600};
+  box-shadow: 0 8px 30px rgba(107, 70, 193, 0.18);
+  ${pressable};
 
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.primary500};
@@ -361,6 +421,86 @@ const SwitchToMapBtn = styled.button`
 
   &:hover {
     filter: brightness(1.05);
+  }
+`;
+
+/** 뒤로 버튼과 검색줄이 나란히 놓이는 첫 줄. */
+const MapSearchRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+/**
+ * 지도 위에 떠 있는 검색줄. KeywordSearchBar 는 목록용 모양(모서리 16px)이라
+ * 여기서만 알약으로 바꿔 씌웁니다.
+ */
+const MapSearchWrap = styled.div`
+  flex: 1;
+  min-width: 0;
+
+  form {
+    margin: 0;
+    border-radius: ${({ theme }) => theme.radii.pill};
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 30px rgba(107, 70, 193, 0.08);
+  }
+`;
+
+/** 검색줄 아래 유형 칩. 넘치면 옆으로 밀어서 봅니다. */
+const MapChipRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+const MapChip = styled.button<{ $active?: boolean }>`
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 16px;
+  border: 1px solid
+    ${({ $active }) => ($active ? "transparent" : "rgba(255, 255, 255, 0.6)")};
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme, $active }) =>
+    $active ? theme.colors.primary600 : "rgba(255, 255, 255, 0.95)"};
+  color: ${({ theme, $active }) => ($active ? theme.colors.white : theme.colors.warmGray)};
+  box-shadow: 0 4px 20px rgba(107, 70, 193, ${({ $active }) => ($active ? 0.24 : 0.08)});
+  font-size: 1.3rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.16s ease;
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary500};
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:active {
+      transform: none;
+    }
   }
 `;
 
@@ -412,11 +552,6 @@ const SheetHandle = styled.div`
   }
 `;
 
-const SheetSearchWrap = styled.div`
-  flex-shrink: 0;
-  padding: 0 12px 8px;
-`;
-
 const SheetScroll = styled.div`
   flex: 1;
   min-height: 0;
@@ -442,6 +577,11 @@ const DesktopMapSplitRoot = styled.div`
   flex-direction: row;
   align-items: stretch;
   background: ${({ theme }) => theme.colors.bg100};
+  animation: ${mapSwapIn} 0.38s ${swapEase};
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 const DesktopMapStage = styled.div`
@@ -496,6 +636,7 @@ const MeditationRegionPage = () => {
     toggleTag,
     setSortBy,
     setCategory,
+    setVenueKind,
     resetFilters,
     isFilterOpen,
     setFilterOpen,
@@ -512,6 +653,16 @@ const MeditationRegionPage = () => {
   const [halfTy, setHalfTy] = useState(200);
   const [sheetDragging, setSheetDragging] = useState(false);
   const [sheetReady, setSheetReady] = useState(false);
+
+  /**
+   * 하단 탭의 "지도" 가 이 화면으로 바로 들어오게 되면서, 여기가 앱의 첫 화면일 수
+   * 있습니다. 그때 navigate(-1) 은 앱 밖으로 나가 버리므로 돌아갈 곳이 없으면 홈으로 보냅니다.
+   */
+  const goBack = useCallback(() => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate("/");
+  }, [navigate]);
 
   const recalcSheetMetrics = useCallback(() => {
     const el = sheetRef.current;
@@ -558,6 +709,8 @@ const MeditationRegionPage = () => {
   const placesAll = useCatalogStore((s) => s.places);
   const region = regionId ? getRegionById(regionId) : undefined;
   const availableTags = useMemo(() => collectAvailableTags(placesAll), [placesAll]);
+  /* 전국 지도로 들어왔을 때 "전체 · 총 120곳" 은 어색해서 "전국" 으로 부릅니다. */
+  const regionLabel = regionId === "all" ? "전국" : (region?.name ?? "");
   const places = useMemo(
     () =>
       regionId
@@ -678,21 +831,13 @@ const MeditationRegionPage = () => {
     );
   }
 
-  const switchToListView = () => {
-    if (narrow) setSheetTy(0);
-    else setViewMode("list");
-  };
-
-  const switchToMapView = () => {
-    if (narrow) setSheetTy(maxTy);
-    else setViewMode("map");
-  };
-
-  const mapTabActive = narrow
-    ? !sheetReady
-      ? true
-      : maxTy > 0 && sheetTy >= maxTy * 0.5
-    : viewMode === "map";
+  /*
+   * 목록 ↔ 지도 전환 버튼은 넓은 화면에서만 씁니다.
+   * 좁은 화면은 지도 위에 목록 시트가 얹혀 있어서, 시트를 끌어 올리고 내리는 것이
+   * 곧 전환입니다. 버튼을 같이 두면 하는 일이 겹치고 지도 아래쪽만 더 가립니다.
+   */
+  const switchToListView = () => setViewMode("list");
+  const switchToMapView = () => setViewMode("map");
 
   const filterDrawer = isFilterOpen && (
     <DrawerOverlay>
@@ -701,9 +846,7 @@ const MeditationRegionPage = () => {
         <DrawerHeader>
           <h3 style={{ margin: 0, fontSize: "1.2rem" }}>필터</h3>
           <DrawerClose type="button" onClick={() => setFilterOpen(false)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+            <Icon name="close" size={20} />
           </DrawerClose>
         </DrawerHeader>
         <FilterPanel
@@ -731,7 +874,7 @@ const MeditationRegionPage = () => {
       />
     ) : null;
 
-  const viewModeToggle = mapTabActive ? (
+  const viewModeToggle = narrow ? null : viewMode === "map" ? (
     <ViewModeBar>
       <SwitchToListBtn type="button" onClick={switchToListView} aria-label="목록으로 보기">
         목록
@@ -752,24 +895,52 @@ const MeditationRegionPage = () => {
           <MapLayer>
             <PlacesClusterMap
               fillViewport
+              /* 검색줄(44) + 칩줄(38) + 사이 여백 아래로 내려 붙입니다. */
+              myLocationTopPx={112}
               places={sortedPlaces}
               onSelectPlace={setMapPeekPlaceId}
             />
           </MapLayer>
           <MapTopBar>
-            <MapTopInner>
-              <MapIconButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 12H5M12 19l-7-7 7-7" />
-                </svg>
+            <MapSearchRow>
+              <MapIconButton type="button" onClick={goBack} aria-label="뒤로 가기">
+                <Icon name="arrow_back" size={22} />
               </MapIconButton>
-              <MapRegionTitle>{region.name}</MapRegionTitle>
-              <MapIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
-              </MapIconButton>
-            </MapTopInner>
+              <MapSearchWrap>
+                <KeywordSearchBar
+                  layout="region"
+                  value={filters.keyword}
+                  onChange={setKeyword}
+                  placeholder="명상지, 명상센터 검색"
+                />
+              </MapSearchWrap>
+            </MapSearchRow>
+            <MapChipRow role="group" aria-label="유형">
+              {MAP_VENUE_CHIPS.map((chip) => {
+                const on = filters.venueKind === chip.venueKind;
+                return (
+                  <MapChip
+                    key={chip.venueKind}
+                    type="button"
+                    $active={on}
+                    aria-pressed={on}
+                    onClick={() => setVenueKind(on ? undefined : chip.venueKind)}
+                  >
+                    {chip.label}
+                  </MapChip>
+                );
+              })}
+              <MapChip
+                type="button"
+                onClick={() => navigate(`/meditation/region/${regionId}/experts`)}
+              >
+                전문가
+              </MapChip>
+              <MapChip type="button" onClick={() => setFilterOpen(true)}>
+                <Icon name="tune" size={16} />
+                필터
+              </MapChip>
+            </MapChipRow>
           </MapTopBar>
         </MapViewport>
 
@@ -787,16 +958,10 @@ const MeditationRegionPage = () => {
             onPointerCancel={onSheetHandleUp}
             aria-hidden
           />
-          <SheetSearchWrap>
-            <KeywordSearchBar
-              layout="region"
-              value={filters.keyword}
-              onChange={setKeyword}
-              placeholder="장소, 이름, 주소, 기관명, 태그로 검색"
-            />
-          </SheetSearchWrap>
           <SheetScroll ref={sheetScrollRef}>
-            <SheetListMeta>총 {sortedPlaces.length}곳</SheetListMeta>
+            <SheetListMeta>
+              {regionLabel} · 총 {sortedPlaces.length}곳
+            </SheetListMeta>
             <List>
               {visibleItems.length === 0 && (
                 <Empty>
@@ -814,7 +979,6 @@ const MeditationRegionPage = () => {
         </SheetShell>
 
         {peekCard}
-        {viewModeToggle}
         {filterDrawer}
       </>
     );
@@ -829,22 +993,20 @@ const MeditationRegionPage = () => {
               <PlacesClusterMap
                 fillViewport
                 sidePanelInsetPx={DESKTOP_MAP_LIST_WIDTH_PX}
+                /* 한 줄짜리 상단바 아래 */
+                myLocationTopPx={68}
                 places={sortedPlaces}
                 onSelectPlace={setMapPeekPlaceId}
               />
             </MapLayer>
             <MapTopBar>
               <MapTopInner>
-                <MapIconButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                  </svg>
+                <MapIconButton type="button" onClick={goBack} aria-label="뒤로 가기">
+                  <Icon name="arrow_back" size={22} />
                 </MapIconButton>
-                <MapRegionTitle>{region.name}</MapRegionTitle>
+                <MapRegionTitle>{regionLabel}</MapRegionTitle>
                 <MapIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                  </svg>
+                  <Icon name="tune" size={22} />
                 </MapIconButton>
               </MapTopInner>
             </MapTopBar>
@@ -855,7 +1017,7 @@ const MeditationRegionPage = () => {
                 layout="region"
                 value={filters.keyword}
                 onChange={setKeyword}
-                placeholder="장소, 이름, 주소, 기관명, 태그로 검색"
+                placeholder="명상지, 명상센터 검색"
               />
             </DesktopListSearch>
             <DesktopListScroll ref={desktopListScrollRef}>
@@ -888,17 +1050,13 @@ const MeditationRegionPage = () => {
       <Page>
         <PageHeader>
           <HeaderLeft>
-            <BackButton type="button" onClick={() => navigate(-1)} aria-label="뒤로 가기">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-              </svg>
+            <BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
+              <Icon name="arrow_back" size={22} />
             </BackButton>
             <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 600 }}>명상지 리스트</h2>
           </HeaderLeft>
           <FilterIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-            </svg>
+            <Icon name="tune" size={22} />
           </FilterIconButton>
         </PageHeader>
 
@@ -906,7 +1064,7 @@ const MeditationRegionPage = () => {
           layout="region"
           value={filters.keyword}
           onChange={setKeyword}
-          placeholder="장소, 이름, 주소, 기관명, 태그로 검색"
+          placeholder="명상지, 명상센터 검색"
         />
 
         <Grid>

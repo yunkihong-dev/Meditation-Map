@@ -97,7 +97,7 @@ const Card = styled.div<{
   overflow: hidden;
   cursor: grab;
   background: ${({ $bg }) => $bg};
-  box-shadow: 0 18px 40px rgba(75, 0, 130, 0.22);
+  box-shadow: 0 18px 40px rgba(107, 70, 193, 0.22);
   z-index: ${({ $phase }) => ($phase === "exit" ? 3 : 2)};
   will-change: transform, opacity;
 

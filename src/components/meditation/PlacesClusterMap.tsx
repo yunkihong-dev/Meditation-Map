@@ -15,14 +15,28 @@ const Root = styled.div<{ $fillViewport?: boolean }>`
   background: ${({ theme }) => theme.colors.bg100};
 `;
 
-const MyLocationBtn = styled.button<{ $floating?: boolean; $rightInsetPx?: number }>`
-  ${({ $floating, $rightInsetPx = 0 }) =>
+const MyLocationBtn = styled.button<{
+  $floating?: boolean;
+  $rightInsetPx?: number;
+  $topPx?: number;
+}>`
+  ${({ $floating, $rightInsetPx = 0, $topPx }) =>
     $floating
       ? css`
           position: fixed;
           z-index: 108;
           right: calc(14px + ${$rightInsetPx}px);
-          bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+          /*
+           * $topPx 를 주면 화면 위(검색·칩 아래)에 붙습니다.
+           * 아래쪽은 미리보기 카드·목록 시트·탭바가 몰려 있어 자리가 없습니다.
+           */
+          ${$topPx == null
+            ? css`
+                bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+              `
+            : css`
+                top: calc(${$topPx}px + env(safe-area-inset-top, 0px));
+              `}
         `
       : css`
           position: absolute;
@@ -38,9 +52,12 @@ const MyLocationBtn = styled.button<{ $floating?: boolean; $rightInsetPx?: numbe
   cursor: pointer;
   display: grid;
   place-items: center;
-  background: ${({ theme }) => theme.colors.white};
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   color: ${({ theme }) => theme.colors.primary600};
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 8px 30px rgba(107, 70, 193, 0.18);
   -webkit-tap-highlight-color: transparent;
 
   svg {
@@ -144,9 +161,9 @@ const PIN_TIP_X = SIGNPOST_W / 2;
 const PIN_TIP_Y = MARKER_H;
 
 /* 한 톤 더 밝은 바이올렛 */
-const SIGN_BOARD = "#a78bfa";
-const SIGN_POLE = "#8b5cf6";
-const CLUSTER_FILL = "#a78bfa";
+const SIGN_BOARD = "#6b46c1";
+const SIGN_POLE = "#532aa8";
+const CLUSTER_FILL = "#6b46c1";
 
 /**
  * 단일 장소: 표지판(직사각형 안에 이름) + 기둥. 좌표는 기둥 끝.
@@ -170,7 +187,7 @@ function buildClusterHtml(count: number, clusterKey: string): string {
 <svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
 <defs>
 <filter id="${fid}" x="-40%" y="-40%" width="180%" height="180%">
-<feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#2f0051" flood-opacity="0.42"/>
+<feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#23005c" flood-opacity="0.42"/>
 </filter>
 </defs>
 <circle cx="19" cy="19" r="15" fill="${CLUSTER_FILL}" filter="url(#${fid})"/>
@@ -189,6 +206,11 @@ interface PlacesClusterMapProps {
    * 오른쪽에서 덜어 낼 픽셀(패널 너비와 맞춤).
    */
   sidePanelInsetPx?: number;
+  /**
+   * fillViewport 일 때 "내 위치" 버튼을 화면 위에서 이만큼 떨어뜨립니다.
+   * 검색·필터 줄 바로 아래에 놓으려는 값입니다. 없으면 예전처럼 아래에 붙습니다.
+   */
+  myLocationTopPx?: number;
 }
 
 /**
@@ -200,6 +222,7 @@ const PlacesClusterMap = ({
   onSelectPlace,
   fillViewport = false,
   sidePanelInsetPx = 0,
+  myLocationTopPx,
 }: PlacesClusterMapProps) => {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
@@ -432,7 +455,7 @@ const PlacesClusterMap = ({
   useEffect(() => {
     if (!mapReady || typeof navigator === "undefined" || !navigator.geolocation) return;
 
-    const dot = `<div style="width:16px;height:16px;background:#4B0082;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.28)" aria-hidden="true"></div>`;
+    const dot = `<div style="width:16px;height:16px;background:#532aa8;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.28)" aria-hidden="true"></div>`;
 
     const upsertMarker = (lat: number, lng: number) => {
       lastGeoRef.current = { lat, lng };
@@ -477,6 +500,7 @@ const PlacesClusterMap = ({
     <MyLocationBtn
       $floating={fillViewport}
       $rightInsetPx={fillViewport ? sidePanelInsetPx : 0}
+      $topPx={fillViewport ? myLocationTopPx : undefined}
       type="button"
       aria-label="현재 위치로 이동"
       title="현재 위치로 이동"

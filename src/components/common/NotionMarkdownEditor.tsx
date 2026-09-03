@@ -56,7 +56,7 @@ const BlockRow = styled.div<{ $type: BlockType }>`
   min-height: 1.8em;
   margin: ${({ $type }) => ($type === "h1" ? "12px 0 6px" : $type === "h2" ? "10px 0 5px" : "2px 0")};
   padding-left: ${({ $type }) => ($type === "bullet" ? "18px" : $type === "quote" ? "14px" : "0")};
-  border-left: ${({ $type }) => ($type === "quote" ? "3px solid rgba(75, 0, 130, 0.25)" : "0")};
+  border-left: ${({ $type }) => ($type === "quote" ? "3px solid rgba(107, 70, 193, 0.25)" : "0")};
 
   ${({ $type }) =>
     $type === "bullet" &&

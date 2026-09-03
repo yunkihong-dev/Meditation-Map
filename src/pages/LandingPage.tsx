@@ -9,7 +9,10 @@ import { typography } from "@/styles/typography";
 import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
 import { apiFetch, useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
+import Icon from "@/components/common/Icon";
+import { LANGUAGES, changeLanguage } from "@/services/i18n/googleTranslate";
 import { dismissLanding } from "@/stores/landingPreference";
+import { currentLanguage, hasChosenLanguage, saveLanguage } from "@/stores/languagePreference";
 import { toast } from "@/stores/toastStore";
 
 /* ─────────────────────────  대화 스크립트  ─────────────────────────
@@ -28,32 +31,46 @@ interface Turn {
   left?: Choice; // 보조(외곽선): 스킵/로그인
   right?: Choice; // 주(채움): 계속 진행
   auto?: number; // 선택 없이 이 턴으로 자동으로 이어짐(설명 구간)
+  /** 좌·우 두 갈래 대신 언어 목록을 답변 자리에 띄웁니다. */
+  language?: true;
+  /** 언어를 고르고 나면 이어질 턴 */
+  next?: number;
 }
 
+/** 언어 턴은 맨 앞. 이미 고른 사람은 여기서 시작하지 않습니다. */
+const LANGUAGE_TURN = 0;
+const FIRST_CHAT_TURN = 1;
+
 const TURNS: Turn[] = [
-  // 0. 인사 + 회원/처음 분기
+  // 0. 언어 고르기 — 다른 말이 나오기 전에 이것부터.
+  {
+    bot: ["사용할 언어를 골라 주세요 / Choose your language"],
+    language: true,
+    next: FIRST_CHAT_TURN,
+  },
+  // 1. 인사 + 회원/처음 분기
   {
     bot: ["안녕하세요 🎉", "명상 웰니스 지도에 오신 걸 환영해요!", "이전에 명상 웰니스 지도를 이용해본 적 있나요?"],
-    left: { label: "네, 회원이에요 😊", next: 1 },
-    right: { label: "처음이에요 🚀", next: 2 },
+    left: { label: "네, 회원이에요 😊", next: 2 },
+    right: { label: "처음이에요 🚀", next: 3 },
   },
-  // 1. 회원: 로그인 안내 + "그래도 소개받을래요?"
+  // 2. 회원: 로그인 안내 + "그래도 소개받을래요?"
   {
     bot: ["반가워요! 로그인만 하면 바로 이용할 수 있어요 😊", "혹시 명상 웰니스 지도가 아직 낯설다면, 잠깐 소개해 드릴까요?"],
     left: { label: "음, 괜찮아 😊", next: "login" },
-    right: { label: "좋아, 들어볼게 ✨", next: 2 },
+    right: { label: "좋아, 들어볼게 ✨", next: 3 },
   },
-  // 2. 소개 ① (선택 없이 자동으로 이어짐)
+  // 3. 소개 ① (선택 없이 자동으로 이어짐)
   {
     bot: ["바쁜 하루 속, 마음 쉴 곳 찾기 어려우셨죠? 🤔", "내 주변 명상 공간을 지도에서 바로 찾게 도와드려요 🗺️"],
-    auto: 3,
-  },
-  // 3. 소개 ② (선택 없이 자동으로 이어짐)
-  {
-    bot: ["검증된 전문가의 클래스와 리트릿도 살펴보고 예약할 수 있어요 🧘", "마음에 든 공간은 찜하고, 나만의 명상 기록도 남길 수 있고요 📖"],
     auto: 4,
   },
-  // 4. 튜토리얼 CTA
+  // 4. 소개 ② (선택 없이 자동으로 이어짐)
+  {
+    bot: ["검증된 전문가의 클래스와 리트릿도 살펴보고 예약할 수 있어요 🧘", "마음에 든 공간은 찜하고, 나만의 명상 기록도 남길 수 있고요 📖"],
+    auto: 5,
+  },
+  // 5. 튜토리얼 CTA
   {
     bot: ["이제 어떻게 쓰는지 튜토리얼로 딱 보여드릴게요 🧚", "1분이면 충분해요!"],
     left: { label: "나중에 할래요", next: "exit" },
@@ -162,6 +179,91 @@ const ProgressFill = styled.div<{ $pct: number }>`
   transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
+/* ── 언어 고르기 (채팅 답변 자리) ── */
+
+const LanguageSearch = styled.div`
+  position: relative;
+  margin-bottom: 10px;
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px 12px 40px;
+    border: 1px solid ${({ theme }) => theme.colors.border200};
+    border-radius: ${({ theme }) => theme.radii.md};
+    background: ${({ theme }) => theme.colors.white};
+    color: ${({ theme }) => theme.colors.charcoal};
+    ${typography.body2};
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  input::placeholder {
+    color: ${({ theme }) => theme.colors.border200};
+  }
+
+  input:focus {
+    border-color: rgba(107, 70, 193, 0.35);
+    box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.14);
+  }
+
+  .material-symbols-outlined {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: ${({ theme }) => theme.colors.outline};
+    pointer-events: none;
+  }
+`;
+
+/** 목록이 길어 답변 자리를 다 먹지 않도록 높이를 묶고 안에서 굴립니다. */
+const LanguageList = styled.div`
+  max-height: 40dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-right: 2px;
+`;
+
+const LanguageOption = styled.button<{ $selected: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid
+    ${({ theme, $selected }) => ($selected ? "transparent" : theme.colors.border200)};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme, $selected }) =>
+    $selected ? theme.colors.primary100 : theme.colors.white};
+  color: ${({ theme, $selected }) =>
+    $selected ? theme.colors.primary900 : theme.colors.charcoal};
+  ${typography.body2};
+  font-weight: ${({ $selected }) => ($selected ? 700 : 500)};
+  text-align: left;
+  cursor: pointer;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+const LanguageEmpty = styled.p`
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 18px 4px;
+  text-align: center;
+  ${typography.caption};
+  font-weight: 400;
+  color: ${({ theme }) => theme.colors.outline};
+`;
+
 /* ── 채팅 ── */
 
 const Transcript = styled.div`
@@ -214,7 +316,7 @@ const Bubble = styled.div<{ $user?: boolean }>`
     background: ${theme.colors.primary600};
     color: ${theme.colors.white};
     border-radius: 20px 20px 6px 20px;
-    box-shadow: 0 6px 16px rgba(75, 0, 130, 0.14);
+    box-shadow: 0 6px 16px rgba(107, 70, 193, 0.14);
   `
       : `
     background: ${theme.colors.white};
@@ -687,10 +789,14 @@ const LandingPage = () => {
   const isAuthed = useAuthStore((s) => !!s.accessToken);
 
   const [phase, setPhase] = useState<Phase>("chat");
+  /* 언어를 이미 고른 사람에게는 그 턴을 건너뛰고 인사부터 시작합니다. */
+  const [languageQuery, setLanguageQuery] = useState("");
 
   const [log, setLog] = useState<LogItem[]>([]);
   const [typing, setTyping] = useState(false);
-  const [turnIndex, setTurnIndex] = useState(0);
+  const [turnIndex, setTurnIndex] = useState(() =>
+    hasChosenLanguage() ? FIRST_CHAT_TURN : LANGUAGE_TURN
+  );
   const [awaiting, setAwaiting] = useState(false); // 현재 턴 봇 발화 끝 → 답변 대기
 
   const [tutorialIndex, setTutorialIndex] = useState(0);
@@ -715,6 +821,18 @@ const LandingPage = () => {
     let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
     setAwaiting(false);
+
+    /*
+     * 언어 턴은 기다리게 하지 않습니다. 읽지 못하는 말이 한 줄씩 타이핑되는 동안
+     * 아무것도 못 하는 게 되니까요. 말풍선과 목록을 한 번에 띄웁니다.
+     */
+    if (turn.language) {
+      setTyping(false);
+      setLog(turn.bot.map((text, idx) => ({ from: "bot" as const, text, head: idx === 0 })));
+      setAwaiting(true);
+      return;
+    }
+
     let i = 0;
 
     const showNext = () => {
@@ -794,6 +912,35 @@ const LandingPage = () => {
     else if (next === "tutorial") setPhase("tutorial");
     else setTurnIndex(next);
   };
+
+  /** 고른 언어를 저장하고 대화를 이어갑니다. 한국어가 아니면 새로고침되며 번역이 걸립니다. */
+  const pickLanguage = (code: string, label: string) => {
+    setAwaiting(false);
+    setLog((prev) => [...prev, { from: "user", text: label }]);
+
+    // 저장하면 currentLanguage() 가 곧 새 값이 되므로 비교는 저장 전에 합니다.
+    const shouldApply = code !== currentLanguage();
+    saveLanguage(code);
+    if (shouldApply) {
+      // 돌아왔을 때는 이미 고른 상태라 이 턴을 건너뛰고 인사부터 시작합니다.
+      changeLanguage(code);
+      return;
+    }
+    setTurnIndex(TURNS[LANGUAGE_TURN].next ?? FIRST_CHAT_TURN);
+  };
+
+  /**
+   * 검색은 이름 그대로도, 영문 코드로도 걸립니다.
+   * "일본" 을 못 읽는 사람도 "ja" 나 "Japan" 으로 찾을 수 있어야 해서입니다.
+   */
+  const languageQueryNorm = languageQuery.trim().toLowerCase();
+  const matchedLanguages = languageQueryNorm
+    ? LANGUAGES.filter(
+        (lang) =>
+          lang.label.toLowerCase().includes(languageQueryNorm) ||
+          lang.code.toLowerCase().includes(languageQueryNorm)
+      )
+    : LANGUAGES;
 
   const goSignup = () => navigate("/profile?start=signup");
 
@@ -925,6 +1072,42 @@ const LandingPage = () => {
 
             <div ref={bottomRef} />
           </Transcript>
+
+          {phase === "chat" && awaiting && turn?.language && (
+            <Footer>
+              <LanguageSearch>
+                <Icon name="search" size={20} />
+                <input
+                  type="search"
+                  value={languageQuery}
+                  onChange={(e) => setLanguageQuery(e.target.value)}
+                  placeholder="언어 검색 / Search language"
+                  aria-label="언어 검색 / Search language"
+                />
+              </LanguageSearch>
+              <LanguageList role="listbox" aria-label="언어 / Language">
+                {matchedLanguages.map((lang) => {
+                  const selected = lang.code === currentLanguage();
+                  return (
+                    <LanguageOption
+                      key={lang.code}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      $selected={selected}
+                      onClick={() => pickLanguage(lang.code, lang.label)}
+                    >
+                      <span>{lang.label}</span>
+                      {selected && <Icon name="check" size={18} />}
+                    </LanguageOption>
+                  );
+                })}
+                {matchedLanguages.length === 0 && (
+                  <LanguageEmpty>찾는 언어가 없어요 / No match</LanguageEmpty>
+                )}
+              </LanguageList>
+            </Footer>
+          )}
 
           {showChoices && turn?.left && turn?.right && (
             <Footer>

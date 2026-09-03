@@ -14,6 +14,7 @@ import InquiryPage from "@/pages/InquiryPage";
 import FavoritesPage from "@/pages/FavoritesPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ExpertProfileEditorPage from "@/pages/ExpertProfileEditorPage";
+import CenterRegisterPage from "@/pages/CenterRegisterPage";
 import OAuthCallbackPage from "@/pages/OAuthCallbackPage";
 import ServiceInfoPage from "@/pages/ServiceInfoPage";
 import NotFoundPage from "@/pages/NotFoundPage";
@@ -23,6 +24,7 @@ import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminPlacesPage from "@/pages/admin/AdminPlacesPage";
 import AdminExpertsPage from "@/pages/admin/AdminExpertsPage";
 import AdminNoticesPage from "@/pages/admin/AdminNoticesPage";
+import AdminBannersPage from "@/pages/admin/AdminBannersPage";
 import AdminInterestsPage from "@/pages/admin/AdminInterestsPage";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ProtectedAdminRoute from "@/components/admin/ProtectedAdminRoute";
@@ -47,6 +49,7 @@ export const routes: RouteObject[] = [
           { path: "places", element: <AdminPlacesPage /> },
           { path: "experts", element: <AdminExpertsPage /> },
           { path: "notices", element: <AdminNoticesPage /> },
+          { path: "banners", element: <AdminBannersPage /> },
           { path: "interests", element: <AdminInterestsPage /> },
         ],
       },
@@ -67,6 +70,7 @@ export const routes: RouteObject[] = [
       { path: "favorites", element: <FavoritesPage /> },
       { path: "profile", element: <ProfilePage /> },
       { path: "profile/expert", element: <ExpertProfileEditorPage /> },
+      { path: "center/register", element: <CenterRegisterPage /> },
       { path: "auth/oauth", element: <OAuthCallbackPage /> },
       { path: "notice", element: <NoticePage /> },
       { path: "inquiry", element: <InquiryPage /> },

@@ -19,26 +19,23 @@ const CATEGORIES: { label: string; value: Category }[] = [
 const Page = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 20px calc(64px + env(safe-area-inset-bottom, 0px));
+  padding: 24px 4px 24px;
   color: ${({ theme }) => theme.colors.text900};
-
-  @media (max-width: 960px) {
-    padding: 20px 14px calc(48px + env(safe-area-inset-bottom, 0px));
-  }
 `;
 
 const PageTitle = styled.h1`
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2.8rem;
+  font-weight: 600;
+  line-height: 1.3;
   margin: 0 0 24px;
-  color: ${({ theme }) => theme.colors.text900};
+  color: ${({ theme }) => theme.colors.primary600};
 `;
 
 const FilterBar = styled.div`
   display: flex;
   gap: 8px;
-  margin: -8px 0 22px;
-  padding: 4px 0;
+  margin: 0 0 32px;
+  padding: 4px 0 8px;
   overflow-x: auto;
   scrollbar-width: none;
 
@@ -49,16 +46,23 @@ const FilterBar = styled.div`
 
 const FilterChip = styled.button<{ $active: boolean }>`
   flex: 0 0 auto;
-  padding: 9px 12px;
-  border: 1px solid
-    ${({ theme, $active }) =>
-      $active ? theme.colors.primary600 : theme.colors.primary200};
+  padding: 10px 18px;
+  border: none;
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme, $active }) =>
-    $active ? theme.colors.primary600 : theme.colors.white};
-  color: ${({ theme, $active }) => ($active ? theme.colors.white : theme.colors.text700)};
-  ${typography.caption};
+    $active ? theme.colors.primary100 : theme.colors.surfaceContainer};
+  color: ${({ theme, $active }) =>
+    $active ? theme.colors.primary900 : theme.colors.warmGray};
+  box-shadow: ${({ theme, $active }) => ($active ? theme.shadow.soft : "none")};
+  ${typography.body2};
+  white-space: nowrap;
   cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: ${({ theme, $active }) =>
+      $active ? theme.colors.primary100 : theme.colors.secondaryFixed};
+  }
 `;
 
 const Count = styled.span`
@@ -70,17 +74,25 @@ const List = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 16px;
+
+  @media (min-width: 720px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 `;
 
 const EmptyMessage = styled.p`
-  font-size: 1.1rem;
-  color: ${({ theme }) => theme.colors.text700};
-  padding: 48px 24px;
+  ${typography.body2};
+  color: ${({ theme }) => theme.colors.warmGray};
+  padding: 56px 24px;
   text-align: center;
   margin: 0;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.white};
+  border: ${({ theme }) => theme.hairline};
+  box-shadow: ${({ theme }) => theme.shadow.card};
 `;
 
 const FavoritesPage = () => {
@@ -124,7 +136,7 @@ const FavoritesPage = () => {
 
   return (
     <Page>
-      <PageTitle>찜 목록</PageTitle>
+      <PageTitle>나의 찜 목록</PageTitle>
       <FilterBar aria-label="찜 목록 카테고리">
         {CATEGORIES.map((item) => (
           <FilterChip

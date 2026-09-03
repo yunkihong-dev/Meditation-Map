@@ -2,9 +2,11 @@ import type {
   MeditationFilters,
   MeditationPlace,
   PaginationResult,
+  PlaceProgram,
   Region,
   SortBy,
 } from "./types";
+import { formatProgramPeriod, normalizePrograms } from "./placeProgramStatus";
 import {
   fetchPlaceById,
   fetchPlaces,
@@ -45,6 +47,45 @@ export const getPopularPlaces = (limit = 8): MeditationPlace[] =>
 export const getPlaceById = (placeId: string): MeditationPlace | undefined =>
   useCatalogStore.getState().places.find((place) => place.id === placeId);
 
+/** 홈 배너 한 장에 필요한 값 — 프로그램과 그게 열리는 장소를 함께 들고 다닙니다. */
+export interface FeaturedProgram {
+  placeId: string;
+  placeName: string;
+  program: PlaceProgram;
+  /** "장소명 · 2026-03-01 ~ 2026-03-07" 형태의 한 줄 설명 */
+  caption: string;
+}
+
+/**
+ * 홈 배너용 — 지금 진행 중인 프로그램·행사를 모읍니다.
+ * 조회수가 높은 장소부터 훑되 한 장소가 배너를 독차지하지 않도록 한 곳당 하나만 씁니다.
+ * (숨김 처리된 장소·프로그램은 리포지토리에서 이미 걸러져 들어옵니다.)
+ */
+export const collectFeaturedPrograms = (
+  places: MeditationPlace[],
+  limit = 4
+): FeaturedProgram[] => {
+  const featured: FeaturedProgram[] = [];
+
+  for (const place of computePopularPlaces(places, places.length)) {
+    if (featured.length >= limit) break;
+    const program = normalizePrograms(place.programs).find(
+      (item) => item.status === "ongoing" && item.title.trim().length > 0
+    );
+    if (!program) continue;
+
+    const period = formatProgramPeriod(program.startDate, program.endDate);
+    featured.push({
+      placeId: place.id,
+      placeName: place.name,
+      program,
+      caption: period ? `${place.name} · ${period}` : place.name,
+    });
+  }
+
+  return featured;
+};
+
 export const collectAvailableTags = (places: MeditationPlace[]): string[] => {
   const tags = new Set<string>();
   places.forEach((place) => {
@@ -80,6 +121,13 @@ export const applyFilters = (
   filters: MeditationFilters
 ): MeditationPlace[] => {
   return items.filter((place) => {
+    if (filters.venueKind) {
+      // venueKind 를 안 채운 예전 데이터는 화면 곳곳과 같이 "명상지" 로 봅니다.
+      const kind = place.venueKind ?? "명상지";
+      if (kind !== filters.venueKind) {
+        return false;
+      }
+    }
     if (filters.category && filters.category !== "all") {
       const resolved = resolveCategory(place);
       if (filters.category === "힐링명상") {

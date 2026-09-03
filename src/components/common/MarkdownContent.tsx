@@ -49,7 +49,7 @@ export const MarkdownContent = styled.div`
   blockquote {
     margin: 0 0 0.5em;
     padding-left: 0.75em;
-    border-left: 3px solid rgba(75, 0, 130, 0.25);
+    border-left: 3px solid rgba(107, 70, 193, 0.25);
     color: inherit;
     opacity: 0.9;
   }

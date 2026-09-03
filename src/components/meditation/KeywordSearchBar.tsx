@@ -1,55 +1,38 @@
 import { FormEvent } from "react";
-import styled, { css } from "styled-components";
+import styled from "styled-components";
+import Icon from "@/components/common/Icon";
 
+/**
+ * 시안의 검색 입력 — 테두리 없이 흰 면에 보라로 옅게 물든 그림자,
+ * 포커스가 오면 테두리 대신 은은한 링이 켜집니다.
+ */
 const Bar = styled.form<{ $layout: "main" | "region" }>`
   position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 auto;
-  background: ${({ theme }) => theme.colors.white};
-  border: 1px solid ${({ theme }) => theme.colors.primary200};
+  width: 100%;
+  /* 홈(main)은 붙박이 검색줄이 바깥 여백을 잡으므로 스스로는 띄우지 않습니다. */
+  margin: ${({ $layout }) => ($layout === "main" ? "0" : "0 0 16px")};
   padding: 12px 44px 12px 16px;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  box-shadow: 0 2px 8px rgba(75, 0, 130, 0.06);
-  transition: width 0.35s ease, max-width 0.35s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  background: ${({ theme }) => theme.colors.white};
+  border: 1px solid transparent;
+  border-radius: ${({ theme, $layout }) =>
+    $layout === "main" ? theme.radii.lg : theme.radii.md};
+  box-shadow: 0 4px 20px rgba(107, 70, 193, 0.04);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
 
-  ${({ $layout }) =>
-    $layout === "main"
-      ? css`
-          width: 75%;
-          max-width: 420px;
-          margin-bottom: 20px;
-
-          &:focus-within {
-            width: 100%;
-            max-width: 100%;
-            border-color: ${({ theme }) => theme.colors.primary400};
-            box-shadow: 0 4px 16px rgba(75, 0, 130, 0.12);
-          }
-        `
-      : css`
-          width: 100%;
-          max-width: 100%;
-          margin-bottom: 16px;
-
-          &:focus-within {
-            border-color: ${({ theme }) => theme.colors.primary400};
-            box-shadow: 0 4px 16px rgba(75, 0, 130, 0.1);
-          }
-        `}
+  &:focus-within {
+    border-color: rgba(107, 70, 193, 0.3);
+    box-shadow: 0 4px 20px rgba(107, 70, 193, 0.1), 0 0 0 3px rgba(107, 70, 193, 0.12);
+  }
 `;
 
 const SearchIcon = styled.span`
-  color: ${({ theme }) => theme.colors.primary600};
+  color: ${({ theme }) => theme.colors.outline};
   display: grid;
   place-items: center;
   flex-shrink: 0;
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
 `;
 
 const Input = styled.input`
@@ -72,8 +55,7 @@ const Input = styled.input`
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.colors.text700};
-    opacity: 0.85;
+    color: ${({ theme }) => theme.colors.border200};
   }
 `;
 
@@ -124,11 +106,8 @@ const KeywordSearchBar = ({
 
   return (
     <Bar $layout={layout} onSubmit={onSubmit}>
-      <SearchIcon aria-hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="7" />
-          <line x1="16.65" y1="16.65" x2="21" y2="21" />
-        </svg>
+      <SearchIcon>
+        <Icon name="search" size={20} />
       </SearchIcon>
       <Input
         id={id}
@@ -142,9 +121,7 @@ const KeywordSearchBar = ({
       />
       {value ? (
         <ClearButton type="button" onClick={() => onChange("")} aria-label="검색어 삭제">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
+          <Icon name="close" size={18} />
         </ClearButton>
       ) : null}
     </Bar>

@@ -125,6 +125,25 @@
   mask-image: linear-gradient(to top, #000 calc(var(--lgtb-fill) - 17%), transparent calc(var(--lgtb-fill) + 4%));
 }
 
+/* Material Symbols 글리프를 쓸 때 — SVG 와 같은 자리에 겹쳐 놓습니다.
+   위 마스크는 요소 종류를 가리지 않으므로 채워지는 연출은 그대로입니다. */
+.lgtb-ico .material-symbols-outlined {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  font-size: 23px;
+  line-height: 23px;
+  color: currentColor;
+}
+.lgtb-ico .lgtb-line.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 300;
+}
+.lgtb-ico .lgtb-solid.material-symbols-outlined {
+  font-variation-settings: "FILL" 1, "wght" 400;
+}
+
 /* ── 인디케이터 ─────────────────────────────────────────────
    .lgtb-ind  : 위치와 젤리 변형만 담당 (JS 애니메이션)
    .lgtb-skin : 겉모습만 담당 (CSS 트랜지션). 두 변형이 서로 다른 요소에

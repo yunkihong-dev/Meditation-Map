@@ -30,7 +30,7 @@ const MapWrapper = styled.div<{ $maxMapHeight?: string }>`
   .land {
     pointer-events: auto;
     fill: ${({ theme }) => theme.colors.buddingPeach};
-    stroke: ${({ theme }) => theme.colors.dustyRose};
+    stroke: ${({ theme }) => theme.colors.border200};
     stroke-width: 1;
     cursor: pointer;
     transition: fill 0.25s ease;
@@ -44,10 +44,11 @@ const MapWrapper = styled.div<{ $maxMapHeight?: string }>`
     fill: ${({ theme }) => theme.colors.primary600} !important;
   }
 
+  /* 수도권·강원은 서로 붙어 있어 한 톤 밝게 깔아 경계를 읽히게 합니다. */
   .land[id="KR-11"]:not(.is-active):not(.is-hovered),
   .land[id="KR-41"]:not(.is-active):not(.is-hovered),
   .land[id="KR-42"]:not(.is-active):not(.is-hovered) {
-    fill: #f8e0d8;
+    fill: ${({ theme }) => theme.colors.secondaryFixed};
   }
 `;
 
