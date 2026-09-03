@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import styled, { keyframes } from "styled-components";
 
-const COLORS = ["#4B0082", "#a88bca", "#C9A962", "#C9A090", "#7a5aab", "#F5D8D0"];
+const COLORS = ["#532aa8", "#6b46c1", "#d0bcff", "#ead9fe", "#8f66d8", "#e9ddff"];
 const COUNT = 70;
 const DURATION_MS = 1800;
 

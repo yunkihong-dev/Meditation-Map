@@ -107,6 +107,11 @@ export interface MeditationFilters {
   keyword: string;
   sortBy: SortBy;
   category: Category;
+  /**
+   * 명상지 / 명상센터 구분. 비우면 둘 다.
+   * category(템플스테이·요가 등 성격)와는 다른 축이라 따로 둡니다.
+   */
+  venueKind?: "명상지" | "명상센터";
 }
 
 export interface PaginationResult<T> {

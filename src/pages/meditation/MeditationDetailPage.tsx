@@ -296,7 +296,7 @@ const ProgramThumbBtn = styled.button`
   cursor: pointer;
   scroll-snap-align: start;
   background: ${({ theme }) => theme.colors.bg100};
-  box-shadow: 0 2px 12px rgba(75, 0, 130, 0.08);
+  box-shadow: 0 2px 12px rgba(107, 70, 193, 0.08);
 
   img {
     width: 120px;
@@ -570,8 +570,8 @@ const NotFoundTitle3D = styled.div`
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 2px 2px rgba(75, 0, 130, 0.25))
-          drop-shadow(0 4px 4px rgba(75, 0, 130, 0.15))
+  filter: drop-shadow(0 2px 2px rgba(107, 70, 193, 0.25))
+          drop-shadow(0 4px 4px rgba(107, 70, 193, 0.15))
           drop-shadow(0 8px 16px rgba(0, 0, 0, 0.1));
   transform: perspective(200px) rotateX(5deg);
   margin-bottom: 12px;

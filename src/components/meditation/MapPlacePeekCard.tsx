@@ -71,7 +71,7 @@ const Card = styled.div`
   text-align: left;
   background: ${({ theme }) => theme.colors.white};
   border-radius: 18px;
-  box-shadow: 0 -4px 28px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(75, 0, 130, 0.1);
+  box-shadow: 0 -4px 28px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(107, 70, 193, 0.1);
   border: 1px solid ${({ theme }) => theme.colors.primary100};
   animation: ${slideUp} 0.42s cubic-bezier(0.25, 0.8, 0.25, 1) both;
   -webkit-tap-highlight-color: transparent;

@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
+import Icon from "@/components/common/Icon";
 import RegionMap from "@/components/meditation/RegionMap";
 import { getRegionById } from "@/services/meditation/meditationService";
+import type { Category } from "@/services/meditation/types";
 import { useCatalogStore } from "@/stores/catalogStore";
 import { useMeditationStore } from "@/stores/meditationStore";
 
 const Page = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 16px 24px;
+  padding: 20px 4px 24px;
   color: ${({ theme }) => theme.colors.text900};
 `;
 
@@ -43,16 +45,20 @@ const BackButton = styled.button`
 `;
 
 const Title = styled.h1`
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 2.4rem;
+  font-weight: 600;
+  line-height: 1.4;
   margin: 0;
-  color: ${({ theme }) => theme.colors.text900};
+  color: ${({ theme }) => theme.colors.charcoal};
 `;
 
 const MapSection = styled.section`
   position: relative;
-  padding: 12px;
+  padding: 16px;
   border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.white};
+  border: ${({ theme }) => theme.hairline};
+  box-shadow: ${({ theme }) => theme.shadow.card};
   margin-bottom: 20px;
   min-height: 280px;
   overflow: visible;
@@ -87,16 +93,18 @@ const RegionPopoverWrap = styled.div<{ $x: number; $y: number }>`
   top: ${({ $y }) => $y}px;
   transform: translate(-50%, -100%);
   z-index: 10;
-  filter: drop-shadow(0 6px 20px rgba(75, 0, 130, 0.12));
+  filter: drop-shadow(0 12px 40px rgba(107, 70, 193, 0.15));
   animation: ${popIn} 0.2s ease;
 `;
 
 const RegionPopover = styled.div`
   position: relative;
-  background: ${({ theme }) => theme.colors.white};
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: ${({ theme }) => theme.radii.lg};
-  border: 1px solid ${({ theme }) => theme.colors.primary200};
-  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 20px;
   min-width: 220px;
   max-width: 280px;
 
@@ -108,7 +116,7 @@ const RegionPopover = styled.div`
     transform: translateX(-50%);
     border-left: 9px solid transparent;
     border-right: 9px solid transparent;
-    border-top: 11px solid ${({ theme }) => theme.colors.primary200};
+    border-top: 11px solid rgba(255, 255, 255, 0.4);
   }
 
   &::after {
@@ -146,18 +154,18 @@ const CloseButton = styled.button`
 `;
 
 const PopoverRegion = styled.p`
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.primary700};
+  font-size: 1.9rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.charcoal};
   margin: 0 0 4px;
   padding-right: 28px;
 `;
 
 const PopoverHint = styled.p`
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.colors.text700};
-  margin: 0 0 12px;
-  line-height: 1.45;
+  font-size: 1.4rem;
+  color: ${({ theme }) => theme.colors.warmGray};
+  margin: 0 0 16px;
+  line-height: 1.6;
 `;
 
 const TypePickList = styled.div`
@@ -168,20 +176,63 @@ const TypePickList = styled.div`
 
 const TypePickButton = styled.button`
   width: 100%;
-  padding: 12px 14px;
+  padding: 14px 16px;
   text-align: left;
-  background: ${({ theme }) => theme.colors.white};
-  color: ${({ theme }) => theme.colors.text900};
-  border: 1px solid ${({ theme }) => theme.colors.primary200};
+  background: ${({ theme }) => theme.colors.surfaceContainer};
+  color: ${({ theme }) => theme.colors.charcoal};
+  border: none;
   border-radius: ${({ theme }) => theme.radii.md};
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.primary50};
-    border-color: ${({ theme }) => theme.colors.primary400};
+    background: ${({ theme }) => theme.colors.secondaryContainer};
+    color: ${({ theme }) => theme.colors.onSecondaryContainer};
+  }
+`;
+
+/** 유형을 이미 들고 온 경우의 단일 액션 — 지역명 아래 채워진 보라 버튼. */
+const GoButton = styled.button`
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.primary600};
+  color: ${({ theme }) => theme.colors.white};
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: ${({ theme }) => theme.shadow.press};
+  transition: transform 0.16s ease, opacity 0.16s ease;
+
+  &:hover {
+    opacity: 0.92;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:active {
+      transform: none;
+    }
   }
 `;
 
@@ -193,26 +244,39 @@ const RegionChips = styled.section`
 `;
 
 const RegionChip = styled.button<{ $active?: boolean }>`
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: 1px solid
-    ${({ theme, $active }) => ($active ? theme.colors.primary600 : theme.colors.border200)};
+  padding: 10px 18px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme, $active }) =>
-    $active ? theme.colors.primary600 : theme.colors.white};
-  color: ${({ $active }) => ($active ? "#fff" : "inherit")};
-  font-size: 1rem;
+    $active ? theme.colors.primary100 : theme.colors.surfaceContainer};
+  color: ${({ theme, $active }) =>
+    $active ? theme.colors.primary900 : theme.colors.warmGray};
+  box-shadow: ${({ theme, $active }) => ($active ? theme.shadow.soft : "none")};
+  font-size: 1.4rem;
   font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 
   &:hover {
-    border-color: ${({ theme }) => theme.colors.primary400};
     background: ${({ theme, $active }) =>
-      $active ? theme.colors.primary600 : theme.colors.primary50};
+      $active ? theme.colors.primary100 : theme.colors.secondaryFixed};
   }
 `;
 
-type RegionEntryKind = "place" | "center" | "expert";
+export type RegionEntryKind = "place" | "center" | "expert";
+
+/**
+ * 홈 바로가기에서 넘어올 때 실어 보내는 값.
+ * 유형을 이미 골라 왔으므로 지역 팝오버에서 다시 묻지 않고 "이동"만 보여 줍니다.
+ */
+export type RegionMapEntryState = {
+  entry: RegionEntryKind;
+  category: Category;
+  /** 명상지 / 명상센터 구분. 비우면 둘 다 */
+  venueKind?: "명상지" | "명상센터";
+};
 
 /** 지역 선택 후 명상지 / 센터는 필터와 함께 목록, 전문가는 별도 리스트 */
 const REGION_ENTRY_TYPES: { label: string; kind: RegionEntryKind }[] = [
@@ -223,6 +287,9 @@ const REGION_ENTRY_TYPES: { label: string; kind: RegionEntryKind }[] = [
 
 const MeditationMapPage = () => {
   const navigate = useNavigate();
+  const { state } = useLocation();
+  /** 홈 바로가기로 들어왔으면 유형이 이미 정해져 있습니다. */
+  const preset = (state as RegionMapEntryState | null) ?? null;
   const mapSectionRef = useRef<HTMLDivElement>(null);
   const regions = useCatalogStore((s) => s.regions);
   const chipRegions = useMemo(
@@ -231,7 +298,7 @@ const MeditationMapPage = () => {
   );
   const popoverRef = useRef<HTMLDivElement>(null);
   const chipsRef = useRef<HTMLElement>(null);
-  const { selectedRegionId, setRegion, setCategory } = useMeditationStore();
+  const { selectedRegionId, setRegion, setCategory, setVenueKind } = useMeditationStore();
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [popoverPos, setPopoverPos] = useState({ x: 0, y: 0 });
 
@@ -320,7 +387,22 @@ const MeditationMapPage = () => {
       navigate(`/meditation/region/${hoveredRegion}/experts`);
       return;
     }
-    setCategory(kind === "place" ? "템플스테이" : "명상센터");
+    // 고른 말과 걸리는 필터를 같게 둡니다 — "명상지" 를 골랐으면 명상지만 나오도록.
+    setCategory("all");
+    setVenueKind(kind === "place" ? "명상지" : "명상센터");
+    navigate(`/meditation/region/${hoveredRegion}`);
+  };
+
+  /** 유형을 들고 온 경우 — 고를 것 없이 그 지역으로 바로 넘어갑니다. */
+  const handleGoWithPreset = () => {
+    if (!hoveredRegion || !preset) return;
+    setRegion(hoveredRegion);
+    if (preset.entry === "expert") {
+      navigate(`/meditation/region/${hoveredRegion}/experts`);
+      return;
+    }
+    setCategory(preset.category);
+    setVenueKind(preset.venueKind);
     navigate(`/meditation/region/${hoveredRegion}`);
   };
 
@@ -360,18 +442,27 @@ const MeditationMapPage = () => {
               </svg>
             </CloseButton>
             <PopoverRegion>{selectedRegion.name}</PopoverRegion>
-            <PopoverHint>찾으시는 유형을 선택해 주세요</PopoverHint>
-            <TypePickList>
-              {REGION_ENTRY_TYPES.map(({ label, kind }) => (
-                <TypePickButton
-                  key={kind}
-                  type="button"
-                  onClick={() => handlePickEntryType(kind)}
-                >
-                  {label}
-                </TypePickButton>
-              ))}
-            </TypePickList>
+            {preset ? (
+              <GoButton type="button" onClick={handleGoWithPreset}>
+                이동
+                <Icon name="arrow_forward" size={18} />
+              </GoButton>
+            ) : (
+              <>
+                <PopoverHint>찾으시는 유형을 선택해 주세요</PopoverHint>
+                <TypePickList>
+                  {REGION_ENTRY_TYPES.map(({ label, kind }) => (
+                    <TypePickButton
+                      key={kind}
+                      type="button"
+                      onClick={() => handlePickEntryType(kind)}
+                    >
+                      {label}
+                    </TypePickButton>
+                  ))}
+                </TypePickList>
+              </>
+            )}
             </RegionPopover>
           </RegionPopoverWrap>
           </>

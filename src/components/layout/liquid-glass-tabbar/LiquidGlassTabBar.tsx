@@ -17,7 +17,13 @@ export type LiquidGlassTab = {
   key: string;
   label: string;
   /** 24×24 viewBox 기준 path 데이터. 선/채움 두 상태에 같은 path를 씁니다. */
-  d: string;
+  d?: string;
+  /**
+   * Material Symbols 이름. 주면 path 대신 이 글리프를 그립니다.
+   * 가변 폰트라 FILL 축 0/1 로 선·채움 두 장을 만들 수 있어,
+   * 인디케이터가 지나가며 채워지는 마스크 연출이 그대로 남습니다.
+   */
+  icon?: string;
 };
 
 export type LiquidGlassOptions = {
@@ -145,6 +151,12 @@ export default function LiquidGlassTabBar({
 
   /* 애니메이션 중 매 프레임 읽어야 하는 값은 state 대신 ref 로 둡니다. */
   const activeRef = useRef(active);
+  /**
+   * 부모에게 마지막으로 알린 탭.
+   * 인디케이터 위치(activeRef)와 따로 둡니다 — 끄는 동안에는 겉모습만 움직이고
+   * 손을 뗄 때 한 번만 알려야 지나가는 탭마다 화면이 바뀌지 않습니다.
+   */
+  const committedRef = useRef(active);
   const litRef = useRef(active);
   const indX = useRef(0);
   const glassOn = useRef(mode === 'always');
@@ -208,10 +220,17 @@ export default function LiquidGlassTabBar({
     Promise.allSettled(el.getAnimations().map(a => a.finished)).then(() => light(target));
   }, [light]);
 
-  const select = useCallback((i: number) => {
+  /** 겉모습만 옮깁니다. 부모에게는 알리지 않습니다. */
+  const moveActive = useCallback((i: number) => {
     if (i === activeRef.current) return;
     activeRef.current = i;
     setActive(i);
+  }, []);
+
+  /** 손을 뗐을 때 한 번만. 화면이 바뀌는 건 여기뿐입니다. */
+  const commit = useCallback((i: number) => {
+    if (i < 0 || i >= tabs.length || i === committedRef.current) return;
+    committedRef.current = i;
     onChange?.(tabs[i].key, i);
   }, [onChange, tabs]);
 
@@ -383,7 +402,10 @@ export default function LiquidGlassTabBar({
   useEffect(() => {
     if (value === undefined) return;
     const i = tabs.findIndex(t => t.key === value);
-    if (i < 0 || i === activeRef.current) return;
+    if (i < 0) return;
+    /* 바깥에서 정해 준 값도 "이미 알린 것" 으로 봅니다 — 되돌려 알리지 않게. */
+    committedRef.current = i;
+    if (i === activeRef.current) return;
     activeRef.current = i;
     setActive(i);
     showGlass();
@@ -395,7 +417,7 @@ export default function LiquidGlassTabBar({
   /* ── 포인터 ────────────────────────────────────────────── */
   const begin = (i: number) => {
     const from = activeRef.current;
-    select(i);
+    moveActive(i);
     takeOver();
     showGlass();                                    // 움직이는 동안은 유리
     const dur = i === from ? 0 : moveTo(i);
@@ -428,12 +450,11 @@ export default function LiquidGlassTabBar({
     indX.current = x;
     el.style.translate = `${x}px`;
 
-    const i = nearest(e.clientX - left);
-    light(i);
-    select(i);
+    /* 끄는 동안에는 어느 탭 위인지 불만 켜 줍니다. 화면은 놓을 때 바뀝니다. */
+    light(nearest(e.clientX - left));
   };
 
-  const endDrag = (e: ReactPointerEvent<HTMLElement>) => {
+  const endDrag = (e: ReactPointerEvent<HTMLElement>, cancelled = false) => {
     const d = drag.current;
     if (!d || e.pointerId !== d.id) return;
     drag.current = null;
@@ -442,13 +463,15 @@ export default function LiquidGlassTabBar({
 
     if (d.moved) {
       const i = nearest(indX.current + indW() / 2);
-      select(i);
+      moveActive(i);
+      if (!cancelled) commit(i);                    // 놓은 자리로 딱 한 번
       const dur = moveTo(i);
       if (dur && indRef.current) { trackLit(indRef.current, i); startSquash(); }
       else { light(i); stopSquash(); wobble(); }   // 제자리에서 놓으면 출렁임만
       scheduleHide(dur ? Math.round(dur * o.handoff / 100) : 160);
-    } else if (!hideTimer.current) {
-      scheduleHide(160);                            // 꾹 눌렀다 뗀 경우
+    } else {
+      if (!cancelled) commit(activeRef.current);    // 그냥 탭 — 누른 자리로
+      if (!hideTimer.current) scheduleHide(160);    // 꾹 눌렀다 뗀 경우
     }
   };
 
@@ -456,6 +479,7 @@ export default function LiquidGlassTabBar({
     if (e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();
     begin(i);
+    commit(i);
   };
 
   /* ── 굴절 강도: R·G·B 를 서로 다르게 밀어 파장 분산을 만든다 ── */
@@ -494,7 +518,7 @@ export default function LiquidGlassTabBar({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
-      onPointerCancel={endDrag}
+      onPointerCancel={e => endDrag(e, true)}
     >
       {/* 인디케이터 하나. 쉴 때는 까만 알약, 이동 중에는 유리로 변합니다. */}
       <div ref={indRef} className="lgtb-ind" aria-hidden="true">
@@ -522,8 +546,17 @@ export default function LiquidGlassTabBar({
           onKeyDown={e => onKeyDown(e, i)}
         >
           <span className="lgtb-ico">
-            <svg className="lgtb-line" viewBox="0 0 24 24" aria-hidden="true"><path d={t.d} /></svg>
-            <svg className="lgtb-solid" viewBox="0 0 24 24" aria-hidden="true"><path d={t.d} /></svg>
+            {t.icon ? (
+              <>
+                <span className="lgtb-line material-symbols-outlined" translate="no" aria-hidden="true">{t.icon}</span>
+                <span className="lgtb-solid material-symbols-outlined" translate="no" aria-hidden="true">{t.icon}</span>
+              </>
+            ) : (
+              <>
+                <svg className="lgtb-line" viewBox="0 0 24 24" aria-hidden="true"><path d={t.d} /></svg>
+                <svg className="lgtb-solid" viewBox="0 0 24 24" aria-hidden="true"><path d={t.d} /></svg>
+              </>
+            )}
           </span>
           <span>{t.label}</span>
         </button>

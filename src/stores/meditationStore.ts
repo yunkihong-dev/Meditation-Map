@@ -15,6 +15,7 @@ interface MeditationStoreState {
   clearTags: () => void;
   setSortBy: (sortBy: SortBy) => void;
   setCategory: (category: Category) => void;
+  setVenueKind: (venueKind?: "명상지" | "명상센터") => void;
   resetFilters: () => void;
   setFilterOpen: (open: boolean) => void;
 }
@@ -24,6 +25,7 @@ const defaultFilters: MeditationFilters = {
   keyword: "",
   sortBy: "recommend",
   category: "all",
+  venueKind: undefined,
 };
 
 export const useMeditationStore = create<MeditationStoreState>((set) => ({
@@ -51,6 +53,8 @@ export const useMeditationStore = create<MeditationStoreState>((set) => ({
     set((state) => ({ filters: { ...state.filters, sortBy }, page: 1 })),
   setCategory: (category) =>
     set((state) => ({ filters: { ...state.filters, category }, page: 1 })),
+  setVenueKind: (venueKind) =>
+    set((state) => ({ filters: { ...state.filters, venueKind }, page: 1 })),
   resetFilters: () => set({ filters: defaultFilters, page: 1 }),
   setFilterOpen: (open) => set({ isFilterOpen: open }),
 }));

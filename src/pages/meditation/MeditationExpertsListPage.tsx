@@ -73,7 +73,7 @@ const Card = styled.button`
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.primary300};
-    box-shadow: 0 4px 16px rgba(75, 0, 130, 0.08);
+    box-shadow: 0 4px 16px rgba(107, 70, 193, 0.08);
   }
 `;
 

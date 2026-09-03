@@ -18,6 +18,7 @@ const links = [
   { to: "/admin/places", label: "명상지·센터" },
   { to: "/admin/experts", label: "전문가" },
   { to: "/admin/notices", label: "공지" },
+  { to: "/admin/banners", label: "홈 배너" },
   { to: "/admin/interests", label: "관심사" },
 ];
 

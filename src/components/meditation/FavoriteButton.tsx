@@ -1,7 +1,12 @@
 import React from "react";
 import styled from "styled-components";
+import Icon from "@/components/common/Icon";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 
+/**
+ * 시안의 favorite 아이콘. 가변 폰트의 FILL 축을 0↔1 로 옮기며 채워지므로,
+ * 예전처럼 선/채움 SVG 두 장을 겹쳐 두지 않아도 같은 전환이 납니다.
+ */
 const Button = styled.button<{ $active?: boolean }>`
   flex-shrink: 0;
   width: 40px;
@@ -12,13 +17,11 @@ const Button = styled.button<{ $active?: boolean }>`
   border: none;
   background: transparent;
   cursor: pointer;
-  color: ${({ theme, $active }) =>
-    $active ? "#e11d48" : theme.colors.text900};
+  color: ${({ theme, $active }) => ($active ? theme.colors.error : "inherit")};
   transition: color 0.35s ease;
 
   &:hover {
-    color: #e11d48;
-    background: transparent;
+    color: ${({ theme }) => theme.colors.error};
   }
 
   &:focus-visible {
@@ -27,42 +30,9 @@ const Button = styled.button<{ $active?: boolean }>`
   }
 `;
 
-const HeartWrap = styled.span`
-  position: relative;
-  display: inline-flex;
-  width: 19px;
-  height: 19px;
-`;
-
-const HeartOutline = styled.svg`
-  position: absolute;
-  inset: 0;
-  width: 19px;
-  height: 19px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  overflow: visible;
-`;
-
-const HeartFill = styled.svg<{ $active?: boolean }>`
-  position: absolute;
-  inset: 0;
-  width: 19px;
-  height: 19px;
-  fill: currentColor;
-  stroke: none;
-  pointer-events: none;
-  opacity: ${({ $active }) => ($active ? 1 : 0)};
-  transition: opacity 0.35s ease;
-`;
-
 interface FavoriteButtonProps {
   placeId: string;
 }
-
-const HEART_PATH =
-  "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z";
 
 const FavoriteButton = ({ placeId }: FavoriteButtonProps) => {
   const { isFavorite, toggleFavorite } = useFavoritesStore();
@@ -81,14 +51,7 @@ const FavoriteButton = ({ placeId }: FavoriteButtonProps) => {
       onClick={handleClick}
       aria-label={active ? "찜 해제" : "찜하기"}
     >
-      <HeartWrap>
-        <HeartOutline viewBox="0 0 24 24">
-          <path d={HEART_PATH} />
-        </HeartOutline>
-        <HeartFill viewBox="0 0 24 24" $active={active}>
-          <path d={HEART_PATH} />
-        </HeartFill>
-      </HeartWrap>
+      <Icon name="favorite" filled={active} size={20} />
     </Button>
   );
 };

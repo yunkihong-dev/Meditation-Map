@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
+import { fetchBanners, type BannerDto } from "@/services/meditation/repositories/bannersRepository";
 import { fetchExperts } from "@/services/meditation/repositories/expertsRepository";
 import { fetchPlaces } from "@/services/meditation/repositories/placesRepository";
 import { fetchRegions } from "@/services/meditation/repositories/regionsRepository";
@@ -15,6 +16,8 @@ interface CatalogState {
   experts: MeditationExpert[];
   /** 관리자가 관리하는 관심사(주제). 온보딩 카드와 칩 목록이 같이 씁니다. */
   interests: InterestDto[];
+  /** 홈 중간 배너. 지금 게시 중인 것만 순서대로 내려옵니다. */
+  banners: BannerDto[];
   catalogReady: boolean;
   /** API 모드에서 카탈로그 요청 실패 시 안내 문구 */
   catalogError: string | null;
@@ -38,6 +41,7 @@ export const useCatalogStore = create<CatalogState>((set) => ({
   regions: [],
   experts: [],
   interests: [],
+  banners: [],
   catalogReady: false,
   catalogError: null,
   clearCatalogError: () => set({ catalogError: null }),
@@ -48,24 +52,28 @@ export const useCatalogStore = create<CatalogState>((set) => ({
         regions: [],
         experts: [],
         interests: [],
+        banners: [],
         catalogReady: true,
         catalogError: null,
       });
       return;
     }
     set({ catalogReady: false, catalogError: null });
-    const [p, r, e, c] = await Promise.all([
+    const [p, r, e, c, b] = await Promise.all([
       fetchOrMark(() => fetchPlaces(), []),
       fetchOrMark(() => fetchRegions(), []),
       fetchOrMark(() => fetchExperts(), []),
       fetchOrMark(() => fetchInterests(), []),
+      fetchOrMark(() => fetchBanners(), []),
     ]);
+    // 배너는 없어도 화면이 도는 부가 요소라, 실패해도 오류 배너를 띄우지 않습니다.
     const hadError = !p.ok || !r.ok || !e.ok || !c.ok;
     set({
       places: p.ok ? p.value : [],
       regions: r.ok ? r.value : [],
       experts: e.ok ? e.value : [],
       interests: c.ok ? c.value : [],
+      banners: b.ok ? b.value : [],
       catalogReady: true,
       catalogError: hadError
         ? "서버에서 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."

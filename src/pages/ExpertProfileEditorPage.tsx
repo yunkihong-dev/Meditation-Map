@@ -35,7 +35,7 @@ const Header = styled.header`
 const Back = styled.button`
   width: 38px;
   height: 38px;
-  border: 1px solid ${({ theme }) => theme.colors.primary100};
+  border: ${({ theme }) => theme.hairline};
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.white};
   color: ${({ theme }) => theme.colors.text900};
@@ -61,10 +61,10 @@ const Lead = styled.p`
 const Card = styled.section`
   margin-top: 16px;
   padding: 22px;
-  border: 1px solid rgba(75, 0, 130, 0.09);
-  border-radius: 22px;
+  border: ${({ theme }) => theme.hairline};
+  border-radius: ${({ theme }) => theme.radii.lg};
   background: ${({ theme }) => theme.colors.white};
-  box-shadow: 0 8px 24px rgba(75, 0, 130, 0.05);
+  box-shadow: ${({ theme }) => theme.shadow.card};
 
   @media (max-width: 640px) {
     padding: 18px 15px;
@@ -104,11 +104,18 @@ const Input = styled.input`
   width: 100%;
   box-sizing: border-box;
   padding: 13px 14px;
-  border: 1px solid ${({ theme }) => theme.colors.primary200};
-  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border200};
+  border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme }) => theme.colors.white};
   color: ${({ theme }) => theme.colors.text900};
   ${typography.body2};
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus {
+    border-color: rgba(107, 70, 193, 0.35);
+    box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.14);
+  }
 `;
 
 const CustomClassRow = styled.div`
@@ -135,16 +142,17 @@ const Chips = styled.div`
 `;
 
 const Chip = styled.button<{ $selected: boolean }>`
-  padding: 8px 11px;
+  padding: 9px 16px;
   border: 1px solid
-    ${({ theme, $selected }) =>
-      $selected ? theme.colors.primary600 : theme.colors.primary200};
+    ${({ theme, $selected }) => ($selected ? "transparent" : theme.colors.border200)};
   border-radius: ${({ theme }) => theme.radii.pill};
   background: ${({ theme, $selected }) =>
-    $selected ? theme.colors.primary600 : theme.colors.white};
-  color: ${({ theme, $selected }) => ($selected ? theme.colors.white : theme.colors.text700)};
-  ${typography.caption};
+    $selected ? theme.colors.secondaryFixed : "transparent"};
+  color: ${({ theme, $selected }) =>
+    $selected ? theme.colors.primary600 : theme.colors.warmGray};
+  ${typography.body2};
   cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
 `;
 
 const RegionLayout = styled.div`
@@ -160,8 +168,8 @@ const RegionLayout = styled.div`
 
 const MapPanel = styled.div`
   padding: 12px;
-  border-radius: 18px;
-  background: ${({ theme }) => theme.colors.primary50};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surfaceLow};
 `;
 
 const RegionHelp = styled.div`
@@ -179,8 +187,8 @@ const Choice = styled.button<{ $selected: boolean }>`
   padding: 14px;
   border: 1px solid
     ${({ theme, $selected }) =>
-      $selected ? theme.colors.primary600 : theme.colors.primary200};
-  border-radius: 13px;
+      $selected ? theme.colors.primary500 : theme.colors.border200};
+  border-radius: ${({ theme }) => theme.radii.md};
   background: ${({ theme, $selected }) =>
     $selected ? theme.colors.primary50 : theme.colors.white};
   color: ${({ theme }) => theme.colors.text900};
@@ -194,9 +202,10 @@ const Footer = styled.div`
   z-index: 5;
   margin-top: 20px;
   padding: 12px;
-  border-radius: 18px;
-  background: rgba(255, 250, 248, 0.94);
-  backdrop-filter: blur(12px);
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: rgba(247, 250, 252, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 `;
 
 const Save = styled.button`

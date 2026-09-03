@@ -32,9 +32,9 @@ function variantStyle(variant: ToastVariant) {
     return { accent: "#D2415A", tint: "rgba(210, 65, 90, 0.12)", glyph: "!" };
   }
   if (variant === "success") {
-    return { accent: theme.colors.primary600, tint: "rgba(75, 0, 130, 0.1)", glyph: "✓" };
+    return { accent: theme.colors.primary600, tint: "rgba(107, 70, 193, 0.1)", glyph: "✓" };
   }
-  return { accent: theme.colors.dustyGold, tint: "rgba(201, 169, 98, 0.16)", glyph: "i" };
+  return { accent: theme.colors.primary500, tint: "rgba(107, 70, 193, 0.12)", glyph: "i" };
 }
 
 const Card = styled.div<{ $variant: ToastVariant }>`
@@ -52,7 +52,7 @@ const Card = styled.div<{ $variant: ToastVariant }>`
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid ${({ $variant }) => variantStyle($variant).tint};
   box-shadow:
-    0 10px 30px rgba(75, 0, 130, 0.16),
+    0 10px 30px rgba(107, 70, 193, 0.16),
     0 2px 6px rgba(61, 61, 61, 0.06);
   backdrop-filter: blur(10px);
   animation: ${slideIn} 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);

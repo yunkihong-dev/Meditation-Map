@@ -1,17 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import FilterPanel from "@/components/meditation/FilterPanel";
+import logoImg from "@/assets/logo.png";
+import Icon from "@/components/common/Icon";
 import KeywordSearchBar from "@/components/meditation/KeywordSearchBar";
+import FeaturedPlaceCard from "@/components/meditation/FeaturedPlaceCard";
 import PopularPlaceCard from "@/components/meditation/PopularPlaceCard";
+import PromoBannerRail from "@/components/meditation/PromoBannerRail";
 import PlaceListItem from "@/components/meditation/PlaceListItem";
-import RegionMap from "@/components/meditation/RegionMap";
 import {
   applyFilters,
   collectAvailableTags,
+  collectFeaturedPrograms,
   computePopularPlaces,
   sortPlaces,
 } from "@/services/meditation/meditationService";
+import type {
+  RegionEntryKind,
+  RegionMapEntryState,
+} from "@/pages/meditation/MeditationMapPage";
+import type { Category } from "@/services/meditation/types";
 import { useCatalogStore } from "@/stores/catalogStore";
 import { useMeditationStore } from "@/stores/meditationStore";
 
@@ -20,101 +29,306 @@ const fadeSlideIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
+/**
+ * 시안의 홈은 좌우 20px(margin-mobile) 여백을 씁니다.
+ * 레이아웃이 잡아 둔 --content-pad 만큼 되돌려 나간 뒤 20px 을 다시 넣습니다.
+ */
 const Page = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px 12px 24px;
+  margin-inline: calc(-1 * var(--content-pad, 16px));
+  padding: 0 20px 24px;
   color: ${({ theme }) => theme.colors.text900};
-  background: ${({ theme }) => theme.colors.warmCream};
+`;
 
-  @media (max-width: 960px) {
-    padding: 14px 10px 24px;
+/* ── 붙박이 상단 — 로고와 알림 ─────────────────────────── */
+const StickyTop = styled.div`
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-inline: -20px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 12px;
+  background: rgba(247, 250, 252, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+`;
+
+const Brand = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.primary300};
+    outline-offset: 4px;
+    border-radius: ${({ theme }) => theme.radii.sm};
+  }
+`;
+
+const BrandLogo = styled.img`
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  object-fit: contain;
+`;
+
+const BrandName = styled.span`
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: ${({ theme }) => theme.colors.primary600};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+/** 배너와 바로가기 사이에 놓이는 검색 자리. */
+const SearchArea = styled.div`
+  width: 100%;
+`;
+
+/**
+ * 상단바 아래 본문. 검색 중에도 검색줄만은 그대로 붙어 있어야 해서
+ * (다시 그리면 입력 포커스가 풀립니다) 이 스택이 분기 바깥에 있습니다.
+ */
+const Stack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding-top: 16px;
+`;
+
+const BellButton = styled(Link)`
+  position: relative;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.white};
+  box-shadow: 0 4px 20px rgba(107, 70, 193, 0.04);
+  color: ${({ theme }) => theme.colors.primary600};
+
+  /* 시안의 빨간 알림 점 */
+  &::after {
+    content: "";
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    border-radius: ${({ theme }) => theme.radii.pill};
+    background: ${({ theme }) => theme.colors.error};
   }
 `;
 
 const MainContent = styled.div`
   animation: ${fadeSlideIn} 0.35s ease both;
-`;
-
-const MainGrid = styled.div`
-  display: block;
-`;
-
-const MapSection = styled.section`
-  padding: 12px;
-  border-radius: ${({ theme }) => theme.radii.lg};
-  margin-bottom: 20px;
-`;
-
-const RegionChips = styled.section`
   display: flex;
-  gap: 10px;
-  margin-bottom: 28px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  -webkit-overflow-scrolling: touch;
-
-  &::-webkit-scrollbar {
-    height: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.colors.warmCream};
-    border-radius: 3px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.colors.primary200};
-    border-radius: 3px;
-  }
+  flex-direction: column;
+  gap: 40px;
 `;
 
-const PopularSection = styled.section`
-  margin-top: 28px;
-  background: ${({ theme }) => theme.colors.warmCream};
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.text900};
-  margin: 0 0 16px;
-`;
-
-const PopularScroll = styled.div`
+/* ── 배너 (가로 스냅 스크롤) ───────────────────────────── */
+const BannerRail = styled.section`
   display: flex;
   gap: 16px;
   overflow-x: auto;
-  padding-bottom: 12px;
+  scroll-snap-type: x mandatory;
+  margin-inline: -20px;
+  padding: 0 20px 4px;
   -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
-const SideColumn = styled.div`
-`;
-
-const RegionChip = styled.button<{ $active?: boolean }>`
+const Banner = styled(Link)<{ $tone: "a" | "b" }>`
+  position: relative;
   flex-shrink: 0;
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: 1px solid
-    ${({ theme, $active }) => ($active ? theme.colors.primary600 : theme.colors.primary300)};
-  background: ${({ theme, $active }) =>
-    $active ? theme.colors.primary600 : theme.colors.white};
-  color: ${({ $active }) => ($active ? "#fff" : "inherit")};
-  font-size: 1.1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  width: 85%;
+  min-height: 180px;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  border-radius: 32px;
+  overflow: hidden;
+  text-decoration: none;
+  background: ${({ $tone }) =>
+    $tone === "a"
+      ? "linear-gradient(135deg, #E9D8FD, #D6BCFA)"
+      : "linear-gradient(135deg, #d0c0e4, #ecdcff)"};
+  box-shadow: ${({ $tone }) =>
+    $tone === "a"
+      ? "0 8px 30px rgba(107, 70, 193, 0.1)"
+      : "0 8px 30px rgba(107, 70, 193, 0.05)"};
 
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary300};
-    outline-offset: 2px;
+  /* 시안의 흐릿한 빛 방울 — 배너 모서리 밖에서 은은하게 번집니다. */
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    border-radius: ${({ theme }) => theme.radii.pill};
+    pointer-events: none;
   }
-
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.colors.primary400};
-    background: ${({ theme, $active }) =>
-      $active ? theme.colors.primary600 : theme.colors.primary50};
+  &::before {
+    right: -40px;
+    bottom: -40px;
+    width: 160px;
+    height: 160px;
+    background: rgba(255, 255, 255, 0.2);
+    filter: blur(28px);
+  }
+  &::after {
+    left: -40px;
+    top: -40px;
+    width: 128px;
+    height: 128px;
+    background: rgba(107, 70, 193, 0.1);
+    filter: blur(20px);
   }
 `;
+
+const BannerBody = styled.div`
+  position: relative;
+  z-index: 1;
+`;
+
+const BannerBadge = styled.span`
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.primary600};
+`;
+
+const BannerTitle = styled.h2`
+  margin: 0 0 4px;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.onSecondaryFixed};
+`;
+
+const BannerDesc = styled.p`
+  margin: 0;
+  font-size: 1.4rem;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.onSecondaryFixedVariant};
+  opacity: 0.9;
+`;
+
+const BannerGo = styled.span`
+  position: relative;
+  z-index: 1;
+  align-self: flex-end;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.primary600};
+  box-shadow: 0 2px 8px rgba(107, 70, 193, 0.12);
+  transition: transform 0.2s ease;
+
+  ${Banner}:hover & {
+    transform: scale(0.95);
+  }
+`;
+
+/* ── 바로가기 4칸 ──────────────────────────────────────── */
+const QuickGrid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+`;
+
+const QuickAction = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.warmGray};
+`;
+
+const QuickIcon = styled.span`
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.primary600};
+  box-shadow: 0 4px 20px rgba(107, 70, 193, 0.06);
+  transition: background 0.2s ease;
+
+  ${QuickAction}:hover & {
+    background: ${({ theme }) => theme.colors.primary50};
+  }
+`;
+
+const QuickLabel = styled.span`
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+`;
+
+/* ── 섹션 머리 ─────────────────────────────────────────── */
+const SectionHead = styled.div`
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 16px;
+`;
+
+const SectionMore = styled.button`
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: ${({ theme }) => theme.colors.primary600};
+`;
+
+/** 대표 카드 하나 + 보조 카드들이 세로로 쌓이는 벤토 배치 */
+const SpotStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const SectionTitle = styled.h2`
+  font-size: 2.4rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.charcoal};
+  margin: 0;
+`;
+
+
 
 const SearchResults = styled.div`
   display: grid;
@@ -192,11 +406,7 @@ const FilterIconButton = styled.button`
     outline-offset: 2px;
   }
 
-  svg {
-    width: 22px;
-    height: 22px;
-    stroke: ${({ theme }) => theme.colors.text900};
-  }
+  color: ${({ theme }) => theme.colors.charcoal};
 `;
 
 const DrawerOverlay = styled.div`
@@ -244,22 +454,17 @@ const DrawerClose = styled.button`
   cursor: pointer;
   display: grid;
   place-items: center;
-
-  svg {
-    width: 18px;
-    height: 18px;
-    stroke: ${({ theme }) => theme.colors.text900};
-  }
+  color: ${({ theme }) => theme.colors.charcoal};
 `;
 
 const ScrollSentinel = styled.div`
   height: 1px;
 `;
 
+
 const MeditationMainPage = () => {
   const navigate = useNavigate();
   const {
-    selectedRegionId,
     filters,
     page,
     pageSize,
@@ -269,6 +474,7 @@ const MeditationMainPage = () => {
     toggleTag,
     setSortBy,
     setCategory,
+    setVenueKind,
     resetFilters,
     isFilterOpen,
     setFilterOpen,
@@ -277,9 +483,12 @@ const MeditationMainPage = () => {
   const [placeholder, setPlaceholder] = useState("");
 
   const places = useCatalogStore((s) => s.places);
-  const regions = useCatalogStore((s) => s.regions);
-  const allRegions = [{ id: "all", name: "전체" }, ...regions];
-  const popularPlaces = useMemo(() => computePopularPlaces(places, 8), [places]);
+  const banners = useCatalogStore((s) => s.banners);
+  const popularPlaces = useMemo(() => computePopularPlaces(places, 3), [places]);
+  /** 배너는 DB의 진행 중인 프로그램에서 뽑습니다. */
+  const featuredPrograms = useMemo(() => collectFeaturedPrograms(places, 4), [places]);
+  /** 벤토 배치: 맨 앞 한 곳은 큰 대표 카드, 나머지는 보조 카드로 쌓습니다. */
+  const [featuredPlace, ...restPlaces] = popularPlaces;
   const availableTags = useMemo(() => collectAvailableTags(places), [places]);
 
   const filteredPlaces = useMemo(
@@ -366,101 +575,179 @@ const MeditationMainPage = () => {
     return () => observer.disconnect();
   }, [hasMore, page, setPage, isSearching]);
 
-  const handleMapRegionClick = (regionId: string) => {
-    setRegion(regionId);
-    navigate("/meditation/map");
+  /**
+   * 바로가기 4칸 — 여기서 유형을 고른 뒤 지역 선택 화면으로 넘깁니다.
+   * 고른 유형을 함께 실어 보내면 지역 팝오버가 유형을 다시 묻지 않고
+   * 지역명과 "이동"만 보여 줍니다.
+   */
+  const handleQuickJump = (
+    entry: RegionEntryKind,
+    nextCategory: Category,
+    venueKind?: "명상지" | "명상센터"
+  ) => {
+    setCategory(nextCategory);
+    setVenueKind(venueKind);
+    setRegion("all");
+    const state: RegionMapEntryState = { entry, category: nextCategory, venueKind };
+    navigate("/meditation/map", { state });
   };
 
   return (
     <Page>
-      <KeywordSearchBar
-        layout="main"
-        value={filters.keyword}
-        onChange={setKeyword}
-        placeholder={placeholder || "명상센터 검색"}
-      />
+      <StickyTop>
+        <Brand to="/">
+          <BrandLogo src={logoImg} alt="" />
+          <BrandName>명상 웰니스 지도</BrandName>
+        </Brand>
+        <BellButton to="/notice" aria-label="공지사항">
+          <Icon name="notifications" />
+        </BellButton>
+      </StickyTop>
 
-      {!isSearching ? (
-        <MainContent>
-          <MainGrid>
-            <MapSection>
-              <RegionMap
-                activeRegionId={selectedRegionId}
-                onSelectRegion={handleMapRegionClick}
+      <Stack>
+        {!isSearching && (
+          <BannerRail aria-label="추천 배너">
+            {featuredPrograms.map(({ placeId, placeName, program, caption }, index) => (
+              <Banner
+                key={`${placeId}-${program.id}`}
+                $tone={index % 2 === 0 ? "a" : "b"}
+                to={`/meditation/place/${placeId}`}
+              >
+                <BannerBody>
+                  <BannerBadge>
+                    {program.kind === "event" ? "진행 중인 행사" : "추천 프로그램"}
+                  </BannerBadge>
+                  <BannerTitle>{program.title}</BannerTitle>
+                  <BannerDesc>{caption || placeName}</BannerDesc>
+                </BannerBody>
+                <BannerGo>
+                  <Icon name="arrow_forward" size={18} />
+                </BannerGo>
+              </Banner>
+            ))}
+            {/* 안내 배너는 콘텐츠가 아니라 앱 기능이라 항상 마지막에 둡니다. */}
+            <Banner
+              $tone={featuredPrograms.length % 2 === 0 ? "a" : "b"}
+              to="/service-info"
+            >
+              <BannerBody>
+                <BannerBadge>초보자 가이드</BannerBadge>
+                <BannerTitle>명상이 처음이신가요?</BannerTitle>
+                <BannerDesc>나에게 맞는 명상법 찾기</BannerDesc>
+              </BannerBody>
+              <BannerGo>
+                <Icon name="arrow_forward" size={18} />
+              </BannerGo>
+            </Banner>
+          </BannerRail>
+        )}
+
+        <SearchArea>
+          <KeywordSearchBar
+            layout="main"
+            value={filters.keyword}
+            onChange={setKeyword}
+            placeholder={placeholder ? `${placeholder} 검색...` : "명상 스팟 검색..."}
+          />
+        </SearchArea>
+
+        {!isSearching ? (
+          <MainContent>
+            <QuickGrid aria-label="바로가기">
+              <QuickAction type="button" onClick={() => handleQuickJump("place", "all")}>
+                <QuickIcon>
+                  <Icon name="forest" filled size={24} />
+                </QuickIcon>
+                <QuickLabel>명상 스팟</QuickLabel>
+              </QuickAction>
+              <QuickAction
+                type="button"
+                onClick={() => handleQuickJump("center", "all", "명상센터")}
+              >
+                <QuickIcon>
+                  <Icon name="home_work" filled size={24} />
+                </QuickIcon>
+                <QuickLabel>센터</QuickLabel>
+              </QuickAction>
+              <QuickAction type="button" onClick={() => handleQuickJump("expert", "all")}>
+                <QuickIcon>
+                  <Icon name="psychology" filled size={24} />
+                </QuickIcon>
+                <QuickLabel>전문가</QuickLabel>
+              </QuickAction>
+              <QuickAction
+                type="button"
+                onClick={() => handleQuickJump("place", "템플스테이")}
+              >
+                <QuickIcon>
+                  <Icon name="temple_buddhist" filled size={24} />
+                </QuickIcon>
+                <QuickLabel>템플스테이</QuickLabel>
+              </QuickAction>
+            </QuickGrid>
+
+            <PromoBannerRail promos={banners} aria-label="이벤트 배너" />
+
+            <section>
+              <SectionHead>
+                <SectionTitle>오늘의 마인드풀 스팟</SectionTitle>
+                <SectionMore type="button" onClick={() => handleQuickJump("place", "all")}>
+                  모두 보기
+                </SectionMore>
+              </SectionHead>
+              {places.length === 0 ? (
+                <Empty style={{ marginTop: 12, textAlign: "center", padding: "24px 8px" }}>
+                  등록된 공간이 없습니다.
+                </Empty>
+              ) : (
+                <SpotStack>
+                  {featuredPlace && <FeaturedPlaceCard place={featuredPlace} />}
+                  {restPlaces.map((place) => (
+                    <PopularPlaceCard key={place.id} place={place} />
+                  ))}
+                </SpotStack>
+              )}
+            </section>
+          </MainContent>
+        ) : (
+          <SearchResults>
+            <FilterAside>
+              <FilterPanel
+                filters={filters}
+                availableTags={availableTags}
+                onChangeKeyword={setKeyword}
+                onChangeCategory={setCategory}
+                onToggleTag={toggleTag}
+                onChangeSortBy={setSortBy}
+                onReset={resetFilters}
               />
-            </MapSection>
-
-            <SideColumn>
-              <RegionChips>
-                {allRegions.map((region) => (
-                  <RegionChip
-                    key={region.id}
-                    type="button"
-                    $active={selectedRegionId === region.id}
-                    onClick={() => handleMapRegionClick(region.id)}
-                  >
-                    {region.name}
-                  </RegionChip>
-                ))}
-              </RegionChips>
-
-              <PopularSection>
-                <SectionTitle>인기 명상지</SectionTitle>
-                {places.length === 0 ? (
-                  <Empty style={{ marginTop: 12, textAlign: "center", padding: "24px 8px" }}>
-                    등록된 공간이 없습니다.
-                  </Empty>
-                ) : (
-                  <PopularScroll>
-                    {popularPlaces.map((place) => (
-                      <PopularPlaceCard key={place.id} place={place} />
-                    ))}
-                  </PopularScroll>
-                )}
-              </PopularSection>
-            </SideColumn>
-          </MainGrid>
-        </MainContent>
-      ) : (
-        <SearchResults>
-          <FilterAside>
-            <FilterPanel
-              filters={filters}
-              availableTags={availableTags}
-              onChangeKeyword={setKeyword}
-              onChangeCategory={setCategory}
-              onToggleTag={toggleTag}
-              onChangeSortBy={setSortBy}
-              onReset={resetFilters}
-            />
-          </FilterAside>
-          <SearchContentWrapper>
-            <SearchContent>
-              <SearchResultHeader>
-                <SearchResultTitle>총 {sortedPlaces.length}곳의 명상센터</SearchResultTitle>
-                <FilterIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                  </svg>
-                </FilterIconButton>
-              </SearchResultHeader>
-              <List>
-                {visibleItems.length === 0 && (
-                  <Empty>
-                    {places.length === 0
-                      ? "등록된 공간이 없습니다."
-                      : "조건에 맞는 명상센터가 없어요."}
-                  </Empty>
-                )}
-                {visibleItems.map((place) => (
-                  <PlaceListItem key={place.id} place={place} />
-                ))}
-              </List>
-              {hasMore && <ScrollSentinel ref={sentinelRef} />}
-            </SearchContent>
-          </SearchContentWrapper>
-        </SearchResults>
-      )}
+            </FilterAside>
+            <SearchContentWrapper>
+              <SearchContent>
+                <SearchResultHeader>
+                  <SearchResultTitle>총 {sortedPlaces.length}곳의 명상센터</SearchResultTitle>
+                  <FilterIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
+                    <Icon name="tune" size={22} />
+                  </FilterIconButton>
+                </SearchResultHeader>
+                <List>
+                  {visibleItems.length === 0 && (
+                    <Empty>
+                      {places.length === 0
+                        ? "등록된 공간이 없습니다."
+                        : "조건에 맞는 명상센터가 없어요."}
+                    </Empty>
+                  )}
+                  {visibleItems.map((place) => (
+                    <PlaceListItem key={place.id} place={place} />
+                  ))}
+                </List>
+                {hasMore && <ScrollSentinel ref={sentinelRef} />}
+              </SearchContent>
+            </SearchContentWrapper>
+          </SearchResults>
+        )}
+      </Stack>
 
       {isSearching && isFilterOpen && (
         <DrawerOverlay>
@@ -468,10 +755,8 @@ const MeditationMainPage = () => {
           <DrawerPanel>
             <DrawerHeader>
               <h3 style={{ margin: 0, fontSize: "1.2rem" }}>필터</h3>
-              <DrawerClose type="button" onClick={() => setFilterOpen(false)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
+              <DrawerClose type="button" onClick={() => setFilterOpen(false)} aria-label="필터 닫기">
+                <Icon name="close" size={18} />
               </DrawerClose>
             </DrawerHeader>
             <FilterPanel

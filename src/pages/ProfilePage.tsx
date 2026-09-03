@@ -9,6 +9,10 @@ import leftArrowImg from "@/assets/left-arrow.png";
 import RegionMap from "@/components/meditation/RegionMap";
 import ProfileEditModal from "@/components/profile/ProfileEditModal";
 import InterestSwipeDeck from "@/components/profile/InterestSwipeDeck";
+import Icon from "@/components/common/Icon";
+import LanguagePicker from "@/components/common/LanguagePicker";
+import { changeLanguage, languageLabel } from "@/services/i18n/googleTranslate";
+import { currentLanguage, saveLanguage } from "@/stores/languagePreference";
 import { typography } from "@/styles/typography";
 import { getRegionById, getRegionIdFromCoordinates } from "@/services/meditation/meditationService";
 import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
@@ -428,7 +432,7 @@ const SignupAvatarCircleButton = styled.button`
   &:hover:not(:disabled) {
     transform: scale(1.03);
     border-color: ${({ theme }) => theme.colors.primary300};
-    box-shadow: 0 4px 14px rgba(75, 0, 130, 0.08);
+    box-shadow: 0 4px 14px rgba(107, 70, 193, 0.08);
   }
 
   &:active:not(:disabled) {
@@ -627,6 +631,30 @@ const ModalTitle = styled.p`
   text-align: center;
   ${typography.body1};
   color: ${({ theme }) => theme.colors.text900};
+`;
+
+/** 언어는 항목이 많아 기본 모달보다 넓게, 스크롤되게 씁니다. */
+const LanguageModalCard = styled(ModalCard)`
+  width: min(92vw, 420px);
+  max-height: 78dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const LanguageModalNote = styled.p`
+  margin: 14px 0 0;
+  ${typography.caption};
+  font-weight: 400;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.outline};
+`;
+
+const SettingsValue = styled.span`
+  flex-shrink: 0;
+  margin-right: 4px;
+  ${typography.body2};
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.outline};
 `;
 
 const ModalActions = styled.div`
@@ -1093,12 +1121,12 @@ const ProfileHero = styled.section`
   position: relative;
   overflow: hidden;
   padding: 26px 22px 22px;
-  border: 1px solid rgba(75, 0, 130, 0.08);
+  border: 1px solid rgba(107, 70, 193, 0.08);
   border-radius: 28px;
   background:
     radial-gradient(circle at 100% 0%, rgba(245, 216, 208, 0.9), transparent 38%),
     linear-gradient(145deg, #ffffff 0%, #faf5ff 100%);
-  box-shadow: 0 16px 40px rgba(75, 0, 130, 0.09);
+  box-shadow: 0 16px 40px rgba(107, 70, 193, 0.09);
 `;
 
 const ProfileHeroTop = styled.div`
@@ -1118,7 +1146,7 @@ const ProfileAvatarButton = styled.button`
   border: 4px solid ${({ theme }) => theme.colors.white};
   border-radius: 50%;
   background: ${({ theme }) => theme.colors.primary100};
-  box-shadow: 0 8px 24px rgba(75, 0, 130, 0.18);
+  box-shadow: 0 8px 24px rgba(107, 70, 193, 0.18);
   cursor: pointer;
   overflow: visible;
 `;
@@ -1232,7 +1260,7 @@ const ProfileStat = styled.div`
   text-align: center;
 
   & + & {
-    border-left: 1px solid rgba(75, 0, 130, 0.1);
+    border-left: 1px solid rgba(107, 70, 193, 0.1);
   }
 `;
 
@@ -1259,11 +1287,11 @@ const JourneyBanner = styled.button`
   gap: 14px;
   border: 0;
   border-radius: 22px;
-  background: linear-gradient(120deg, #4b0082, #7a5aab);
+  background: linear-gradient(120deg, #532aa8, #6b46c1);
   color: white;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(75, 0, 130, 0.16);
+  box-shadow: 0 12px 30px rgba(107, 70, 193, 0.18);
 `;
 
 const JourneyIcon = styled.span`
@@ -1274,7 +1302,6 @@ const JourneyIcon = styled.span`
   place-items: center;
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.16);
-  font-size: 1.35rem;
 `;
 
 const JourneyText = styled.span`
@@ -1297,6 +1324,62 @@ const JourneyText = styled.span`
   }
 `;
 
+/**
+ * 시안 마이페이지의 "명상 센터 등록하기" 카드 —
+ * 연보라 면에 짙은 보라 글씨, 오른쪽에 흰 원형 아이콘.
+ */
+const CenterCta = styled.button`
+  width: 100%;
+  margin-top: 14px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 0;
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.primary100};
+  color: ${({ theme }) => theme.colors.primary900};
+  text-align: left;
+  cursor: pointer;
+  box-shadow: ${({ theme }) => theme.shadow.card};
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(0.98);
+  }
+`;
+
+const CenterCtaText = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    ${typography.title};
+    font-weight: 600;
+  }
+
+  small {
+    ${typography.body2};
+    font-weight: 400;
+    opacity: 0.8;
+  }
+`;
+
+const CenterCtaIcon = styled.span`
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: ${({ theme }) => theme.colors.primary600};
+`;
+
 const DashboardSection = styled.section`
   margin-top: 26px;
 `;
@@ -1316,7 +1399,7 @@ const QuickGrid = styled.div`
 const QuickCard = styled.button`
   min-height: 112px;
   padding: 17px;
-  border: 1px solid rgba(75, 0, 130, 0.08);
+  border: 1px solid rgba(107, 70, 193, 0.08);
   border-radius: 20px;
   background: ${({ theme }) => theme.colors.white};
   color: ${({ theme }) => theme.colors.text900};
@@ -1327,13 +1410,13 @@ const QuickCard = styled.button`
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 26px rgba(75, 0, 130, 0.1);
+    box-shadow: 0 10px 26px rgba(107, 70, 193, 0.1);
   }
 `;
 
 const QuickCardIcon = styled.span`
   display: block;
-  font-size: 1.35rem;
+  color: ${({ theme }) => theme.colors.primary600};
 `;
 
 const QuickCardTitle = styled.strong`
@@ -1352,7 +1435,7 @@ const QuickCardDesc = styled.span`
 
 const SettingsCard = styled.div`
   overflow: hidden;
-  border: 1px solid rgba(75, 0, 130, 0.08);
+  border: 1px solid rgba(107, 70, 193, 0.08);
   border-radius: 22px;
   background: ${({ theme }) => theme.colors.white};
   box-shadow: 0 7px 22px rgba(61, 61, 61, 0.04);
@@ -1366,7 +1449,7 @@ const SettingsRow = styled.button`
   align-items: center;
   gap: 13px;
   border: 0;
-  border-bottom: 1px solid rgba(75, 0, 130, 0.07);
+  border-bottom: 1px solid rgba(107, 70, 193, 0.07);
   background: transparent;
   color: ${({ theme }) => theme.colors.text900};
   text-align: left;
@@ -1384,6 +1467,7 @@ const SettingsIcon = styled.span`
   place-items: center;
   border-radius: 10px;
   background: ${({ theme }) => theme.colors.primary50};
+  color: ${({ theme }) => theme.colors.primary600};
 `;
 
 const SettingsLabel = styled.span`
@@ -1393,8 +1477,9 @@ const SettingsLabel = styled.span`
 `;
 
 const SettingsArrow = styled.span`
-  color: ${({ theme }) => theme.colors.mutedMauve};
-  font-size: 1.25rem;
+  display: grid;
+  place-items: center;
+  color: ${({ theme }) => theme.colors.outline};
 `;
 
 const ProfileMessage = styled.p<{ $error?: boolean }>`
@@ -1492,6 +1577,7 @@ const ProfilePage = () => {
   const [agreeService, setAgreeService] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeMarketing, setAgreeMarketing] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
   const [termsDetailOpen, setTermsDetailOpen] = useState<TermsDetailId | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoMessage, setGeoMessage] = useState<string | null>(null);
@@ -2293,24 +2379,42 @@ const ProfilePage = () => {
           )}
 
           <JourneyBanner type="button" onClick={() => navigate("/meditation/map")}>
-            <JourneyIcon aria-hidden="true">◌</JourneyIcon>
+            <JourneyIcon>
+              <Icon name="self_care" filled size={22} />
+            </JourneyIcon>
             <JourneyText>
               <strong>오늘, 잠시 쉬어갈 곳을 찾아볼까요?</strong>
               <small>내 주변 명상 공간을 지도에서 둘러보세요</small>
             </JourneyText>
-            <SettingsArrow aria-hidden="true">›</SettingsArrow>
+            <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
           </JourneyBanner>
+
+          <CenterCta type="button" onClick={() => navigate("/center/register")}>
+            <CenterCtaText>
+              <strong>명상 센터 등록하기</strong>
+              <small>간단한 단계로 나의 공간을 등록해보세요</small>
+            </CenterCtaText>
+            <CenterCtaIcon>
+              <Icon name="storefront" size={32} />
+            </CenterCtaIcon>
+          </CenterCta>
 
           <DashboardSection>
             <DashboardSectionTitle>나의 명상</DashboardSectionTitle>
             <QuickGrid>
               <QuickCard type="button" onClick={() => navigate("/favorites")}>
-                <QuickCardIcon aria-hidden="true">♡</QuickCardIcon>
+                <QuickCardIcon>
+                  <Icon name="favorite" filled size={22} />
+                </QuickCardIcon>
                 <QuickCardTitle>저장한 장소</QuickCardTitle>
                 <QuickCardDesc>{favoriteCount}곳의 쉼터를 모았어요</QuickCardDesc>
               </QuickCard>
               <QuickCard type="button" onClick={() => navigate("/meditation")}>
-                <QuickCardIcon aria-hidden="true">⌁</QuickCardIcon>
+                <QuickCardIcon>
+                  <Icon name="spa" filled size={22} />
+                </QuickCardIcon>
                 <QuickCardTitle>명상 둘러보기</QuickCardTitle>
                 <QuickCardDesc>새로운 프로그램을 만나보세요</QuickCardDesc>
               </QuickCard>
@@ -2321,20 +2425,28 @@ const ProfilePage = () => {
             <DashboardSectionTitle>전문가 활동</DashboardSectionTitle>
             <SettingsCard>
               <SettingsRow type="button" onClick={() => navigate("/profile/expert")}>
-                <SettingsIcon aria-hidden="true">✦</SettingsIcon>
+                <SettingsIcon>
+                  <Icon name="workspace_premium" size={22} />
+                </SettingsIcon>
                 <SettingsLabel>
                   {meProfile?.expertProfileId ? "전문가 프로필 수정" : "명상 전문가로 전환"}
                 </SettingsLabel>
-                <SettingsArrow aria-hidden="true">›</SettingsArrow>
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
               </SettingsRow>
               {meProfile?.expertProfileId && (
                 <SettingsRow
                   type="button"
                   onClick={() => navigate(`/meditation/expert/${meProfile.expertProfileId}`)}
                 >
-                  <SettingsIcon aria-hidden="true">◎</SettingsIcon>
+                  <SettingsIcon>
+                    <Icon name="visibility" size={22} />
+                  </SettingsIcon>
                   <SettingsLabel>내 전문가 페이지 보기</SettingsLabel>
-                  <SettingsArrow aria-hidden="true">›</SettingsArrow>
+                  <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
                 </SettingsRow>
               )}
             </SettingsCard>
@@ -2344,19 +2456,41 @@ const ProfilePage = () => {
             <DashboardSectionTitle>서비스</DashboardSectionTitle>
             <SettingsCard>
               <SettingsRow type="button" onClick={() => navigate("/notice")}>
-                <SettingsIcon aria-hidden="true">♢</SettingsIcon>
+                <SettingsIcon>
+                  <Icon name="campaign" size={22} />
+                </SettingsIcon>
                 <SettingsLabel>공지사항</SettingsLabel>
-                <SettingsArrow aria-hidden="true">›</SettingsArrow>
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
               </SettingsRow>
               <SettingsRow type="button" onClick={() => navigate("/inquiry")}>
-                <SettingsIcon aria-hidden="true">?</SettingsIcon>
+                <SettingsIcon>
+                  <Icon name="question_answer" size={22} />
+                </SettingsIcon>
                 <SettingsLabel>문의하기</SettingsLabel>
-                <SettingsArrow aria-hidden="true">›</SettingsArrow>
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
               </SettingsRow>
               <SettingsRow type="button" onClick={() => navigate("/service-info")}>
-                <SettingsIcon aria-hidden="true">i</SettingsIcon>
+                <SettingsIcon>
+                  <Icon name="info" size={22} />
+                </SettingsIcon>
                 <SettingsLabel>서비스 안내</SettingsLabel>
-                <SettingsArrow aria-hidden="true">›</SettingsArrow>
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
+              </SettingsRow>
+              <SettingsRow type="button" onClick={() => setLanguageOpen(true)}>
+                <SettingsIcon>
+                  <Icon name="language" size={22} />
+                </SettingsIcon>
+                <SettingsLabel>언어 / Language</SettingsLabel>
+                <SettingsValue>{languageLabel(currentLanguage())}</SettingsValue>
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
               </SettingsRow>
             </SettingsCard>
           </DashboardSection>
@@ -2956,6 +3090,40 @@ const ProfilePage = () => {
             </BottomPrimaryButton>
             </StepFooter>
           </StepContent>
+        )}
+
+        {languageOpen && (
+          <ModalOverlay
+            role="dialog"
+            aria-modal="true"
+            aria-label="언어 / Language"
+            onClick={() => setLanguageOpen(false)}
+          >
+            <LanguageModalCard onClick={(e) => e.stopPropagation()}>
+              <ModalTitle>언어 / Language</ModalTitle>
+              <div style={{ marginTop: 16 }}>
+                <LanguagePicker
+                  value={currentLanguage()}
+                  onSelect={(code) => {
+                    setLanguageOpen(false);
+                    if (code === currentLanguage()) return;
+                    saveLanguage(code);
+                    // 여기서 화면이 새로 그려지며 번역이 걸립니다.
+                    changeLanguage(code);
+                  }}
+                />
+              </div>
+              <LanguageModalNote>
+                한국어 외에는 Google 번역으로 자동 번역됩니다. 기계 번역이라 표현이 어색하거나
+                고유명사가 그대로 번역될 수 있습니다.
+              </LanguageModalNote>
+              <ModalActions style={{ gridTemplateColumns: "1fr" }}>
+                <ModalButton type="button" onClick={() => setLanguageOpen(false)}>
+                  닫기
+                </ModalButton>
+              </ModalActions>
+            </LanguageModalCard>
+          </ModalOverlay>
         )}
 
         {step === "signup-region" && isRegionModalOpen && (
