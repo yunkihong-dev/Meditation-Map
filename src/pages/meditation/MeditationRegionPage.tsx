@@ -17,10 +17,6 @@ import { useCatalogStore } from "@/stores/catalogStore";
 import { useMeditationStore } from "@/stores/meditationStore";
 
 const PEEK_STRIP_PX = 96;
-const NARROW_MAX = 960;
-/** 데스크톱 지도+목록 분할 시 오른쪽 목록 패널 기준 너비(px). PlacesClusterMap 버튼 inset과 맞춤. */
-const DESKTOP_MAP_LIST_WIDTH_PX = 400;
-
 /**
  * 지도 위 유형 칩. 지역 선택 팝오버와 같은 갈래입니다.
  * 앞의 둘은 목록을 걸러 내고 — 켜진 칩을 다시 누르면 꺼져 전체가 됩니다 —
@@ -31,103 +27,22 @@ const MAP_VENUE_CHIPS: { label: string; venueKind: "명상센터" | "명상지" 
   { label: "명상지", venueKind: "명상지" },
 ];
 
-function useNarrowScreen() {
-  const [narrow, setNarrow] = useState(
-    () => typeof window !== "undefined" && window.matchMedia(`(max-width: ${NARROW_MAX}px)`).matches
-  );
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${NARROW_MAX}px)`);
-    const fn = () => setNarrow(mq.matches);
-    mq.addEventListener("change", fn);
-    return () => mq.removeEventListener("change", fn);
-  }, []);
-  return narrow;
-}
-
-/*
- * 넓은 화면(>960px)에서 목록 ↔ 지도는 서로 다른 트리를 early return 으로
- * 갈아 끼웁니다. 좁은 화면처럼 시트가 미끄러지는 전환이 없어 그냥 툭 바뀌므로,
- * 새로 붙는 쪽이 스스로 떠오르며 나타나게 해 전환이 눈에 보이도록 합니다.
- * fill-mode 를 두지 않아 애니메이션이 끝나면 transform 이 남지 않습니다.
- */
+/* 지역 정보를 찾지 못했을 때 뜨는 안내 화면이 조용히 떠오르도록. */
 const listSwapIn = keyframes`
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const mapSwapIn = keyframes`
-  from { opacity: 0; transform: scale(1.02); }
-  to { opacity: 1; transform: scale(1); }
-`;
-
 const swapEase = "cubic-bezier(0.25, 0.85, 0.3, 1)";
 
-/** 누르는 순간 살짝 눌리는 느낌 — 탭이 먹었는지 바로 알 수 있게. */
-const pressable = css`
-  transition: transform 0.16s ease, filter 0.16s ease;
-
-  &:active {
-    transform: scale(0.96);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-
-    &:active {
-      transform: none;
-    }
-  }
-`;
-
+/** 지역을 찾지 못했을 때만 쓰는 안내 화면. 지도 화면은 껍데기 없이 전체를 덮습니다. */
 const Page = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 20px calc(64px + env(safe-area-inset-bottom, 0px));
+  padding: 24px 4px calc(48px + env(safe-area-inset-bottom, 0px));
   color: ${({ theme }) => theme.colors.text900};
   animation: ${listSwapIn} 0.34s ${swapEase};
 
-  @media (max-width: 960px) {
-    padding: 20px 14px calc(48px + env(safe-area-inset-bottom, 0px));
-  }
-
   @media (prefers-reduced-motion: reduce) {
     animation: none;
-  }
-`;
-
-const PageHeader = styled.header`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-`;
-
-const HeaderLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const BackButton = styled.button`
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  border-radius: ${({ theme }) => theme.radii.pill};
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary300};
-    outline-offset: 2px;
-  }
-
-  svg {
-    width: 24px;
-    height: 24px;
-    stroke: ${({ theme }) => theme.colors.text900};
   }
 `;
 
@@ -152,60 +67,6 @@ const LinkButton = styled.button`
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.primary300};
     outline-offset: 2px;
-  }
-`;
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  grid-template-areas: "filter content";
-  gap: 28px;
-
-  @media (max-width: 960px) {
-    grid-template-columns: 1fr;
-    grid-template-areas: "content";
-  }
-`;
-
-const Content = styled.main`
-  grid-area: content;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-const FilterAside = styled.aside`
-  grid-area: filter;
-
-  @media (max-width: 960px) {
-    display: none;
-  }
-`;
-
-const FilterIconButton = styled.button`
-  display: none;
-  width: 40px;
-  height: 40px;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: ${({ theme }) => theme.radii.pill};
-
-  @media (max-width: 960px) {
-    display: flex;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary300};
-    outline-offset: 2px;
-  }
-
-  svg {
-    width: 22px;
-    height: 22px;
-    stroke: ${({ theme }) => theme.colors.text900};
   }
 `;
 
@@ -313,15 +174,6 @@ const MapTopBar = styled.div`
   }
 `;
 
-const MapTopInner = styled.div`
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
-  align-items: center;
-  gap: 8px;
-  max-width: 1200px;
-  margin: 0 auto;
-`;
-
 const MapIconButton = styled.button`
   flex-shrink: 0;
   width: 44px;
@@ -347,80 +199,6 @@ const MapIconButton = styled.button`
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.primary300};
     outline-offset: 2px;
-  }
-`;
-
-const MapRegionTitle = styled.span`
-  text-align: center;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: ${({ theme }) => theme.colors.text900};
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const ViewModeBar = styled.div`
-  position: fixed;
-  left: 50%;
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
-  z-index: 110;
-  display: flex;
-  justify-content: center;
-`;
-
-/** 지도 보기 중 → 목록으로 전환 (채워진 보라) */
-const SwitchToListBtn = styled.button`
-  padding: 12px 28px;
-  border: none;
-  margin: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  -webkit-tap-highlight-color: transparent;
-  background: ${({ theme }) => theme.colors.primary600};
-  color: #fff;
-  box-shadow: 0 4px 22px rgba(107, 70, 193, 0.35);
-  ${pressable};
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary300};
-    outline-offset: 3px;
-  }
-
-  &:hover {
-    filter: brightness(1.06);
-  }
-`;
-
-/** 리스트 보기 중 → 지도로 전환 (시안의 떠 있는 유리 컨트롤 톤) */
-const SwitchToMapBtn = styled.button`
-  padding: 12px 28px;
-  border: none;
-  margin: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  -webkit-tap-highlight-color: transparent;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  color: ${({ theme }) => theme.colors.primary600};
-  box-shadow: 0 8px 30px rgba(107, 70, 193, 0.18);
-  ${pressable};
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.colors.primary500};
-    outline-offset: 3px;
-  }
-
-  &:hover {
-    filter: brightness(1.05);
   }
 `;
 
@@ -566,58 +344,6 @@ const SheetListMeta = styled.p`
   color: ${({ theme }) => theme.colors.text700};
 `;
 
-const DesktopMapSplitRoot = styled.div`
-  position: fixed;
-  z-index: 40;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: var(--tabbar-space);
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  background: ${({ theme }) => theme.colors.bg100};
-  animation: ${mapSwapIn} 0.38s ${swapEase};
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-`;
-
-const DesktopMapStage = styled.div`
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-`;
-
-const DesktopListRail = styled.aside`
-  width: min(${DESKTOP_MAP_LIST_WIDTH_PX}px, 42vw);
-  max-width: ${DESKTOP_MAP_LIST_WIDTH_PX}px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: ${({ theme }) => theme.colors.white};
-  border-left: 1px solid ${({ theme }) => theme.colors.primary100};
-  box-shadow: -6px 0 20px rgba(0, 0, 0, 0.06);
-  z-index: 2;
-  min-height: 0;
-`;
-
-const DesktopListSearch = styled.div`
-  flex-shrink: 0;
-  padding: 12px 12px 8px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.primary100};
-`;
-
-const DesktopListScroll = styled.div`
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-  -webkit-overflow-scrolling: touch;
-`;
-
 const ScrollSentinel = styled.div`
   height: 1px;
 `;
@@ -625,7 +351,6 @@ const ScrollSentinel = styled.div`
 const MeditationRegionPage = () => {
   const navigate = useNavigate();
   const { regionId } = useParams();
-  const narrow = useNarrowScreen();
   const {
     filters,
     page,
@@ -641,11 +366,9 @@ const MeditationRegionPage = () => {
     isFilterOpen,
     setFilterOpen,
   } = useMeditationStore();
-  const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [mapPeekPlaceId, setMapPeekPlaceId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const sheetScrollRef = useRef<HTMLDivElement | null>(null);
-  const desktopListScrollRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef({ active: false, startY: 0, startTy: 0 });
   const [sheetTy, setSheetTy] = useState(0);
@@ -675,7 +398,7 @@ const MeditationRegionPage = () => {
   }, []);
 
   useLayoutEffect(() => {
-    if (!narrow || !regionId) return;
+    if (!regionId) return;
     const id = requestAnimationFrame(() => {
       recalcSheetMetrics();
       const el = sheetRef.current;
@@ -686,10 +409,9 @@ const MeditationRegionPage = () => {
       setSheetReady(true);
     });
     return () => cancelAnimationFrame(id);
-  }, [narrow, regionId, recalcSheetMetrics]);
+  }, [regionId, recalcSheetMetrics]);
 
   useEffect(() => {
-    if (!narrow) return;
     const onResize = () => recalcSheetMetrics();
     window.addEventListener("resize", onResize);
     window.visualViewport?.addEventListener("resize", onResize);
@@ -697,7 +419,7 @@ const MeditationRegionPage = () => {
       window.removeEventListener("resize", onResize);
       window.visualViewport?.removeEventListener("resize", onResize);
     };
-  }, [narrow, recalcSheetMetrics]);
+  }, [recalcSheetMetrics]);
 
   useEffect(() => {
     if (regionId) {
@@ -734,7 +456,8 @@ const MeditationRegionPage = () => {
   );
   const hasMore = visibleItems.length < sortedPlaces.length;
 
-  const inMapContext = narrow || viewMode === "map";
+  /* 목록 시트가 지도 위에 얹혀 있는 한 화면이라, 시트를 올려 둔 동안에도 지도 맥락입니다. */
+  const inMapContext = true;
   const peekPlace =
     mapPeekPlaceId && inMapContext
       ? placesAll.find((p) => p.id === mapPeekPlaceId)
@@ -753,10 +476,7 @@ const MeditationRegionPage = () => {
   }, [filters.keyword, filters.sortBy, filters.tags, filters.category, setPage]);
 
   useEffect(() => {
-    const root =
-      narrow ? sheetScrollRef.current
-      : viewMode === "map" ? desktopListScrollRef.current
-      : null;
+    const root = sheetScrollRef.current;
     const sentinel = sentinelRef.current;
     if (!sentinel || !hasMore) return;
 
@@ -771,7 +491,7 @@ const MeditationRegionPage = () => {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, narrow, viewMode, page, setPage]);
+  }, [hasMore, page, setPage]);
 
   const snapSheet = useCallback(
     (y: number) => {
@@ -831,14 +551,6 @@ const MeditationRegionPage = () => {
     );
   }
 
-  /*
-   * 목록 ↔ 지도 전환 버튼은 넓은 화면에서만 씁니다.
-   * 좁은 화면은 지도 위에 목록 시트가 얹혀 있어서, 시트를 끌어 올리고 내리는 것이
-   * 곧 전환입니다. 버튼을 같이 두면 하는 일이 겹치고 지도 아래쪽만 더 가립니다.
-   */
-  const switchToListView = () => setViewMode("list");
-  const switchToMapView = () => setViewMode("map");
-
   const filterDrawer = isFilterOpen && (
     <DrawerOverlay>
       <DrawerBackdrop onClick={() => setFilterOpen(false)} />
@@ -874,23 +586,8 @@ const MeditationRegionPage = () => {
       />
     ) : null;
 
-  const viewModeToggle = narrow ? null : viewMode === "map" ? (
-    <ViewModeBar>
-      <SwitchToListBtn type="button" onClick={switchToListView} aria-label="목록으로 보기">
-        목록
-      </SwitchToListBtn>
-    </ViewModeBar>
-  ) : (
-    <ViewModeBar>
-      <SwitchToMapBtn type="button" onClick={switchToMapView} aria-label="지도로 보기">
-        지도
-      </SwitchToMapBtn>
-    </ViewModeBar>
-  );
-
-  if (narrow) {
-    return (
-      <>
+  return (
+    <>
         <MapViewport>
           <MapLayer>
             <PlacesClusterMap
@@ -978,127 +675,7 @@ const MeditationRegionPage = () => {
           </SheetScroll>
         </SheetShell>
 
-        {peekCard}
-        {filterDrawer}
-      </>
-    );
-  }
-
-  if (viewMode === "map") {
-    return (
-      <>
-        <DesktopMapSplitRoot>
-          <DesktopMapStage>
-            <MapLayer>
-              <PlacesClusterMap
-                fillViewport
-                sidePanelInsetPx={DESKTOP_MAP_LIST_WIDTH_PX}
-                /* 한 줄짜리 상단바 아래 */
-                myLocationTopPx={68}
-                places={sortedPlaces}
-                onSelectPlace={setMapPeekPlaceId}
-              />
-            </MapLayer>
-            <MapTopBar>
-              <MapTopInner>
-                <MapIconButton type="button" onClick={goBack} aria-label="뒤로 가기">
-                  <Icon name="arrow_back" size={22} />
-                </MapIconButton>
-                <MapRegionTitle>{regionLabel}</MapRegionTitle>
-                <MapIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
-                  <Icon name="tune" size={22} />
-                </MapIconButton>
-              </MapTopInner>
-            </MapTopBar>
-          </DesktopMapStage>
-          <DesktopListRail aria-label="명상지 목록">
-            <DesktopListSearch>
-              <KeywordSearchBar
-                layout="region"
-                value={filters.keyword}
-                onChange={setKeyword}
-                placeholder="명상지, 명상센터 검색"
-              />
-            </DesktopListSearch>
-            <DesktopListScroll ref={desktopListScrollRef}>
-              <SheetListMeta>총 {sortedPlaces.length}곳</SheetListMeta>
-              <List>
-                {visibleItems.length === 0 && (
-                  <Empty>
-                    {places.length === 0
-                      ? "등록된 공간이 없습니다."
-                      : "조건에 맞는 명상센터가 없어요."}
-                  </Empty>
-                )}
-                {visibleItems.map((place) => (
-                  <PlaceListItem key={place.id} place={place} />
-                ))}
-              </List>
-              {hasMore && <ScrollSentinel ref={sentinelRef} />}
-            </DesktopListScroll>
-          </DesktopListRail>
-        </DesktopMapSplitRoot>
-        {peekCard}
-        {viewModeToggle}
-        {filterDrawer}
-      </>
-    );
-  }
-
-  return (
-    <>
-      <Page>
-        <PageHeader>
-          <HeaderLeft>
-            <BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
-              <Icon name="arrow_back" size={22} />
-            </BackButton>
-            <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 600 }}>명상지 리스트</h2>
-          </HeaderLeft>
-          <FilterIconButton type="button" onClick={() => setFilterOpen(true)} aria-label="필터">
-            <Icon name="tune" size={22} />
-          </FilterIconButton>
-        </PageHeader>
-
-        <KeywordSearchBar
-          layout="region"
-          value={filters.keyword}
-          onChange={setKeyword}
-          placeholder="명상지, 명상센터 검색"
-        />
-
-        <Grid>
-          <FilterAside>
-            <FilterPanel
-              filters={filters}
-              availableTags={availableTags}
-              onChangeKeyword={setKeyword}
-              onChangeCategory={setCategory}
-              onToggleTag={toggleTag}
-              onChangeSortBy={setSortBy}
-              onReset={resetFilters}
-            />
-          </FilterAside>
-          <Content>
-            <List>
-              {visibleItems.length === 0 && (
-                <Empty>
-                  {places.length === 0
-                    ? "등록된 공간이 없습니다."
-                    : "조건에 맞는 명상센터가 없어요."}
-                </Empty>
-              )}
-              {visibleItems.map((place) => (
-                <PlaceListItem key={place.id} place={place} />
-              ))}
-            </List>
-            {hasMore && <ScrollSentinel ref={sentinelRef} />}
-          </Content>
-        </Grid>
-      </Page>
-
-      {viewModeToggle}
-
+      {peekCard}
       {filterDrawer}
     </>
   );
