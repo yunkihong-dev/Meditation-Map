@@ -227,9 +227,15 @@ export default function LiquidGlassTabBar({
     setActive(i);
   }, []);
 
-  /** 손을 뗐을 때 한 번만. 화면이 바뀌는 건 여기뿐입니다. */
+  /**
+   * 손을 뗐을 때 한 번만. 화면이 바뀌는 건 여기뿐입니다.
+   *
+   * 이미 켜져 있는 탭을 다시 눌러도 알립니다. 탭 하나가 화면 하나가 아니라
+   * 갈래 하나(홈 아래에 장소 상세·공지…)라서, "그 탭 맞음" 과 "그 탭의 첫 화면" 이
+   * 다릅니다. 걸러 버리면 하위 화면에서 그 탭을 눌러도 아무 일이 없습니다.
+   */
   const commit = useCallback((i: number) => {
-    if (i < 0 || i >= tabs.length || i === committedRef.current) return;
+    if (i < 0 || i >= tabs.length) return;
     committedRef.current = i;
     onChange?.(tabs[i].key, i);
   }, [onChange, tabs]);
