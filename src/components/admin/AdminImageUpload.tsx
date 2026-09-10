@@ -85,7 +85,13 @@ export function AdminImageUpload({ label, value, onChange, cropTo }: AdminImageU
             onChange={(e) => onChange(e.target.value)}
             placeholder="이미지 URL · 업로드 · 파일 끌어다 놓기"
           />
-          <AdminButton type="button" disabled={uploading} onClick={() => inputRef.current?.click()}>
+          <AdminButton
+            type="button"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+            /* 옆 입력칸에 붙는 보조 버튼이라 한 단계 작게. 줄바꿈은 막습니다. */
+            style={{ fontSize: 12, padding: "8px 12px", flexShrink: 0, whiteSpace: "nowrap" }}
+          >
             {uploading ? "…" : "업로드"}
           </AdminButton>
         </div>
