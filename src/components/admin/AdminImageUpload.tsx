@@ -1,5 +1,6 @@
 import { type DragEvent as ReactDragEvent, useRef, useState } from "react";
 import { uploadAdminImage } from "@/services/admin/adminApi";
+import AdminImageCropper from "./AdminImageCropper";
 import { AdminButton, AdminField, AdminInput, AdminLabel } from "./adminStyles";
 
 /** OS에서 파일을 끌어온 드래그인지 판별 */
@@ -11,13 +12,26 @@ interface AdminImageUploadProps {
   label?: string;
   value: string;
   onChange: (url: string) => void;
+  /**
+   * 주면 올리기 전에 자르기 화면을 띄우고 이 크기로 내보냅니다.
+   * 배너처럼 비율이 정해진 자리에 씁니다 — 어디가 잘릴지 올리는 사람이 정하게 됩니다.
+   */
+  cropTo?: { width: number; height: number };
 }
 
-export function AdminImageUpload({ label, value, onChange }: AdminImageUploadProps) {
+export function AdminImageUpload({ label, value, onChange, cropTo }: AdminImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
+  const [pendingCrop, setPendingCrop] = useState<File | null>(null);
+
+  /** 자르기가 켜져 있으면 바로 올리지 않고 편집 화면을 먼저 띄웁니다. */
+  const receiveFile = (file: File) => {
+    setError(null);
+    if (cropTo) setPendingCrop(file);
+    else void handleFile(file);
+  };
 
   const handleFile = async (file: File) => {
     setUploading(true);
@@ -36,7 +50,7 @@ export function AdminImageUpload({ label, value, onChange }: AdminImageUploadPro
     e.preventDefault();
     setFileDragOver(false);
     const f = e.dataTransfer.files?.[0];
-    if (f) void handleFile(f);
+    if (f) receiveFile(f);
   };
 
   return (
@@ -79,7 +93,16 @@ export function AdminImageUpload({ label, value, onChange }: AdminImageUploadPro
           <img
             src={value}
             alt=""
-            style={{ maxHeight: 96, maxWidth: "100%", borderRadius: 8, objectFit: "cover" }}
+            style={
+              cropTo
+                ? {
+                    width: "100%",
+                    aspectRatio: `${cropTo.width} / ${cropTo.height}`,
+                    borderRadius: 8,
+                    objectFit: "cover",
+                  }
+                : { maxHeight: 96, maxWidth: "100%", borderRadius: 8, objectFit: "cover" }
+            }
           />
         ) : (
           <p style={{ margin: 0, color: fileDragOver ? "#c4b5fd" : "#71717a", fontSize: 12 }}>
@@ -94,11 +117,23 @@ export function AdminImageUpload({ label, value, onChange }: AdminImageUploadPro
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) void handleFile(f);
+          if (f) receiveFile(f);
           e.target.value = "";
         }}
       />
       {error ? <p style={{ margin: "6px 0 0", color: "#f87171", fontSize: 12 }}>{error}</p> : null}
+      {pendingCrop && cropTo ? (
+        <AdminImageCropper
+          file={pendingCrop}
+          outputWidth={cropTo.width}
+          outputHeight={cropTo.height}
+          onCancel={() => setPendingCrop(null)}
+          onDone={(cropped) => {
+            setPendingCrop(null);
+            void handleFile(cropped);
+          }}
+        />
+      ) : null}
     </AdminField>
   );
 }

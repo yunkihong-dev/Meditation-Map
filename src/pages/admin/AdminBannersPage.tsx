@@ -186,7 +186,8 @@ export default function AdminBannersPage() {
         </div>
         <p style={{ margin: "0 0 12px", color: "#71717a", fontSize: 13 }}>
           홈 화면의 바로가기와 “오늘의 마인드풀 스팟” 사이에 위에서부터 순서대로 보입니다.
-          새로 등록하면 견본 이미지가 들어가 있으니, 실제 소재로 바꿔서 올려 주세요.
+          새로 등록하면 기본 배너가 들어가 있으니 실제 소재로 바꿔 주세요. 이미지를 올리면
+          자르기 화면이 뜹니다 — 비율이 다른 사진도 어디를 보여줄지 직접 정할 수 있습니다.
         </p>
         {error && <AdminError>{error}</AdminError>}
         <AdminTable>
@@ -309,9 +310,10 @@ export default function AdminBannersPage() {
             </div>
 
             <AdminImageUpload
-              label="배너 이미지 (800 × 200 권장)"
+              label="배너 이미지 (800 × 200)"
               value={draft.imageUrl}
               onChange={(url) => setDraft({ ...draft, imageUrl: url })}
+              cropTo={{ width: 800, height: 200 }}
             />
 
             <AdminField>
