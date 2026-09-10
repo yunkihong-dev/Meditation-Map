@@ -179,13 +179,14 @@ export default function AdminBannersPage() {
     <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 16 }}>
       <AdminCard>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>홈 배너</h2>
+          <h2 style={{ margin: 0 }}>광고 배너</h2>
           <AdminButton $variant="primary" type="button" onClick={beginNew}>
             + 등록
           </AdminButton>
         </div>
         <p style={{ margin: "0 0 12px", color: "#71717a", fontSize: 13 }}>
           홈 화면의 바로가기와 “오늘의 마인드풀 스팟” 사이에 위에서부터 순서대로 보입니다.
+          새로 등록하면 견본 이미지가 들어가 있으니, 실제 소재로 바꿔서 올려 주세요.
         </p>
         {error && <AdminError>{error}</AdminError>}
         <AdminTable>
@@ -237,7 +238,7 @@ export default function AdminBannersPage() {
                         alt=""
                         style={{
                           width: 80,
-                          height: 35,
+                          height: 20,
                           objectFit: "cover",
                           borderRadius: 6,
                           display: "block",
@@ -308,7 +309,7 @@ export default function AdminBannersPage() {
             </div>
 
             <AdminImageUpload
-              label="배너 이미지 (가로가 긴 이미지, 16:7 권장)"
+              label="배너 이미지 (800 × 200 권장)"
               value={draft.imageUrl}
               onChange={(url) => setDraft({ ...draft, imageUrl: url })}
             />

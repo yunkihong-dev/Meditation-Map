@@ -7,20 +7,20 @@ import { getRegionById } from "@/services/meditation/meditationService";
 import FavoriteButton from "./FavoriteButton";
 
 /**
- * 시안(나의 찜 목록)의 카드 — 큰 모서리(24px), 보라로 옅게 물든 그림자,
- * 사진 위에 떠 있는 찜 버튼, 아래쪽 가는 선으로 나뉜 별점 줄.
+ * 목록 카드. 시트 안에서 여러 장이 이어 보여야 하는 자리라 한 장을 낮게 유지합니다.
+ * 이름 · 지역 · 태그 세 줄이면 충분하고, 별점·"자세히 보기" 같은 줄을 더 얹으면
+ * 사진만 큰 카드가 되어 한 화면에 한 곳 반밖에 안 들어옵니다.
  */
 const Card = styled.article`
-  position: relative;
   background: ${({ theme }) => theme.colors.white};
   border-radius: ${({ theme }) => theme.radii.lg};
   overflow: hidden;
-  border: ${({ theme }) => theme.hairline};
   box-shadow: ${({ theme }) => theme.shadow.card};
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: ${({ theme }) => theme.hairline};
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
     box-shadow: ${({ theme }) => theme.shadow.soft};
   }
 `;
@@ -33,7 +33,7 @@ const CardLink = styled(Link)`
 
 const Thumbnail = styled.div`
   width: 100%;
-  height: 180px;
+  height: 140px;
   overflow: hidden;
   background: ${({ theme }) => theme.colors.surfaceVariant};
 
@@ -44,92 +44,59 @@ const Thumbnail = styled.div`
   }
 `;
 
-/** 사진 위 오른쪽 위 — 시안의 유리 원형 찜 버튼 자리입니다. */
-const FavoriteSlot = styled.div`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 2;
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: ${({ theme }) => theme.radii.pill};
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 2px 10px rgba(107, 70, 193, 0.12);
+const Body = styled.div`
+  padding: 16px 18px;
 `;
 
-const Body = styled.div`
-  padding: 20px;
+const Title = styled.h3`
+  font-size: 1.7rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: ${({ theme }) => theme.colors.charcoal};
+`;
+
+const Meta = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 1.3rem;
+  color: ${({ theme }) => theme.colors.warmGray};
+`;
+
+const Location = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 `;
 
 const Tags = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.2rem;
 
   span {
-    padding: 4px 12px;
-    border-radius: ${({ theme }) => theme.radii.pill};
     background: ${({ theme }) => theme.colors.secondaryContainer};
     color: ${({ theme }) => theme.colors.onSecondaryContainer};
-    font-size: 1.2rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-  }
-
-  span:nth-child(n + 3) {
-    background: ${({ theme }) => theme.colors.surfaceContainer};
-    color: ${({ theme }) => theme.colors.warmGray};
+    padding: 4px 10px;
+    border-radius: ${({ theme }) => theme.radii.pill};
   }
 `;
 
-const Title = styled.h3`
-  font-size: 1.9rem;
-  font-weight: 600;
-  line-height: 1.4;
-  margin: 0 0 8px;
-  color: ${({ theme }) => theme.colors.charcoal};
-`;
-
-const Location = styled.p`
+const TagRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin: 0;
-  font-size: 1.4rem;
-  color: ${({ theme }) => theme.colors.warmGray};
+  gap: 8px;
 `;
 
-const Footer = styled.div`
+const FavoriteSlot = styled.div`
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid ${({ theme }) => theme.colors.surfaceVariant};
-`;
-
-const Rating = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 1.4rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.outline};
-
-  .material-symbols-outlined {
-    color: ${({ theme }) => theme.colors.primary500};
-  }
-`;
-
-const More = styled.span`
-  font-size: 1.4rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.primary600};
 `;
 
 interface PlaceListItemProps {
@@ -141,9 +108,6 @@ const PlaceListItem = ({ place }: PlaceListItemProps) => {
 
   return (
     <Card>
-      <FavoriteSlot>
-        <FavoriteButton placeId={place.id} />
-      </FavoriteSlot>
       <CardLink to={`/meditation/place/${place.id}`}>
         <Thumbnail>
           <img
@@ -155,25 +119,23 @@ const PlaceListItem = ({ place }: PlaceListItemProps) => {
           />
         </Thumbnail>
         <Body>
-          {place.hashtags.length > 0 && (
+          <Title>{place.name}</Title>
+          <Meta>
+            <Location>
+              <Icon name="location_on" size={16} />
+              {region?.name ?? place.regionId}
+            </Location>
+          </Meta>
+          <TagRow>
             <Tags>
               {place.hashtags.slice(0, 4).map((tag) => (
                 <span key={tag}>{tag}</span>
               ))}
             </Tags>
-          )}
-          <Title>{place.name}</Title>
-          <Location>
-            <Icon name="location_on" size={16} />
-            {region?.name ?? place.regionId}
-          </Location>
-          <Footer>
-            <Rating>
-              <Icon name="star" filled size={18} />
-              {typeof place.rating === "number" ? place.rating.toFixed(1) : "–"}
-            </Rating>
-            <More>자세히 보기</More>
-          </Footer>
+            <FavoriteSlot>
+              <FavoriteButton placeId={place.id} />
+            </FavoriteSlot>
+          </TagRow>
         </Body>
       </CardLink>
     </Card>

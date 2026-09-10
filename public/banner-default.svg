@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="200" viewBox="0 0 800 200" role="img" aria-label="명상 웰니스 지도 - 내 주변 명상 공간을 지도에서 찾아보세요">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E9D8FD"/>
+      <stop offset="100%" stop-color="#D6BCFA"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6B46C1" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#6B46C1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="800" height="200" fill="url(#bg)"/>
+  <circle cx="690" cy="180" r="150" fill="url(#glowA)"/>
+  <circle cx="70" cy="20" r="120" fill="url(#glowB)"/>
+
+  <text x="48" y="96"
+        font-family="'Noto Sans KR','Noto Sans',AppleSDGothicNeo-Regular,sans-serif"
+        font-size="38" font-weight="700" fill="#211631" letter-spacing="-1.2">오늘, 쉬어갈 곳을 찾아보세요</text>
+
+  <text x="48" y="134"
+        font-family="'Noto Sans KR','Noto Sans',AppleSDGothicNeo-Regular,sans-serif"
+        font-size="19" font-weight="400" fill="#4D415F" fill-opacity="0.92">내 주변 명상 공간과 프로그램을 지도에서</text>
+
+  <circle cx="712" cy="100" r="32" fill="#FFFFFF"/>
+  <path d="M700 100h23M714 91l9 9-9 9" fill="none" stroke="#532AA8" stroke-width="3.2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

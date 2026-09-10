@@ -21,10 +21,25 @@ export type BannerStamps = {
   updatedAt?: string;
 };
 
+/**
+ * 기본 배너. 올린 광고가 하나도 없을 때 홈이 이걸 대신 띄웁니다.
+ *
+ * 그래서 "광고 자리" 같은 안내가 아니라 서비스를 알리는 내용으로 채웠습니다 —
+ * 사용자에게 보이는 면이라, 비어 있다는 사정이 드러나면 안 됩니다.
+ * 관리자가 새 배너를 만들 때의 시작 이미지이기도 해서, 그대로 저장해도 말이 됩니다.
+ */
+export const DEFAULT_BANNER_IMAGE = "/banner-default.svg";
+
+/** 기본 배너를 눌렀을 때 갈 곳 — 전국 지도. */
+export const DEFAULT_BANNER_HREF = "/meditation/region/all";
+
+/** 기본 배너의 대체 텍스트. */
+export const DEFAULT_BANNER_ALT = "오늘, 쉬어갈 곳을 찾아보세요 — 내 주변 명상 공간과 프로그램을 지도에서";
+
 export function emptyBannerDraft(nextSortOrder = 0): BannerDraft {
   return {
-    imageUrl: "",
-    alt: "",
+    imageUrl: DEFAULT_BANNER_IMAGE,
+    alt: DEFAULT_BANNER_ALT,
     href: "",
     sortOrder: nextSortOrder,
     startsAt: "",
