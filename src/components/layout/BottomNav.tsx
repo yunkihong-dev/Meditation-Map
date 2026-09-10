@@ -40,8 +40,15 @@ const BottomNav = () => {
        * 지금 어느 탭인지 아이콘 채움으로만 알 수 있습니다. 바가 어두워진 뒤로는
        * 그것만으로 잘 안 보여서, 현재 탭 자리를 한 겹 더 어둡게 눌러 둡니다.
        * rim 은 그 눌린 자리의 테두리 반사 — 경계가 드러나게 조금 올렸습니다.
+       *
+       * ratio 는 인디케이터 가로 비율. 기본값(130)이면 인디케이터 폭이 92px 로
+       * 탭 폭(114px)보다 좁아, restWidth 를 아무리 키워도 거기서 막힙니다
+       * (알약 폭 = restWidth × min(탭폭, 인디케이터폭)). 그래서 좌우 여백만 15px 로
+       * 벌어져 상하 5px 와 어긋나 보였습니다. 165 로 올려 인디케이터가 탭보다 넓어지면
+       * restWidth 91% 가 탭 폭 기준으로 걸려 좌우 5.1px · 상하 4.9px 로 맞습니다.
+       * 화면이 좁아져도 탭 폭에 비례하므로 여백 비율이 유지됩니다.
        */
-      glass={{ darkness: 60, blur: 24, slider: 26, rim: 55 }}
+      glass={{ darkness: 60, blur: 24, slider: 26, rim: 55, ratio: 165 }}
       value={activeKey(pathname)}
       onChange={(key) => {
         const tab = TABS.find((t) => t.key === key);

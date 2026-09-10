@@ -4,6 +4,7 @@ import styled, { keyframes } from "styled-components";
 import FilterPanel from "@/components/meditation/FilterPanel";
 import logoImg from "@/assets/logo.png";
 import Icon from "@/components/common/Icon";
+import MeditationIcon from "@/components/common/MeditationIcon";
 import KeywordSearchBar from "@/components/meditation/KeywordSearchBar";
 import FeaturedPlaceCard from "@/components/meditation/FeaturedPlaceCard";
 import PopularPlaceCard from "@/components/meditation/PopularPlaceCard";
@@ -44,9 +45,9 @@ const StickyTop = styled.div`
   position: sticky;
   top: 0;
   z-index: 40;
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   margin-inline: -20px;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 12px;
@@ -56,9 +57,10 @@ const StickyTop = styled.div`
 `;
 
 const Brand = styled(Link)`
+  grid-column: 2;
+  justify-self: center;
   display: flex;
   align-items: center;
-  gap: 8px;
   min-width: 0;
   text-decoration: none;
 
@@ -69,21 +71,12 @@ const Brand = styled(Link)`
   }
 `;
 
+/** 로고가 가로로 긴 워드마크라 높이만 잡고 폭은 비율에 맡긴다. */
 const BrandLogo = styled.img`
-  width: 36px;
-  height: 36px;
+  width: auto;
+  height: 54px;
   flex-shrink: 0;
   object-fit: contain;
-`;
-
-const BrandName = styled.span`
-  font-size: 1.8rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: ${({ theme }) => theme.colors.primary600};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 `;
 
 /** 배너와 바로가기 사이에 놓이는 검색 자리. */
@@ -103,6 +96,7 @@ const Stack = styled.div`
 `;
 
 const BellButton = styled(Link)`
+  grid-column: 3;
   position: relative;
   flex-shrink: 0;
   width: 48px;
@@ -596,8 +590,7 @@ const MeditationMainPage = () => {
     <Page>
       <StickyTop>
         <Brand to="/">
-          <BrandLogo src={logoImg} alt="" />
-          <BrandName>명상 웰니스 지도</BrandName>
+          <BrandLogo src={logoImg} alt="Wellit" />
         </Brand>
         <BellButton to="/notice" aria-label="공지사항">
           <Icon name="notifications" />
@@ -647,7 +640,7 @@ const MeditationMainPage = () => {
             layout="main"
             value={filters.keyword}
             onChange={setKeyword}
-            placeholder={placeholder ? `${placeholder} 검색...` : "명상 스팟 검색..."}
+            placeholder={placeholder ? `${placeholder} 검색...` : "힐링명소 검색..."}
           />
         </SearchArea>
 
@@ -658,7 +651,7 @@ const MeditationMainPage = () => {
                 <QuickIcon>
                   <Icon name="forest" filled size={24} />
                 </QuickIcon>
-                <QuickLabel>명상 스팟</QuickLabel>
+                <QuickLabel>힐링명소</QuickLabel>
               </QuickAction>
               <QuickAction
                 type="button"
@@ -671,7 +664,7 @@ const MeditationMainPage = () => {
               </QuickAction>
               <QuickAction type="button" onClick={() => handleQuickJump("expert", "all")}>
                 <QuickIcon>
-                  <Icon name="psychology" filled size={24} />
+                  <MeditationIcon size={26} />
                 </QuickIcon>
                 <QuickLabel>전문가</QuickLabel>
               </QuickAction>

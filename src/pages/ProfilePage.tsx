@@ -263,27 +263,11 @@ const Brand = styled.div`
   flex-shrink: 0;
 `;
 
+/** 로고가 가로로 긴 워드마크라 폭만 잡고 높이는 비율에 맡긴다. */
 const BrandLogo = styled.img`
-  width: 74px;
-  height: 74px;
+  width: 200px;
+  height: auto;
   object-fit: contain;
-`;
-
-const LogoWelcomeText = styled.p`
-  margin: 10px 0 0;
-  padding: 0 12px;
-  text-align: center;
-  ${typography.body1};
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text900};
-  line-height: 1.45;
-  max-width: 320px;
-`;
-
-const BrandTitle = styled.h1`
-  margin: 8px 0 0;
-  ${typography.title};
-  color: ${({ theme }) => theme.colors.primary300};
 `;
 
 const StepTitle = styled.h2`
@@ -709,8 +693,8 @@ const CompleteArt = styled.div`
 `;
 
 const CompleteLogo = styled.img`
-  width: 108px;
-  height: 108px;
+  width: 264px;
+  height: auto;
   object-fit: contain;
 `;
 
@@ -939,17 +923,10 @@ const TermsBottomBlock = styled.div`
   padding-bottom: 4px;
 `;
 
-const TermsLogoBlock = styled.div`
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 0;
-`;
-
 const TermsLogo = styled.img`
-  width: 72px;
-  height: 72px;
+  flex-shrink: 0;
+  width: 196px;
+  height: auto;
   object-fit: contain;
 `;
 
@@ -2537,9 +2514,7 @@ const ProfilePage = () => {
           <StepContent>
             <StepMain>
               <Brand>
-                <BrandLogo src={logoImg} alt="명상 웰니스 지도 로고" />
-                <LogoWelcomeText>명상 웰니스 지도에 오신 것을 환영합니다!</LogoWelcomeText>
-                <BrandTitle>명상 웰니스 지도</BrandTitle>
+                <BrandLogo src={logoImg} alt="Wellit" />
               </Brand>
 
               <Form>
@@ -2665,10 +2640,7 @@ const ProfilePage = () => {
           <StepContent>
             <TermsMain>
               <TermsLogoCenter>
-                <TermsLogoBlock>
-                  <TermsLogo src={logoImg} alt="명상 웰니스 지도 로고" />
-                  <LogoWelcomeText>명상 웰니스 지도에 오신 것을 환영합니다!</LogoWelcomeText>
-                </TermsLogoBlock>
+                <TermsLogo src={logoImg} alt="Wellit" />
               </TermsLogoCenter>
               <TermsBottomBlock>
                 <TermsLead>서비스 이용을 위해 아래 약관에 동의해 주세요.</TermsLead>
@@ -3074,7 +3046,7 @@ const ProfilePage = () => {
           <StepContent>
             <StepMain>
             <CompleteArt>
-              <CompleteLogo src={logoImg} alt="명상 웰니스 지도 로고" />
+              <CompleteLogo src={logoImg} alt="Wellit" />
             </CompleteArt>
             <CompleteTitle>가입 완료!</CompleteTitle>
             <CompleteDesc>평온한 명상 여행을 시작하세요</CompleteDesc>
