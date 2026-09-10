@@ -23,7 +23,8 @@ function activeKey(pathname: string): string {
     return "map";
   }
   if (pathname.startsWith("/favorites")) return "saved";
-  if (pathname.startsWith("/profile")) return "me";
+  // 센터 등록은 마이 페이지에서만 들어가는 길이라 그쪽 갈래로 둡니다.
+  if (pathname.startsWith("/profile") || pathname.startsWith("/center")) return "me";
   return "home";
 }
 
