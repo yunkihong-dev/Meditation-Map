@@ -18,8 +18,21 @@ import {
  * 의존성을 하나 더 늘릴 만큼은 아닙니다.
  */
 
-const MIN_ZOOM = 1;
+/**
+ * 1 = 틀을 꽉 채우는 크기(cover). 그보다 작게도 줄일 수 있게 열어 둡니다.
+ * 세로로 긴 사진이나 로고처럼, 잘라내기보다 통째로 넣고 여백을 두는 편이 나은 소재가 있습니다.
+ */
+const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 4;
+
+/** 사진을 줄였을 때 드러나는 뒷배경. 앱 팔레트에서 골랐습니다. */
+const BACKGROUNDS = [
+  { label: "연보라", value: "#E9D8FD" },
+  { label: "라벤더", value: "#D6BCFA" },
+  { label: "흰색", value: "#FFFFFF" },
+  { label: "표면", value: "#F7FAFC" },
+  { label: "먹빛", value: "#211631" },
+];
 
 interface Props {
   /** 편집할 원본 파일 */
@@ -46,6 +59,7 @@ export default function AdminImageCropper({
   const [frame, setFrame] = useState({ w: 0, h: 0 });
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [background, setBackground] = useState(BACKGROUNDS[0].value);
   const [busy, setBusy] = useState(false);
   const drag = useRef<{ id: number; x: number; y: number } | null>(null);
 
@@ -76,11 +90,15 @@ export default function AdminImageCropper({
   const drawnW = img ? img.width * baseScale * zoom : 0;
   const drawnH = img ? img.height * baseScale * zoom : 0;
 
-  /** 사진이 틀 밖으로 밀려나 여백이 보이지 않도록 이동 범위를 가둡니다. */
+  /**
+   * 이동 범위를 가둡니다.
+   * 사진이 틀보다 크면 가장자리 너머로는 못 밀고(여백이 새지 않게),
+   * 작으면 틀 안에서만 움직입니다(밖으로 나가 사라지지 않게).
+   */
   const clampOffset = useCallback(
     (next: { x: number; y: number }) => {
-      const maxX = Math.max(0, (drawnW - frame.w) / 2);
-      const maxY = Math.max(0, (drawnH - frame.h) / 2);
+      const maxX = Math.abs(drawnW - frame.w) / 2;
+      const maxY = Math.abs(drawnH - frame.h) / 2;
       return {
         x: Math.min(maxX, Math.max(-maxX, next.x)),
         y: Math.min(maxY, Math.max(-maxY, next.y)),
@@ -123,6 +141,10 @@ export default function AdminImageCropper({
       canvas.height = outputHeight;
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("캔버스를 만들지 못했습니다");
+
+      // 사진을 줄였을 때 드러나는 자리. JPEG 은 투명을 담지 못하므로 반드시 칠해야 합니다.
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, outputWidth, outputHeight);
 
       // 미리보기 틀 → 출력 픽셀 배율. 보이는 구도가 그대로 유지됩니다.
       const k = outputWidth / frame.w;
@@ -177,7 +199,8 @@ export default function AdminImageCropper({
       >
         <h3 style={{ margin: "0 0 4px", fontSize: 16 }}>배너 이미지 자르기</h3>
         <p style={{ margin: "0 0 16px", color: "#a1a1aa", fontSize: 13, lineHeight: 1.6 }}>
-          끌어서 위치를 잡고, 휠이나 아래 막대로 확대합니다. 지금 보이는 그대로{" "}
+          끌어서 위치를 잡고, 휠이나 아래 막대로 키우거나 줄입니다. 줄이면 드러나는 자리는
+          아래에서 고른 배경색으로 채웁니다. 지금 보이는 그대로{" "}
           <strong style={{ color: "#e4e4e7" }}>
             {outputWidth} × {outputHeight}
           </strong>{" "}
@@ -198,7 +221,7 @@ export default function AdminImageCropper({
             aspectRatio: `${outputWidth} / ${outputHeight}`,
             overflow: "hidden",
             borderRadius: 8,
-            background: "#09090b",
+            background,
             cursor: drag.current ? "grabbing" : "grab",
             touchAction: "none",
             userSelect: "none",
@@ -253,7 +276,7 @@ export default function AdminImageCropper({
 
         {/* 확대 */}
         <label style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0 8px" }}>
-          <span style={{ fontSize: 13, color: "#a1a1aa", flexShrink: 0 }}>확대</span>
+          <span style={{ fontSize: 13, color: "#a1a1aa", flexShrink: 0 }}>크기</span>
           <input
             type="range"
             min={MIN_ZOOM}
@@ -268,9 +291,55 @@ export default function AdminImageCropper({
           </span>
         </label>
 
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 0 16px" }}>
+          <span style={{ fontSize: 13, color: "#a1a1aa", flexShrink: 0 }}>배경</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            {BACKGROUNDS.map((bg) => (
+              <button
+                key={bg.value}
+                type="button"
+                title={bg.label}
+                aria-label={bg.label}
+                aria-pressed={background === bg.value}
+                onClick={() => setBackground(bg.value)}
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 6,
+                  background: bg.value,
+                  cursor: "pointer",
+                  border:
+                    background === bg.value ? "2px solid #a78bfa" : "1px solid rgba(255,255,255,0.2)",
+                }}
+              />
+            ))}
+          </div>
+          {/* 팔레트에 없는 색이 필요할 때 — 소재 배경과 정확히 맞춰야 하는 경우가 있습니다. */}
+          <label
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#71717a" }}
+          >
+            직접
+            <input
+              type="color"
+              value={background}
+              onChange={(e) => setBackground(e.target.value)}
+              style={{
+                width: 26,
+                height: 26,
+                padding: 0,
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: 6,
+                background: "none",
+                cursor: "pointer",
+              }}
+            />
+          </label>
+        </div>
+
         <ul style={{ margin: "0 0 16px", paddingLeft: 18, color: "#71717a", fontSize: 12, lineHeight: 1.7 }}>
           <li>가로가 긴 사진일수록 잘리는 곳이 적습니다.</li>
           <li>글자가 든 이미지는 점선 안에 두세요. 좁은 기기에서 가장자리가 더 잘립니다.</li>
+          <li>세로로 긴 사진·로고는 줄여서 넣고 배경으로 채우는 편이 낫습니다.</li>
           <li>원본이 {outputWidth}px보다 작으면 확대할수록 흐려집니다.</li>
         </ul>
 
