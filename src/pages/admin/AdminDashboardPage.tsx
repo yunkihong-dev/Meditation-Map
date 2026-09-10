@@ -9,6 +9,7 @@ import {
   type AdminTrafficMetrics,
   type MetricSeries,
 } from "@/services/admin/adminApi";
+import { apiLabel, apiLabelWithUri } from "@/services/admin/apiLabels";
 import AdminMetricLineChart from "@/components/admin/AdminMetricLineChart";
 import {
   ChartSelect,
@@ -203,7 +204,7 @@ export default function AdminDashboardPage() {
 
       <ChartsStack>
         <SectionHeader>
-          <SectionTitle>API별 호출량</SectionTitle>
+          <SectionTitle>기능별 호출량</SectionTitle>
           {apiBundle && apiBundle.endpoints.length > 0 ? (
             <ChartSelect
               value={selectedApiUri}
@@ -212,7 +213,7 @@ export default function AdminDashboardPage() {
             >
               {apiBundle.endpoints.map((endpoint) => (
                 <option key={endpoint.uri} value={endpoint.uri}>
-                  {endpoint.uri}
+                  {apiLabel(endpoint.uri)}
                 </option>
               ))}
             </ChartSelect>
@@ -226,7 +227,8 @@ export default function AdminDashboardPage() {
           </AdminCard>
         ) : selectedEndpoint ? (
           <AdminMetricLineChart
-            title={selectedEndpoint.uri}
+            /* 이름과 주소를 함께 — 관리자는 이름으로, 개발자는 주소로 봅니다. */
+            title={apiLabelWithUri(selectedEndpoint.uri)}
             series={selectedEndpoint.series}
             compact
             emptyMessage="호출 기록 없음"
@@ -234,7 +236,7 @@ export default function AdminDashboardPage() {
         ) : (
           <AdminCard>
             <p style={{ margin: 0, color: "#71717a", textAlign: "center", padding: "20px 0", fontSize: 13 }}>
-              API 호출 기록이 쌓이면 URI별 그래프가 표시됩니다.
+              API 호출 기록이 쌓이면 화면별 그래프가 표시됩니다.
             </p>
           </AdminCard>
         )}

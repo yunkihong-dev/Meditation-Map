@@ -23,7 +23,8 @@ function activeKey(pathname: string): string {
     return "map";
   }
   if (pathname.startsWith("/favorites")) return "saved";
-  if (pathname.startsWith("/profile")) return "me";
+  // 센터 등록은 마이 페이지에서만 들어가는 길이라 그쪽 갈래로 둡니다.
+  if (pathname.startsWith("/profile") || pathname.startsWith("/center")) return "me";
   return "home";
 }
 
@@ -52,7 +53,10 @@ const BottomNav = () => {
       value={activeKey(pathname)}
       onChange={(key) => {
         const tab = TABS.find((t) => t.key === key);
-        if (tab) navigate(tab.to);
+        if (!tab) return;
+        // 이미 그 화면이면 아무것도 하지 않습니다 — 같은 경로를 또 밀면 뒤로 가기가 먹통이 됩니다.
+        if (tab.to === pathname) return;
+        navigate(tab.to);
       }}
       aria-label="하단 메뉴"
       className="app-tabbar"
