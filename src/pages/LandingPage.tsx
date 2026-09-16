@@ -43,9 +43,9 @@ const LANGUAGE_TURN = 0;
 const FIRST_CHAT_TURN = 1;
 
 const TURNS: Turn[] = [
-  // 0. 언어 고르기 — 다른 말이 나오기 전에 이것부터.
+  // 0. 언어 고르기 — 다른 말이 나오기 전에 이것부터. 말풍선 없이 시트만 띄웁니다.
   {
-    bot: ["사용할 언어를 골라 주세요 / Choose your language"],
+    bot: [],
     language: true,
     next: FIRST_CHAT_TURN,
   },
@@ -745,12 +745,12 @@ const LandingPage = () => {
     setAwaiting(false);
 
     /*
-     * 언어 턴은 기다리게 하지 않습니다. 읽지 못하는 말이 한 줄씩 타이핑되는 동안
-     * 아무것도 못 하는 게 되니까요. 말풍선과 목록을 한 번에 띄웁니다.
+     * 언어 턴은 말풍선 없이 시트만 띄웁니다. 읽지 못하는 말이 타이핑되는 걸
+     * 기다리게 할 이유가 없고, 시트 제목이 이미 그 말을 하고 있습니다.
      */
     if (turn.language) {
       setTyping(false);
-      setLog(turn.bot.map((text, idx) => ({ from: "bot" as const, text, head: idx === 0 })));
+      setLog([]);
       setAwaiting(true);
       return;
     }
@@ -835,10 +835,12 @@ const LandingPage = () => {
     else setTurnIndex(next);
   };
 
-  /** 고른 언어를 저장하고 대화를 이어갑니다. 한국어가 아니면 새로고침되며 번역이 걸립니다. */
-  const pickLanguage = (code: string, label: string) => {
+  /**
+   * 고른 언어를 저장하고 대화를 이어갑니다. 한국어가 아니면 새로고침되며 번역이 걸립니다.
+   * 물어본 말풍선이 없으니 답한 말풍선도 남기지 않습니다 — 인사부터 깨끗하게 시작합니다.
+   */
+  const pickLanguage = (code: string) => {
     setAwaiting(false);
-    setLog((prev) => [...prev, { from: "user", text: label }]);
 
     // 저장하면 currentLanguage() 가 곧 새 값이 되므로 비교는 저장 전에 합니다.
     const shouldApply = code !== currentLanguage();
