@@ -9,8 +9,8 @@ import { typography } from "@/styles/typography";
 import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
 import { apiFetch, useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
-import Icon from "@/components/common/Icon";
-import { LANGUAGES, changeLanguage } from "@/services/i18n/googleTranslate";
+import LanguageSheet from "@/components/common/LanguageSheet";
+import { changeLanguage } from "@/services/i18n/googleTranslate";
 import { dismissLanding } from "@/stores/landingPreference";
 import { currentLanguage, hasChosenLanguage, saveLanguage } from "@/stores/languagePreference";
 import { toast } from "@/stores/toastStore";
@@ -177,91 +177,6 @@ const ProgressFill = styled.div<{ $pct: number }>`
   border-radius: inherit;
   background: ${({ theme }) => theme.colors.primary400};
   transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-`;
-
-/* ── 언어 고르기 (채팅 답변 자리) ── */
-
-const LanguageSearch = styled.div`
-  position: relative;
-  margin-bottom: 10px;
-
-  input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 12px 14px 12px 40px;
-    border: 1px solid ${({ theme }) => theme.colors.border200};
-    border-radius: ${({ theme }) => theme.radii.md};
-    background: ${({ theme }) => theme.colors.white};
-    color: ${({ theme }) => theme.colors.charcoal};
-    ${typography.body2};
-    outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  input::placeholder {
-    color: ${({ theme }) => theme.colors.border200};
-  }
-
-  input:focus {
-    border-color: rgba(107, 70, 193, 0.35);
-    box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.14);
-  }
-
-  .material-symbols-outlined {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: ${({ theme }) => theme.colors.outline};
-    pointer-events: none;
-  }
-`;
-
-/** 목록이 길어 답변 자리를 다 먹지 않도록 높이를 묶고 안에서 굴립니다. */
-const LanguageList = styled.div`
-  max-height: 40dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding-right: 2px;
-`;
-
-const LanguageOption = styled.button<{ $selected: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 1px solid
-    ${({ theme, $selected }) => ($selected ? "transparent" : theme.colors.border200)};
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ theme, $selected }) =>
-    $selected ? theme.colors.primary100 : theme.colors.white};
-  color: ${({ theme, $selected }) =>
-    $selected ? theme.colors.primary900 : theme.colors.charcoal};
-  ${typography.body2};
-  font-weight: ${({ $selected }) => ($selected ? 700 : 500)};
-  text-align: left;
-  cursor: pointer;
-
-  span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-`;
-
-const LanguageEmpty = styled.p`
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: 18px 4px;
-  text-align: center;
-  ${typography.caption};
-  font-weight: 400;
-  color: ${({ theme }) => theme.colors.outline};
 `;
 
 /* ── 채팅 ── */
@@ -789,8 +704,6 @@ const LandingPage = () => {
   const isAuthed = useAuthStore((s) => !!s.accessToken);
 
   const [phase, setPhase] = useState<Phase>("chat");
-  /* 언어를 이미 고른 사람에게는 그 턴을 건너뛰고 인사부터 시작합니다. */
-  const [languageQuery, setLanguageQuery] = useState("");
 
   const [log, setLog] = useState<LogItem[]>([]);
   const [typing, setTyping] = useState(false);
@@ -929,19 +842,6 @@ const LandingPage = () => {
     setTurnIndex(TURNS[LANGUAGE_TURN].next ?? FIRST_CHAT_TURN);
   };
 
-  /**
-   * 검색은 이름 그대로도, 영문 코드로도 걸립니다.
-   * "일본" 을 못 읽는 사람도 "ja" 나 "Japan" 으로 찾을 수 있어야 해서입니다.
-   */
-  const languageQueryNorm = languageQuery.trim().toLowerCase();
-  const matchedLanguages = languageQueryNorm
-    ? LANGUAGES.filter(
-        (lang) =>
-          lang.label.toLowerCase().includes(languageQueryNorm) ||
-          lang.code.toLowerCase().includes(languageQueryNorm)
-      )
-    : LANGUAGES;
-
   const goSignup = () => navigate("/profile?start=signup");
 
   // 줌 라이트박스: 열기/닫기 + 세로 드래그로 닫기
@@ -1073,40 +973,17 @@ const LandingPage = () => {
             <div ref={bottomRef} />
           </Transcript>
 
+          {/*
+           * 언어 턴의 답변은 말풍선 아래가 아니라 시트로 띄웁니다.
+           * 첫 진입이라 반드시 골라야 하므로 onClose 를 주지 않습니다.
+           */}
           {phase === "chat" && awaiting && turn?.language && (
-            <Footer>
-              <LanguageSearch>
-                <Icon name="search" size={20} />
-                <input
-                  type="search"
-                  value={languageQuery}
-                  onChange={(e) => setLanguageQuery(e.target.value)}
-                  placeholder="언어 검색 / Search language"
-                  aria-label="언어 검색 / Search language"
-                />
-              </LanguageSearch>
-              <LanguageList role="listbox" aria-label="언어 / Language">
-                {matchedLanguages.map((lang) => {
-                  const selected = lang.code === currentLanguage();
-                  return (
-                    <LanguageOption
-                      key={lang.code}
-                      type="button"
-                      role="option"
-                      aria-selected={selected}
-                      $selected={selected}
-                      onClick={() => pickLanguage(lang.code, lang.label)}
-                    >
-                      <span>{lang.label}</span>
-                      {selected && <Icon name="check" size={18} />}
-                    </LanguageOption>
-                  );
-                })}
-                {matchedLanguages.length === 0 && (
-                  <LanguageEmpty>찾는 언어가 없어요 / No match</LanguageEmpty>
-                )}
-              </LanguageList>
-            </Footer>
+            <LanguageSheet
+              value={currentLanguage()}
+              onSelect={pickLanguage}
+              title="언어를 골라 주세요"
+              description="Choose your language"
+            />
           )}
 
           {showChoices && turn?.left && turn?.right && (

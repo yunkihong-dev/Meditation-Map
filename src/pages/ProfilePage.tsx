@@ -10,7 +10,7 @@ import RegionMap from "@/components/meditation/RegionMap";
 import ProfileEditModal from "@/components/profile/ProfileEditModal";
 import InterestSwipeDeck from "@/components/profile/InterestSwipeDeck";
 import Icon from "@/components/common/Icon";
-import LanguagePicker from "@/components/common/LanguagePicker";
+import LanguageSheet from "@/components/common/LanguageSheet";
 import { changeLanguage, languageLabel } from "@/services/i18n/googleTranslate";
 import { currentLanguage, saveLanguage } from "@/stores/languagePreference";
 import { typography } from "@/styles/typography";
@@ -615,22 +615,6 @@ const ModalTitle = styled.p`
   text-align: center;
   ${typography.body1};
   color: ${({ theme }) => theme.colors.text900};
-`;
-
-/** 언어는 항목이 많아 기본 모달보다 넓게, 스크롤되게 씁니다. */
-const LanguageModalCard = styled(ModalCard)`
-  width: min(92vw, 420px);
-  max-height: 78dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-`;
-
-const LanguageModalNote = styled.p`
-  margin: 14px 0 0;
-  ${typography.caption};
-  font-weight: 400;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.colors.outline};
 `;
 
 const SettingsValue = styled.span`
@@ -3111,39 +3095,19 @@ const ProfilePage = () => {
        * 그려질 자리가 없어 아무 일도 일어나지 않습니다.
        */}
       {languageOpen && (
-        <ModalOverlay
-          role="dialog"
-          aria-modal="true"
-          aria-label="언어 / Language"
-          onClick={() => setLanguageOpen(false)}
-        >
-          <LanguageModalCard onClick={(e) => e.stopPropagation()}>
-            <ModalTitle>언어 / Language</ModalTitle>
-            <div style={{ marginTop: 16 }}>
-              <LanguagePicker
-                value={currentLanguage()}
-                onSelect={(code) => {
-                  setLanguageOpen(false);
-                  if (code === currentLanguage()) return;
-                  saveLanguage(code);
-                  // 여기서 화면이 새로 그려지며 번역이 걸립니다.
-                  changeLanguage(code);
-                }}
-              />
-            </div>
-            <LanguageModalNote>
-              한국어 외에는 Google 번역으로 자동 번역됩니다. 기계 번역이라 표현이 어색하거나
-              고유명사가 그대로 번역될 수 있습니다.
-            </LanguageModalNote>
-            <ModalActions style={{ gridTemplateColumns: "1fr" }}>
-              <ModalButton type="button" onClick={() => setLanguageOpen(false)}>
-                닫기
-              </ModalButton>
-            </ModalActions>
-          </LanguageModalCard>
-        </ModalOverlay>
+        <LanguageSheet
+          value={currentLanguage()}
+          onClose={() => setLanguageOpen(false)}
+          description="한국어 외에는 Google 번역으로 자동 번역됩니다"
+          onSelect={(code) => {
+            setLanguageOpen(false);
+            if (code === currentLanguage()) return;
+            saveLanguage(code);
+            // 여기서 화면이 새로 그려지며 번역이 걸립니다.
+            changeLanguage(code);
+          }}
+        />
       )}
-
     </Page>
   );
 };
