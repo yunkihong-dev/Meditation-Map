@@ -3064,40 +3064,6 @@ const ProfilePage = () => {
           </StepContent>
         )}
 
-        {languageOpen && (
-          <ModalOverlay
-            role="dialog"
-            aria-modal="true"
-            aria-label="언어 / Language"
-            onClick={() => setLanguageOpen(false)}
-          >
-            <LanguageModalCard onClick={(e) => e.stopPropagation()}>
-              <ModalTitle>언어 / Language</ModalTitle>
-              <div style={{ marginTop: 16 }}>
-                <LanguagePicker
-                  value={currentLanguage()}
-                  onSelect={(code) => {
-                    setLanguageOpen(false);
-                    if (code === currentLanguage()) return;
-                    saveLanguage(code);
-                    // 여기서 화면이 새로 그려지며 번역이 걸립니다.
-                    changeLanguage(code);
-                  }}
-                />
-              </div>
-              <LanguageModalNote>
-                한국어 외에는 Google 번역으로 자동 번역됩니다. 기계 번역이라 표현이 어색하거나
-                고유명사가 그대로 번역될 수 있습니다.
-              </LanguageModalNote>
-              <ModalActions style={{ gridTemplateColumns: "1fr" }}>
-                <ModalButton type="button" onClick={() => setLanguageOpen(false)}>
-                  닫기
-                </ModalButton>
-              </ModalActions>
-            </LanguageModalCard>
-          </ModalOverlay>
-        )}
-
         {step === "signup-region" && isRegionModalOpen && (
           <ModalOverlay role="dialog" aria-modal="true" aria-label="지역 확인">
             <ModalCard>
@@ -3138,6 +3104,46 @@ const ProfilePage = () => {
         )}
       </Card>
       )}
+
+      {/*
+       * 언어 모달은 로그인·회원가입 어느 분기에서든 열려야 하므로 분기 바깥에 둡니다.
+       * 회원가입 분기 안에 넣어 두면, 로그인 상태의 대시보드에서 버튼을 눌러도
+       * 그려질 자리가 없어 아무 일도 일어나지 않습니다.
+       */}
+      {languageOpen && (
+        <ModalOverlay
+          role="dialog"
+          aria-modal="true"
+          aria-label="언어 / Language"
+          onClick={() => setLanguageOpen(false)}
+        >
+          <LanguageModalCard onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>언어 / Language</ModalTitle>
+            <div style={{ marginTop: 16 }}>
+              <LanguagePicker
+                value={currentLanguage()}
+                onSelect={(code) => {
+                  setLanguageOpen(false);
+                  if (code === currentLanguage()) return;
+                  saveLanguage(code);
+                  // 여기서 화면이 새로 그려지며 번역이 걸립니다.
+                  changeLanguage(code);
+                }}
+              />
+            </div>
+            <LanguageModalNote>
+              한국어 외에는 Google 번역으로 자동 번역됩니다. 기계 번역이라 표현이 어색하거나
+              고유명사가 그대로 번역될 수 있습니다.
+            </LanguageModalNote>
+            <ModalActions style={{ gridTemplateColumns: "1fr" }}>
+              <ModalButton type="button" onClick={() => setLanguageOpen(false)}>
+                닫기
+              </ModalButton>
+            </ModalActions>
+          </LanguageModalCard>
+        </ModalOverlay>
+      )}
+
     </Page>
   );
 };
