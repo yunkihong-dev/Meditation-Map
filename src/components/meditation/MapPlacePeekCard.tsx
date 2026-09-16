@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import styled, { keyframes } from "styled-components";
+import { fixedInColumn } from "@/styles/column";
 import FavoriteButton from "@/components/meditation/FavoriteButton";
 import { MarkdownText } from "@/components/common/MarkdownText";
 import { getRegionById } from "@/services/meditation/meditationService";
@@ -46,9 +47,8 @@ const Backdrop = styled.button`
 
 const CardWrap = styled.div`
   position: fixed;
-  left: 0;
-  right: 0;
   bottom: 0;
+  ${fixedInColumn};
   z-index: 115;
   padding: 0 12px;
   /* 하단 탭(56px) 바로 위 */

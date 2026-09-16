@@ -24,11 +24,8 @@ const Overlay = styled.div`
   justify-content: flex-end;
   animation: ${fadeIn} 0.2s ease both;
 
-  @media (min-width: 600px) {
-    justify-content: center;
-    align-items: center;
-    padding: 24px;
-  }
+  /* 넓은 화면에서도 가운데 대화상자로 바꾸지 않습니다 — 앱은 모바일 한 벌입니다. */
+  align-items: center;
 `;
 
 const Sheet = styled.div`
@@ -41,11 +38,7 @@ const Sheet = styled.div`
   overflow: hidden;
   animation: ${slideUp} 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 
-  @media (min-width: 600px) {
-    border-radius: ${({ theme }) => theme.radii.lg};
-    max-width: 440px;
-    max-height: min(85dvh, 640px);
-  }
+  max-width: 480px;
 `;
 
 const SheetHeader = styled.div`

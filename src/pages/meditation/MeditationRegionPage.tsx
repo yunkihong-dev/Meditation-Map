@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled, { css, keyframes } from "styled-components";
+import { edgeInColumn, fixedInColumn } from "@/styles/column";
 import Icon from "@/components/common/Icon";
 import FilterPanel from "@/components/meditation/FilterPanel";
 import KeywordSearchBar from "@/components/meditation/KeywordSearchBar";
@@ -88,7 +89,7 @@ const DrawerBackdrop = styled.div`
 
 const DrawerPanel = styled.div`
   position: absolute;
-  right: 0;
+  right: ${edgeInColumn(0)};
   top: 0;
   height: 100%;
   width: min(90vw, 360px);
@@ -138,9 +139,8 @@ const MapViewport = styled.div`
   position: fixed;
   z-index: 40;
   top: 0;
-  left: 0;
-  right: 0;
   bottom: var(--tabbar-space);
+  ${fixedInColumn};
   background: ${({ theme }) => theme.colors.bg100};
 `;
 
@@ -284,9 +284,8 @@ const MapChip = styled.button<{ $active?: boolean }>`
 
 const SheetShell = styled.div<{ $ty: number; $dragging: boolean }>`
   position: fixed;
-  left: 0;
-  right: 0;
   bottom: var(--tabbar-space);
+  ${fixedInColumn};
   height: calc(100dvh - var(--tabbar-space));
   z-index: 95;
   transform: translateY(${({ $ty }) => $ty}px);

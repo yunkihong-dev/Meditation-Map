@@ -16,7 +16,7 @@ const Overlay = styled.div`
 `;
 
 const Sheet = styled.section`
-  width: min(100%, 620px);
+  width: min(100%, 480px);
   max-height: 88dvh;
   overflow-y: auto;
   padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 0px));

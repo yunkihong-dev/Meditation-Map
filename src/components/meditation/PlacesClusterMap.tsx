@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styled, { css } from "styled-components";
+import { edgeInColumn } from "@/styles/column";
 import { approximateLatLngForPlace } from "@/services/meditation/placeApproxPosition";
 import { ensureNaverMapsCore } from "@/services/meditation/naverMapLoader";
 import type { MeditationPlace } from "@/services/meditation/types";
@@ -25,7 +26,8 @@ const MyLocationBtn = styled.button<{
       ? css`
           position: fixed;
           z-index: 108;
-          right: calc(14px + ${$rightInsetPx}px);
+          /* 뷰포트가 아니라 기둥의 오른쪽 가장자리에서 14px. 넓은 화면에서 멀리 떨어지지 않게. */
+          right: ${edgeInColumn(14 + $rightInsetPx)};
           /*
            * $topPx 를 주면 화면 위(검색·칩 아래)에 붙습니다.
            * 아래쪽은 미리보기 카드·목록 시트·탭바가 몰려 있어 자리가 없습니다.

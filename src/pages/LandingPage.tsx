@@ -1,6 +1,7 @@
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
+import { fixedInColumn } from "@/styles/column";
 import logoImg from "@/assets/logo.png";
 import kakaoImg from "@/assets/kakao.png";
 import naverImg from "@/assets/naver.png";
@@ -129,10 +130,18 @@ const zoomIn = keyframes`
 
 const Screen = styled.div`
   position: fixed;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  ${fixedInColumn};
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.colors.warmCream};
+
+  /* Layout 의 기둥과 같은 테두리 — 넓은 화면에서 어디까지가 앱인지 보이게 */
+  @media (min-width: 520px) {
+    border-left: ${({ theme }) => theme.hairline};
+    border-right: ${({ theme }) => theme.hairline};
+  }
 `;
 
 const Header = styled.header`

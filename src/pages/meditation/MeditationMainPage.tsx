@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
+import { edgeInColumn } from "@/styles/column";
 import FilterPanel from "@/components/meditation/FilterPanel";
 import logoImg from "@/assets/logo.png";
 import Icon from "@/components/common/Icon";
@@ -421,7 +422,7 @@ const DrawerBackdrop = styled.div`
 
 const DrawerPanel = styled.div`
   position: absolute;
-  right: 0;
+  right: ${edgeInColumn(0)};
   top: 0;
   height: 100%;
   width: min(90vw, 360px);
