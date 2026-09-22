@@ -1,4 +1,6 @@
-import { defineConfig } from "vite";
+// vitest/config 의 defineConfig 는 vite 의 것을 그대로 재수출하면서 test 블록 타입만 더해 준다.
+// plugins·server·resolve 설정은 아래 그대로다.
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
@@ -54,5 +56,12 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/setupTests.ts"],
+    // 테스트 파일만 수집한다. e2e·빌드 산출물까지 긁어 가면 실행 시간이 무의미하게 늘어난다.
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 });
