@@ -4,10 +4,11 @@ import Icon from "@/components/common/Icon";
 import type { MeditationPlace } from "@/services/meditation/types";
 import { listPlaceThumbnailUrl } from "@/services/meditation/listImageUrl";
 import { getRegionById } from "@/services/meditation/meditationService";
+import { displayHashtags } from "@/services/meditation/hashtags";
 import FavoriteButton from "./FavoriteButton";
 
 /**
- * 시안 메인의 보조 카드 — 왼쪽 정사각 썸네일, 오른쪽에 분류·이름·별점.
+ * 시안 메인의 보조 카드 — 왼쪽 정사각 썸네일, 오른쪽에 분류·이름·별점·해시태그.
  * 큰 대표 카드(FeaturedPlaceCard) 아래에 세로로 쌓입니다.
  */
 const CardWrapper = styled.div`
@@ -56,6 +57,8 @@ const Thumb = styled.div`
 const Body = styled.div`
   flex: 1;
   min-width: 0;
+  /* 오른쪽 가운데 찜 버튼 자리를 비워 제목·태그가 그 밑으로 파고들지 않게 합니다. */
+  padding-right: 36px;
 `;
 
 const Kicker = styled.span`
@@ -94,6 +97,24 @@ const Rating = styled.div`
   }
 `;
 
+const Tags = styled.div`
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+
+  span {
+    flex-shrink: 0;
+    padding: 3px 9px;
+    border-radius: ${({ theme }) => theme.radii.pill};
+    background: ${({ theme }) => theme.colors.secondaryContainer};
+    color: ${({ theme }) => theme.colors.onSecondaryContainer};
+    font-size: 1.1rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+`;
+
 const FavoriteWrap = styled.div`
   position: absolute;
   top: 50%;
@@ -108,7 +129,8 @@ interface PopularPlaceCardProps {
 
 const PopularPlaceCard = ({ place }: PopularPlaceCardProps) => {
   const region = getRegionById(place.regionId);
-  const kicker = place.hashtags?.[0] ?? place.venueKind ?? region?.name ?? "명상";
+  const kicker = place.venueKind ?? region?.name ?? "명상";
+  const tags = displayHashtags(place.hashtags, 3);
 
   return (
     <CardWrapper>
@@ -130,6 +152,13 @@ const PopularPlaceCard = ({ place }: PopularPlaceCardProps) => {
             {typeof place.rating === "number" ? place.rating.toFixed(1) : "–"}
             <span>· {region?.name ?? place.regionId}</span>
           </Rating>
+          {tags.length > 0 && (
+            <Tags>
+              {tags.map((tag) => (
+                <span key={tag}>{tag}</span>
+              ))}
+            </Tags>
+          )}
         </Body>
       </Card>
       <FavoriteWrap>

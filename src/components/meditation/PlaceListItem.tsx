@@ -4,6 +4,7 @@ import Icon from "@/components/common/Icon";
 import type { MeditationPlace } from "@/services/meditation/types";
 import { listPlaceThumbnailUrl } from "@/services/meditation/listImageUrl";
 import { getRegionById } from "@/services/meditation/meditationService";
+import { displayHashtags } from "@/services/meditation/hashtags";
 import FavoriteButton from "./FavoriteButton";
 
 /**
@@ -164,7 +165,7 @@ const PlaceListItem = ({ place }: PlaceListItemProps) => {
           </Location>
           <Bottom>
             <Tags>
-              {place.hashtags.slice(0, 2).map((tag) => (
+              {displayHashtags(place.hashtags, 2).map((tag) => (
                 <span key={tag}>{tag}</span>
               ))}
             </Tags>

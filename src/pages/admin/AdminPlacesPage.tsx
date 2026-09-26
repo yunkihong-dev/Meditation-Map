@@ -15,6 +15,7 @@ import { AdminRegionSelect } from "@/components/admin/AdminRegionSelect";
 import AdminAddressMapField from "@/components/admin/AdminAddressMapField";
 import AdminMarkdownField from "@/components/admin/AdminMarkdownField";
 import AdminFacilityPicker from "@/components/admin/AdminFacilityPicker";
+import AdminHashtagInput from "@/components/admin/AdminHashtagInput";
 import AdminPlacePreview from "@/components/admin/AdminPlacePreview";
 import AdminConfirmModal from "@/components/admin/AdminConfirmModal";
 import { toast } from "@/stores/toastStore";
@@ -432,6 +433,16 @@ export default function AdminPlacesPage() {
                 <AdminField>
                   <AdminLabel>이름</AdminLabel>
                   <AdminInput value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+                </AdminField>
+                <AdminField>
+                  <AdminLabel>해시태그</AdminLabel>
+                  <p style={{ margin: "0 0 8px", fontSize: 12, color: "#71717a" }}>
+                    엔터나 쉼표로 추가합니다. 앞의 두세 개가 홈·목록 카드에 표시되고 검색에도 걸립니다.
+                  </p>
+                  <AdminHashtagInput
+                    value={draft.hashtags}
+                    onChange={(hashtags) => setDraft({ ...draft, hashtags })}
+                  />
                 </AdminField>
                 <AdminMarkdownField
                   label="한 줄 소개 (마크다운)"

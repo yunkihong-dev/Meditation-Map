@@ -4,6 +4,7 @@ import Icon from "@/components/common/Icon";
 import type { MeditationPlace } from "@/services/meditation/types";
 import { listPlaceThumbnailUrl } from "@/services/meditation/listImageUrl";
 import { getRegionById } from "@/services/meditation/meditationService";
+import { displayHashtags } from "@/services/meditation/hashtags";
 import FavoriteButton from "./FavoriteButton";
 
 /**
@@ -129,6 +130,7 @@ interface FeaturedPlaceCardProps {
 
 const FeaturedPlaceCard = ({ place }: FeaturedPlaceCardProps) => {
   const region = getRegionById(place.regionId);
+  const tags = displayHashtags(place.hashtags, 3);
 
   return (
     <Card>
@@ -146,10 +148,10 @@ const FeaturedPlaceCard = ({ place }: FeaturedPlaceCardProps) => {
           />
         </Photo>
         <Caption>
-          {place.hashtags.length > 0 && (
+          {tags.length > 0 && (
             <Tags>
-              {place.hashtags.slice(0, 2).map((tag) => (
-                <span key={tag}>#{tag.replace(/^#/, "")}</span>
+              {tags.map((tag) => (
+                <span key={tag}>{tag}</span>
               ))}
             </Tags>
           )}
