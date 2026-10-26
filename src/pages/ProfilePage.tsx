@@ -17,6 +17,10 @@ import { typography } from "@/styles/typography";
 import { getRegionById, getRegionIdFromCoordinates } from "@/services/meditation/meditationService";
 import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
 import { apiFetch, useAuthStore } from "@/stores/authStore";
+import { useMemberNotificationStore } from "@/stores/notificationStore";
+import { useCenterChatStore } from "@/stores/centerChatStore";
+import { badgeText } from "@/services/notifications/format";
+import { updateMarketingConsent } from "@/services/notifications/repositories/marketingConsentRepository";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useCatalogStore } from "@/stores/catalogStore";
 import { toast } from "@/stores/toastStore";
@@ -1500,7 +1504,7 @@ const TERMS_DETAIL_TEXT: Record<TermsDetailId, { title: string; body: string }> 
   },
   marketing: {
     title: "마케팅 정보 수신",
-    body: `이벤트·혜택·신규 기능 등의 안내를 이메일 등으로 받아보실 수 있습니다.\n\n본 항목은 선택 사항이며, 동의하지 않아도 서비스 가입 및 이용에 제한이 없습니다.\n\n수신 방법·빈도·철회 절차 등은 추후 설정에서 변경하실 수 있습니다.`,
+    body: `이벤트·혜택·신규 기능 등 광고성 안내를 앱 알림(푸시 포함)·이메일 등으로 받아보실 수 있습니다. 광고성 알림 제목에는 "(광고)"가 표시되며, 야간(21시~8시)에는 보내지 않습니다.\n\n본 항목은 선택 사항이며, 동의하지 않아도 서비스 가입 및 이용에 제한이 없습니다.\n\n동의는 언제든지 마이 > 알림 화면의 "광고성 알림 받기"에서 철회할 수 있습니다.`,
   },
 };
 
@@ -1566,6 +1570,8 @@ const ProfilePage = () => {
   const accessToken = useAuthStore((s) => s.accessToken);
   const sessionEmail = useAuthStore((s) => s.email);
   const logout = useAuthStore((s) => s.logout);
+  const unreadBadge = badgeText(useMemberNotificationStore((s) => s.unreadCount));
+  const centerChatUnread = useCenterChatStore((s) => s.customerUnreadThreads);
   const favoriteCount = useFavoritesStore((s) => s.favorites.length);
   const profileImageInputRef = useRef<HTMLInputElement>(null);
   const [meProfile, setMeProfile] = useState<MeProfile | null>(null);
@@ -2181,6 +2187,16 @@ const ProfilePage = () => {
 
       // 온보딩에서 고른 관심사와 지역을 프로필에 남깁니다. 여기서 실패해도 가입은 이미
       // 끝났으므로 막지 않습니다. 나중에 프로필 수정에서 다시 고를 수 있습니다.
+      // 가입 약관의 "광고성 정보 수신(선택)" 동의를 서버에 남깁니다(D3). 실패해도 가입은 끝났으므로
+      // 막지 않습니다. 알림 화면의 수신 동의 토글에서 다시 켤 수 있습니다.
+      if (agreeMarketing) {
+        try {
+          await updateMarketingConsent(true);
+        } catch {
+          /* 조용히 넘어갑니다 */
+        }
+      }
+
       if (signupInterests.length > 0 || regionId) {
         try {
           await updateMyProfile({
@@ -2396,6 +2412,51 @@ const ProfilePage = () => {
                 <QuickCardDesc>새로운 프로그램을 만나보세요</QuickCardDesc>
               </QuickCard>
             </QuickGrid>
+          </DashboardSection>
+
+          <DashboardSection>
+            <DashboardSectionTitle>알림·내 장소</DashboardSectionTitle>
+            <SettingsCard>
+              <SettingsRow type="button" onClick={() => navigate("/notifications")}>
+                <SettingsIcon>
+                  <Icon name="notifications" size={22} />
+                </SettingsIcon>
+                <SettingsLabel>알림</SettingsLabel>
+                {unreadBadge && <SettingsValue>{unreadBadge}개 안 읽음</SettingsValue>}
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
+              </SettingsRow>
+              {/* 센터 1:1 문의(고객) — 운영팀 '문의하기'(/inquiry)와 구분해 '센터 문의' */}
+              <SettingsRow type="button" onClick={() => navigate("/profile/center-chats")}>
+                <SettingsIcon>
+                  <Icon name="chat" size={22} />
+                </SettingsIcon>
+                <SettingsLabel>센터 문의</SettingsLabel>
+                {centerChatUnread > 0 && <SettingsValue>{centerChatUnread}개 대화 안 읽음</SettingsValue>}
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
+              </SettingsRow>
+              <SettingsRow type="button" onClick={() => navigate("/profile/places")}>
+                <SettingsIcon>
+                  <Icon name="storefront" size={22} />
+                </SettingsIcon>
+                <SettingsLabel>내 장소 관리</SettingsLabel>
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
+              </SettingsRow>
+              <SettingsRow type="button" onClick={() => navigate("/profile/place-claims")}>
+                <SettingsIcon>
+                  <Icon name="assignment" size={22} />
+                </SettingsIcon>
+                <SettingsLabel>소유 신청 내역</SettingsLabel>
+                <SettingsArrow>
+                  <Icon name="chevron_right" size={22} />
+                </SettingsArrow>
+              </SettingsRow>
+            </SettingsCard>
           </DashboardSection>
 
           <DashboardSection>

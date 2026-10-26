@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getMeditationApiBaseUrl } from "@/services/meditation/repositories/apiConfig";
+import { JSON_ACCEPT } from "@/stores/authStore";
 
 const STAFF_ROLES = new Set(["ADMIN", "DEV", "EMPLOYEE"]);
 
@@ -24,7 +25,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set) => ({
       return;
     }
     try {
-      const res = await fetch(`${base}/admin/auth/me`, { credentials: "include" });
+      const res = await fetch(`${base}/admin/auth/me`, { credentials: "include", headers: { Accept: JSON_ACCEPT } });
       if (res.ok) {
         const me = (await res.json()) as { username?: string; role?: string };
         const role = me.role ?? "";

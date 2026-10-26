@@ -75,6 +75,8 @@ export interface MeditationPlace {
   shortDescription: string;
   description: string;
   address: string;
+  /** 상세 주소(층·호수 등). 오너 편집(C4)으로 생긴 키 — 없을 수 있음 */
+  addressDetail?: string;
   /** 지도 마커 위도 (관리자가 주소 검색 후 직접 보정). 없으면 주소 지오코딩으로 표시 */
   lat?: number;
   /** 지도 마커 경도 */

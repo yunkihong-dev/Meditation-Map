@@ -5,6 +5,7 @@ import { adminLogin } from "@/services/admin/adminApi";
 import { useAdminAuthStore } from "@/stores/adminAuthStore";
 import { toast } from "@/stores/toastStore";
 import { AdminButton, AdminCard, AdminField, AdminInput, AdminLabel } from "@/components/admin/adminStyles";
+import AdminPasswordInput from "@/components/admin/AdminPasswordInput";
 
 const Page = styled.div`
   min-height: 100vh;
@@ -56,7 +57,7 @@ export default function AdminLoginPage() {
           </AdminField>
           <AdminField>
             <AdminLabel>비밀번호</AdminLabel>
-            <AdminInput value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="current-password" required />
+            <AdminPasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
           </AdminField>
           <AdminButton $variant="primary" type="submit" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
             {loading ? "로그인 중…" : "로그인"}

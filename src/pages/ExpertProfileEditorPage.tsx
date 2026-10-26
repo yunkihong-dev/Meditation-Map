@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import RegionMap from "@/components/meditation/RegionMap";
@@ -17,12 +17,118 @@ import { toast } from "@/stores/toastStore";
 import CelebrationParticles from "@/components/common/CelebrationParticles";
 import CredentialListField from "@/components/profile/CredentialListField";
 import { typography } from "@/styles/typography";
+import { OWNER_DESKTOP_QUERY, useMediaQuery } from "@/hooks/useMediaQuery";
+import { EXPERT_STEP, EXPERT_STEPS, expertMissingSteps } from "@/pages/expertEditorSteps";
 
-const Page = styled.div`
+const Page = styled.div<{ $stepped?: boolean }>`
   max-width: 980px;
   margin: 0 auto;
-  padding: calc(18px + env(safe-area-inset-top, 0px)) 0 48px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 0 ${({ $stepped }) => ($stepped ? "80px" : "48px")};
   color: ${({ theme }) => theme.colors.text900};
+`;
+
+/* ── 모바일(<1024px) 단계 나누기 — 한 화면에 한 단계, 진행 표시 + 탭바 위 고정 버튼 ── */
+
+const StepNav = styled.nav`
+  margin: 4px 0 4px;
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    color: ${({ theme }) => theme.colors.primary600};
+    ${typography.caption};
+    font-weight: 700;
+  }
+
+  ol {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  button {
+    width: 100%;
+    padding: 0 0 6px;
+    border: 0;
+    background: transparent;
+    color: ${({ theme }) => theme.colors.text700};
+    ${typography.caption};
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  button::before {
+    content: "";
+    display: block;
+    height: 4px;
+    margin-bottom: 6px;
+    border-radius: 9999px;
+    background: ${({ theme }) => theme.colors.primary100};
+  }
+
+  button[data-done="true"]::before,
+  button[aria-current="step"]::before {
+    background: ${({ theme }) => theme.colors.primary600};
+  }
+
+  button[aria-current="step"] {
+    color: ${({ theme }) => theme.colors.text900};
+    font-weight: 700;
+  }
+`;
+
+const StepPane = styled.div`
+  &[hidden] {
+    display: none;
+  }
+`;
+
+const StepBar = styled.div`
+  position: fixed;
+  left: 50%;
+  bottom: var(--tabbar-space);
+  z-index: 20;
+  width: min(100%, 480px);
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  padding: 10px 16px 12px;
+  background: rgba(247, 250, 252, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  .row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .row > button {
+    flex: 1;
+  }
+`;
+
+const Ghost = styled.button`
+  flex: none !important;
+  padding: 15px 20px;
+  border: 1px solid ${({ theme }) => theme.colors.border200};
+  border-radius: ${({ theme }) => theme.radii.pill};
+  background: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.text900};
+  ${typography.buttonMd};
+  cursor: pointer;
+`;
+
+const Missing = styled.p`
+  margin: 0 0 8px;
+  color: ${({ theme }) => theme.colors.text700};
+  text-align: center;
+  ${typography.caption};
 `;
 
 const Header = styled.header`
@@ -290,6 +396,9 @@ export default function ExpertProfileEditorPage() {
   const managedInterests = useCatalogStore((state) => state.interests);
   const [customClassType, setCustomClassType] = useState("");
   const [celebrating, setCelebrating] = useState(false);
+  // 모바일(<1024px — 센터 관리 화면과 같은 기준)만 단계로 나눕니다. PC 는 기존 한 페이지 그대로.
+  const stepped = !useMediaQuery(OWNER_DESKTOP_QUERY);
+  const [step, setStep] = useState(0);
 
   // 관리자 목록에 더해, 이 전문가가 예전에 직접 넣어 둔 주제도 칩으로 보여줍니다.
   // 그러지 않으면 관리자가 목록에서 내린 순간 선택해 둔 값이 화면에서 사라집니다.
@@ -326,8 +435,96 @@ export default function ExpertProfileEditorPage() {
     draft.intro.trim().length > 0 &&
     draft.regionIds.length > 0;
 
+  const save = () => {
+    setBusy(true);
+    setMessage(null);
+    // 저장하면 expertProfileId 가 생기므로, 전환인지 여부는 요청 전에 판단해 둡니다.
+    const isConversion = !profile.expertProfileId;
+    void updateMyExpertProfile(draft)
+      .then((next) => {
+        setProfile(next);
+        if (isConversion) {
+          setCelebrating(true);
+          toast.success("전문가로 전환이 성공했습니다!");
+        } else {
+          toast.success("전문가 정보를 저장했습니다.");
+        }
+        setMessage({
+          text: isConversion
+            ? "명상 전문가로 전환됐어요."
+            : "전문가 프로필을 저장했어요.",
+        });
+        // 축하 효과를 볼 시간을 주고 넘어갑니다.
+        window.setTimeout(() => navigate("/profile"), isConversion ? 2000 : 700);
+      })
+      .catch((error) => {
+        const text = error instanceof Error ? error.message : "저장하지 못했어요.";
+        setMessage({ text, error: true });
+        toast.error(text);
+      })
+      .finally(() => setBusy(false));
+  };
+
+  const saveLabel = busy
+    ? "저장 중…"
+    : profile.expertProfileId
+      ? "전문가 정보 저장"
+      : "명상 전문가로 전환";
+
+  const lastStep = EXPERT_STEPS.length - 1;
+  const missing = expertMissingSteps(draft);
+  const goStep = (i: number) => {
+    setStep(i);
+    if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+  };
+  /** 모바일: 단계 칸(숨은 단계도 DOM·입력 상태 유지). PC: 감싸지 않고 그대로 */
+  const pane = (i: number, node: ReactNode) =>
+    stepped ? (
+      <StepPane hidden={step !== i} data-step={i}>
+        {node}
+      </StepPane>
+    ) : (
+      node
+    );
+
+  /** 관심사 — PC 는 이력 카드 안(기존 위치), 모바일은 단계 하나를 따로 씁니다 */
+  const interestsField = (
+        <Field>
+          <Label>관심사</Label>
+          <Hint>가르치는 주제를 고르세요. 목록에 없으면 아래에 직접 적어 추가할 수 있습니다.</Hint>
+          <Chips>
+            {classTypeOptions.map((item) => (
+              <Chip
+                key={item}
+                type="button"
+                $selected={draft.classTypes.includes(item)}
+                onClick={() => toggleArray("classTypes", item)}
+              >
+                {item}
+              </Chip>
+            ))}
+          </Chips>
+          <CustomClassRow>
+            <Input
+              value={customClassType}
+              maxLength={30}
+              placeholder="예: 차명상"
+              onChange={(e) => setCustomClassType(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                addCustomClassType();
+              }}
+            />
+            <AddClassButton type="button" onClick={addCustomClassType}>
+              추가
+            </AddClassButton>
+          </CustomClassRow>
+        </Field>
+  );
+
   return (
-    <Page>
+    <Page $stepped={stepped}>
       <CelebrationParticles active={celebrating} />
       <Header>
         <Back type="button" onClick={() => navigate("/profile")} aria-label="마이페이지로 돌아가기">
@@ -337,6 +534,32 @@ export default function ExpertProfileEditorPage() {
       </Header>
       <Lead>작성한 내용은 명상 전문가 목록과 상세 페이지에 공개됩니다.</Lead>
 
+      {stepped && (
+        <StepNav aria-label="입력 단계">
+          <div className="meta">
+            <span>
+              {EXPERT_STEPS.length}단계 중 {step + 1}단계
+            </span>
+            <span>{EXPERT_STEPS[step]}</span>
+          </div>
+          <ol>
+            {EXPERT_STEPS.map((label, i) => (
+              <li key={label}>
+                <button
+                  type="button"
+                  aria-current={step === i ? "step" : undefined}
+                  data-done={i < step ? "true" : "false"}
+                  onClick={() => goStep(i)}
+                >
+                  {label}
+                </button>
+              </li>
+            ))}
+          </ol>
+        </StepNav>
+      )}
+
+      {pane(EXPERT_STEP.basic, <>
       <Card>
         <SectionTitle>공개 설정</SectionTitle>
         <SectionDesc>
@@ -385,7 +608,9 @@ export default function ExpertProfileEditorPage() {
           />
         </Field>
       </Card>
+      </>)}
 
+      {pane(EXPERT_STEP.career,
       <Card>
         <SectionTitle>이력과 전문 분야</SectionTitle>
         <SectionDesc>
@@ -421,40 +646,13 @@ export default function ExpertProfileEditorPage() {
             addLabel="경력 추가"
           />
         </Field>
-        <Field>
-          <Label>관심사</Label>
-          <Hint>가르치는 주제를 고르세요. 목록에 없으면 아래에 직접 적어 추가할 수 있습니다.</Hint>
-          <Chips>
-            {classTypeOptions.map((item) => (
-              <Chip
-                key={item}
-                type="button"
-                $selected={draft.classTypes.includes(item)}
-                onClick={() => toggleArray("classTypes", item)}
-              >
-                {item}
-              </Chip>
-            ))}
-          </Chips>
-          <CustomClassRow>
-            <Input
-              value={customClassType}
-              maxLength={30}
-              placeholder="예: 차명상"
-              onChange={(e) => setCustomClassType(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                e.preventDefault();
-                addCustomClassType();
-              }}
-            />
-            <AddClassButton type="button" onClick={addCustomClassType}>
-              추가
-            </AddClassButton>
-          </CustomClassRow>
-        </Field>
+        {!stepped && interestsField}
       </Card>
+      )}
 
+      {stepped && pane(EXPERT_STEP.interests, <Card style={{ paddingTop: 2 }}>{interestsField}</Card>)}
+
+      {pane(EXPERT_STEP.regions,
       <Card>
         <SectionTitle>주 활동 지역</SectionTitle>
         <SectionDesc>지도에서 활동 가능한 지역을 여러 곳 선택할 수 있습니다.</SectionDesc>
@@ -486,7 +684,9 @@ export default function ExpertProfileEditorPage() {
           </RegionHelp>
         </RegionLayout>
       </Card>
+      )}
 
+      {pane(EXPERT_STEP.center,
       <Card>
         <SectionTitle>센터 정보</SectionTitle>
         <SectionDesc>본인 소유 센터가 있다면 인증 정보를 함께 입력해 주세요.</SectionDesc>
@@ -551,48 +751,47 @@ export default function ExpertProfileEditorPage() {
         )}
       </Card>
 
+      )}
+
+      {stepped ? (
+        <StepBar>
+          {step === lastStep && !valid && missing.length > 0 && (
+            <Missing>
+              {missing.map((i) => `${i + 1}단계 ${EXPERT_STEPS[i]}`).join(", ")}을(를) 채워야 저장할 수 있어요.
+            </Missing>
+          )}
+          <div className="row">
+            {step > 0 && (
+              <Ghost type="button" onClick={() => goStep(step - 1)}>
+                이전
+              </Ghost>
+            )}
+            {step < lastStep &&
+              (profile.expertProfileId ? (
+                <Ghost type="button" onClick={() => goStep(step + 1)}>
+                  다음
+                </Ghost>
+              ) : (
+                <Save type="button" onClick={() => goStep(step + 1)}>
+                  다음
+                </Save>
+              ))}
+            {(step === lastStep || profile.expertProfileId) && (
+              <Save type="button" disabled={busy || !valid} onClick={save}>
+                {saveLabel}
+              </Save>
+            )}
+          </div>
+          {message && <Message $error={message.error}>{message.text}</Message>}
+        </StepBar>
+      ) : (
       <Footer>
-        <Save
-          type="button"
-          disabled={busy || !valid}
-          onClick={() => {
-            setBusy(true);
-            setMessage(null);
-            // 저장하면 expertProfileId 가 생기므로, 전환인지 여부는 요청 전에 판단해 둡니다.
-            const isConversion = !profile.expertProfileId;
-            void updateMyExpertProfile(draft)
-              .then((next) => {
-                setProfile(next);
-                if (isConversion) {
-                  setCelebrating(true);
-                  toast.success("전문가로 전환이 성공했습니다!");
-                } else {
-                  toast.success("전문가 정보를 저장했습니다.");
-                }
-                setMessage({
-                  text: isConversion
-                    ? "명상 전문가로 전환됐어요."
-                    : "전문가 프로필을 저장했어요.",
-                });
-                // 축하 효과를 볼 시간을 주고 넘어갑니다.
-                window.setTimeout(() => navigate("/profile"), isConversion ? 2000 : 700);
-              })
-              .catch((error) => {
-                const text = error instanceof Error ? error.message : "저장하지 못했어요.";
-                setMessage({ text, error: true });
-                toast.error(text);
-              })
-              .finally(() => setBusy(false));
-          }}
-        >
-          {busy
-            ? "저장 중…"
-            : profile.expertProfileId
-              ? "전문가 정보 저장"
-              : "명상 전문가로 전환"}
+        <Save type="button" disabled={busy || !valid} onClick={save}>
+          {saveLabel}
         </Save>
         {message && <Message $error={message.error}>{message.text}</Message>}
       </Footer>
+      )}
     </Page>
   );
 }
