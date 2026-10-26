@@ -1,4 +1,5 @@
 import { regionNameById } from "@/data/koreaRegions";
+import { ensureNaverMapsGeocoder } from "@/services/meditation/naverMapLoader";
 import { REGION_BBOXES } from "./regionFromLocation";
 
 export type GeocodePrecision = "exact" | "area" | "region";
@@ -217,6 +218,15 @@ export function zoomForGeocodeCandidate(candidate: GeocodeCandidate): number {
 export async function searchAddressCandidates(query: string): Promise<GeocodeCandidate[]> {
   const q = query.trim();
   if (!q) return [];
+
+  // 오너 편집·센터 등록처럼 지도를 띄우지 않는 화면에서도 검색되도록, 지오코더가 없으면 여기서 로드합니다.
+  if (!getNaverService()?.geocode) {
+    const key = (import.meta.env.VITE_NAVER_MAP_CLIENT_ID as string | undefined)?.trim();
+    const loaded = await ensureNaverMapsGeocoder(key);
+    if (!loaded) {
+      throw new Error("지도 API를 불러오지 못했습니다. VITE_NAVER_MAP_CLIENT_ID 설정을 확인해 주세요.");
+    }
+  }
 
   const queries = buildFallbackQueries(q);
   let lastStatus: string | number = "OK";

@@ -5,6 +5,8 @@ import ReactMarkdown from "react-markdown";
 import { MarkdownText } from "@/components/common/MarkdownText";
 import { fetchPlaceById, getRegionById } from "@/services/meditation/meditationService";
 import FavoriteButton from "@/components/meditation/FavoriteButton";
+import ChatInquiryButton from "@/components/centerChat/ChatInquiryButton";
+import { sendPlaceView } from "@/services/meditation/repositories/placeViewBeacon";
 import PlaceProgramsModal, {
   ProgramPhotoExpandOverlay,
   useProgramGalleryLoop,
@@ -548,6 +550,8 @@ const MapWrap = styled.div`
   background: ${({ theme }) => theme.colors.bg100};
   overflow: hidden;
   position: relative;
+  /* 네이버 지도 컨트롤(일반/위성·로고 링크)의 z-index 가 하단 '문의하기' 바(z-index 20) 위로 새지 않게 쌓임 맥락을 가둡니다 */
+  isolation: isolate;
 `;
 
 const NotFoundWrap = styled.div`
@@ -637,6 +641,8 @@ const MeditationDetailPage = () => {
         if (p) {
           setPlace(p);
           setDetailError(null);
+          // C7 조회 비콘 — 상세를 실제로 연 경우에만, 같은 장소는 짧은 시간 안에 한 번만(sendPlaceView 가 거름)
+          sendPlaceView(placeId);
         } else {
           setPlace(undefined);
           setDetailError("not_found");
@@ -974,6 +980,7 @@ const MeditationDetailPage = () => {
             <circle cx="12" cy="10" r="3" />
           </svg>
           {place.address}
+          {place.addressDetail ? ` ${place.addressDetail}` : ""}
         </LocationRow>
         <Description>
           <MarkdownText markdown={place.shortDescription} />
@@ -1080,7 +1087,10 @@ const MeditationDetailPage = () => {
           <h3>위치</h3>
           <MapAddressRow>
             <MapAddressButton type="button" onClick={copyAddress} title="클릭하여 주소 복사">
-              <MapAddressText>{place.address}</MapAddressText>
+              <MapAddressText>
+                {place.address}
+                {place.addressDetail ? ` ${place.addressDetail}` : ""}
+              </MapAddressText>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -1101,6 +1111,9 @@ const MeditationDetailPage = () => {
           <MapWrap id="naver-map" ref={mapRef} />
         </MapSection>
       </Content>
+
+      {/* 문의하기 — 본문 뒤 sticky 바(탭바 위에 붙음, 끝까지 내리면 지도 아래 제자리) */}
+      <ChatInquiryButton place={place} />
 
       {hasProgramModal && (
         <PlaceProgramsModal

@@ -13,6 +13,7 @@ import {
 import { toast } from "@/stores/toastStore";
 import { KOREA_REGIONS } from "@/data/koreaRegions";
 import AdminConfirmModal from "@/components/admin/AdminConfirmModal";
+import AdminPasswordInput from "@/components/admin/AdminPasswordInput";
 import AdminMarkdownField from "@/components/admin/AdminMarkdownField";
 import AdminExpertPreview from "@/components/admin/AdminExpertPreview";
 import { AdminImageUpload } from "@/components/admin/AdminImageUpload";
@@ -392,8 +393,7 @@ export default function AdminExpertsPage() {
                 </AdminField>
                 <AdminField>
                   <AdminLabel>비밀번호</AdminLabel>
-                  <AdminInput
-                    type="password"
+                  <AdminPasswordInput
                     value={account.password}
                     onChange={(e) => setAccount((a) => ({ ...a, password: e.target.value }))}
                     placeholder="8자 이상 · 영문·숫자·특수문자 포함"

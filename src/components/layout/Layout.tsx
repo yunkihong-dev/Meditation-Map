@@ -1,6 +1,9 @@
-import { Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { rememberAppPath } from "@/services/navigation/lastAppPath";
 import styled from "styled-components";
 import BottomNav from "@/components/layout/BottomNav";
+import { MemberNotificationBridge } from "@/components/notifications/NotificationBridges";
 
 /**
  * 앱은 모바일 한 벌만 만듭니다. 넓은 화면에서는 늘리지 않고 가운데 기둥으로 세웁니다.
@@ -38,8 +41,15 @@ const Content = styled.main`
 `;
 
 const Layout = () => {
+  // 센터 관리 화면의 "앱으로 돌아가기"가 돌아올 자리
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    rememberAppPath(pathname + search);
+  }, [pathname, search]);
+
   return (
     <LayoutShell>
+      <MemberNotificationBridge />
       <Content>
         <Outlet />
       </Content>

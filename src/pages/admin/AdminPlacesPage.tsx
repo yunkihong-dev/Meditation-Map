@@ -25,10 +25,10 @@ import { removeDraft, type StoredAdminDraft } from "@/services/admin/adminLocalD
 import {
   computeProgramStatus,
   defaultEventPeriod,
-  normalizePlacePrograms,
   programStatusLabel,
 } from "@/services/meditation/placeProgramStatus";
 import {
+  normalizeAdminPlace,
   readNoticeBody,
   writeNoticeBody,
 } from "@/services/admin/placeAdminFields";
@@ -45,11 +45,8 @@ import {
 
 type Tab = "basic" | "programs";
 
-function normalizePlace(data: MeditationPlace): MeditationPlace {
-  const photos = data.photos ?? [];
-  const thumbnailUrl = data.thumbnailUrl?.trim() || photos[0] || "";
-  return normalizePlacePrograms({ ...data, photos, thumbnailUrl });
-}
+/** addressDetail 등 폼이 모르는 키를 보존합니다(placeAdminFields.normalizeAdminPlace) */
+const normalizePlace = normalizeAdminPlace;
 
 export default function AdminPlacesPage() {
   const [rows, setRows] = useState<AdminPlaceRow[]>([]);
@@ -448,6 +445,14 @@ export default function AdminPlacesPage() {
                   onChange={(address) => setDraft({ ...draft, address })}
                   onCoordsChange={(lat, lng) => setDraft((d) => (d ? { ...d, lat, lng } : d))}
                 />
+                <AdminField>
+                  <AdminLabel>상세 주소 (층·호수 — 오너도 수정 가능)</AdminLabel>
+                  <AdminInput
+                    value={draft.addressDetail ?? ""}
+                    onChange={(e) => setDraft({ ...draft, addressDetail: e.target.value })}
+                    placeholder="예: 4층 402호"
+                  />
+                </AdminField>
                 <AdminMarkdownField
                   label="입장료·이용 요금 (마크다운)"
                   value={draft.admissionFee ?? ""}

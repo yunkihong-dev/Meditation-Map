@@ -24,6 +24,7 @@ import type {
 import type { Category } from "@/services/meditation/types";
 import { useCatalogStore } from "@/stores/catalogStore";
 import { useMeditationStore } from "@/stores/meditationStore";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const fadeSlideIn = keyframes`
   from { opacity: 0; transform: translateY(8px); }
@@ -95,30 +96,10 @@ const Stack = styled.div`
   padding-top: 16px;
 `;
 
-const BellButton = styled(Link)`
+/** 종(알림 패널)이 들어가는 오른쪽 칸 */
+const BellSlot = styled.div`
   grid-column: 3;
-  position: relative;
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ theme }) => theme.colors.white};
-  box-shadow: 0 4px 20px rgba(107, 70, 193, 0.04);
-  color: ${({ theme }) => theme.colors.primary600};
-
-  /* 시안의 빨간 알림 점 */
-  &::after {
-    content: "";
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 8px;
-    height: 8px;
-    border-radius: ${({ theme }) => theme.radii.pill};
-    background: ${({ theme }) => theme.colors.error};
-  }
+  justify-self: end;
 `;
 
 const MainContent = styled.div`
@@ -592,9 +573,9 @@ const MeditationMainPage = () => {
         <Brand to="/">
           <BrandLogo src={logoImg} alt="Wellit" />
         </Brand>
-        <BellButton to="/notice" aria-label="공지사항">
-          <Icon name="notifications" />
-        </BellButton>
+        <BellSlot>
+          <NotificationBell scope="me" />
+        </BellSlot>
       </StickyTop>
 
       <Stack>

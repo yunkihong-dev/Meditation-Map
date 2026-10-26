@@ -45,6 +45,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // FCM 서비스워커는 자기 scope 로 따로 등록됩니다. precache 에 넣으면 옛 버전이 남을 수 있어 뺍니다.
+        globIgnores: ["**/firebase-messaging-sw.js"],
       },
     }),
   ],
